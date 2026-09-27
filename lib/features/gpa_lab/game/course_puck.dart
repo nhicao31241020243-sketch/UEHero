@@ -3,7 +3,16 @@ import 'dart:ui';
 
 import 'package:flame/events.dart';
 import 'package:flame_forge2d/flame_forge2d.dart';
-import 'package:flutter/material.dart' show Alignment, RadialGradient;
+import 'package:flutter/material.dart'
+    show
+        Alignment,
+        FontWeight,
+        RadialGradient,
+        TextAlign,
+        TextPainter,
+        TextSpan,
+        TextStyle;
+import 'package:flutter/services.dart';
 
 import 'grade_pocket.dart';
 import 'physics_filters.dart';
@@ -47,7 +56,7 @@ class CoursePuck extends BodyComponent with DragCallbacks, ContactCallbacks {
     required Vector2 position,
     Vector2? initialVelocity,
     this.onSnapped,
-  }) : radius = credits >= 5 ? 0.95 : 0.82,
+  }) : radius = credits >= 5 ? 0.70 : 0.62,
        super(
          renderBody: false,
          bodyDef: BodyDef(
@@ -60,7 +69,7 @@ class CoursePuck extends BodyComponent with DragCallbacks, ContactCallbacks {
          ),
          shapeSpecs: [
            ShapeSpec(
-             Circle(radius: credits >= 5 ? 0.95 : 0.82),
+             Circle(radius: credits >= 5 ? 0.70 : 0.62),
              ShapeDef(
                density: credits >= 5 ? 1.25 : 1.0,
                filter: freePuckFilter(),
@@ -119,6 +128,8 @@ class CoursePuck extends BodyComponent with DragCallbacks, ContactCallbacks {
   void onDragStart(DragStartEvent event) {
     super.onDragStart(event);
 
+    HapticFeedback.lightImpact();
+
     puckState = PuckState.held;
 
     _targetWorldPosition = game.screenToWorld(event.canvasPosition);
@@ -146,7 +157,6 @@ class CoursePuck extends BodyComponent with DragCallbacks, ContactCallbacks {
 
     _targetWorldPosition = null;
 
-    // Thả trực tiếp vào một well mới.
     final pocket = _closestActivePocket();
 
     if (pocket != null) {
@@ -154,14 +164,13 @@ class CoursePuck extends BodyComponent with DragCallbacks, ContactCallbacks {
       return;
     }
 
-    // Nếu puck trước đó đã có grade mà user thả hụt,
-    // quay về assignment cũ thay vì âm thầm xóa scenario.
+    // Nếu đã có grade rồi mà thả hụt,
+    // quay lại well cũ để không làm mất scenario.
     if (committedPocket != null) {
       _snapTo(committedPocket!, notify: false);
       return;
     }
 
-    // Puck chưa từng assign → fling bình thường.
     puckState = PuckState.flying;
 
     body.type = BodyType.dynamic;
@@ -208,6 +217,7 @@ class CoursePuck extends BodyComponent with DragCallbacks, ContactCallbacks {
     final held = puckState == PuckState.held;
 
     final targetLift = held ? 1.0 : 0.0;
+
     final t = math.min(1.0, dt * 14.0);
 
     _visualLift += (targetLift - _visualLift) * t;
@@ -224,8 +234,6 @@ class CoursePuck extends BodyComponent with DragCallbacks, ContactCallbacks {
       return;
     }
 
-    // Một puck được fling vào well và đã chậm đủ
-    // cũng có thể tự snap.
     if ((puckState == PuckState.flying || puckState == PuckState.candidate) &&
         activePockets.isNotEmpty &&
         body.linearVelocity.length <= _autoSnapSpeed) {
@@ -276,6 +284,8 @@ class CoursePuck extends BodyComponent with DragCallbacks, ContactCallbacks {
     priority = 0;
 
     if (notify) {
+      HapticFeedback.mediumImpact();
+
       onSnapped?.call(courseId, credits, pocket.label, pocket.gradePoint);
     }
   }
@@ -310,66 +320,131 @@ class CoursePuck extends BodyComponent with DragCallbacks, ContactCallbacks {
 
     final snapped = puckState == PuckState.snapped;
 
-    final baseScale = snapped ? 0.94 : 1.0;
+    // Lún nhẹ khi snapped.
+    final baseScale = snapped ? 0.90 : 1.0;
 
+    // Nhấc lên khi held.
     final scale = baseScale + (_visualLift * 0.07);
 
-    final shadowY = radius * (snapped ? 0.05 : 0.14 + _visualLift * 0.20);
+    final shadowY = radius * (snapped ? 0.03 : 0.13 + _visualLift * 0.22);
 
     canvas.save();
     canvas.scale(scale);
 
+    // Shadow — tín hiệu Z-axis chính.
     canvas.drawCircle(
       Offset(0, shadowY),
-      radius * (1.0 + _visualLift * 0.05),
+      radius * (1.0 + _visualLift * 0.08),
       Paint()
         ..color = Color.fromRGBO(
           0,
           0,
           0,
-          snapped ? 0.28 : 0.48 - (_visualLift * 0.14),
+          snapped ? 0.22 : 0.50 - (_visualLift * 0.16),
         )
         ..maskFilter = MaskFilter.blur(
           BlurStyle.normal,
-          snapped ? 2 : 3 + (_visualLift * 7),
+          snapped ? 1.8 : 3 + (_visualLift * 8),
         ),
     );
 
+    // Red lower rim.
     canvas.drawCircle(
-      Offset(0, radius * 0.11),
+      Offset(0, radius * 0.10),
       radius,
-      Paint()..color = const Color(0xFF57070C),
+      Paint()..color = const Color(0xFF59070C),
     );
 
+    // Ceramic face.
     canvas.drawCircle(
       Offset.zero,
       radius,
       Paint()
         ..shader = const RadialGradient(
           center: Alignment(-0.38, -0.40),
-          radius: 1.1,
-          colors: [Color(0xFF3B3B40), Color(0xFF202024), Color(0xFF101012)],
+          radius: 1.08,
+          colors: [Color(0xFF404045), Color(0xFF242428), Color(0xFF111113)],
         ).createShader(Rect.fromCircle(center: Offset.zero, radius: radius)),
     );
 
+    // Silver top edge.
     canvas.drawCircle(
       Offset.zero,
       radius,
       Paint()
-        ..color = const Color(0x77FFFFFF)
+        ..color = const Color(0x88FFFFFF)
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 0.045,
+        ..strokeWidth = 0.040,
     );
 
+    // Netflix-red inner rim.
     canvas.drawCircle(
       Offset.zero,
       radius * 0.91,
       Paint()
         ..color = const Color(0x99E50914)
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 0.055 + (_visualLift * 0.025),
+        ..strokeWidth = 0.047 + (_visualLift * 0.025),
     );
 
+    _renderCourseLabel(canvas);
+
+    // Foreground lip illusion:
+    // snapped puck trông như nằm TRONG hốc.
+    if (snapped) {
+      canvas.drawArc(
+        Rect.fromCircle(center: Offset.zero, radius: radius * 1.03),
+        0,
+        math.pi,
+        false,
+        Paint()
+          ..color = const Color(0xCC070708)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 0.12
+          ..strokeCap = StrokeCap.round,
+      );
+    }
+
     canvas.restore();
+  }
+
+  void _renderCourseLabel(Canvas canvas) {
+    final namePainter = TextPainter(
+      text: TextSpan(
+        text: courseName,
+        style: TextStyle(
+          color: const Color(0xFFF4F4F6),
+          fontSize: radius * 0.46,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+      textAlign: TextAlign.center,
+      textDirection: TextDirection.ltr,
+      maxLines: 2,
+      ellipsis: '…',
+    )..layout(maxWidth: radius * 1.48);
+
+    namePainter.paint(
+      canvas,
+      Offset(-namePainter.width / 2, -namePainter.height / 2 - radius * 0.06),
+    );
+
+    final creditPainter = TextPainter(
+      text: TextSpan(
+        text: '$credits TC',
+        style: TextStyle(
+          color: const Color(0xFF9999A3),
+          fontSize: radius * 0.30,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      textAlign: TextAlign.center,
+      textDirection: TextDirection.ltr,
+    )..layout();
+
+    creditPainter.paint(
+      canvas,
+      Offset(-creditPainter.width / 2, radius * 0.27),
+    );
   }
 }
