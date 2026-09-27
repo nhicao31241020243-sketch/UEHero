@@ -56,7 +56,7 @@ class CoursePuck extends BodyComponent with DragCallbacks, ContactCallbacks {
     required Vector2 position,
     Vector2? initialVelocity,
     this.onSnapped,
-  }) : radius = credits >= 5 ? 0.70 : 0.62,
+  }) : radius = credits >= 5 ? 1.08 : 0.96,
        super(
          renderBody: false,
          bodyDef: BodyDef(
@@ -69,7 +69,7 @@ class CoursePuck extends BodyComponent with DragCallbacks, ContactCallbacks {
          ),
          shapeSpecs: [
            ShapeSpec(
-             Circle(radius: credits >= 5 ? 0.70 : 0.62),
+             Circle(radius: credits >= 5 ? 1.08 : 0.96),
              ShapeDef(
                density: credits >= 5 ? 1.25 : 1.0,
                filter: freePuckFilter(),
@@ -80,6 +80,16 @@ class CoursePuck extends BodyComponent with DragCallbacks, ContactCallbacks {
            ),
          ],
        );
+
+  Color get accentColor {
+    return courseId == 'internship'
+        ? const Color(0xFFFF9B55)
+        : const Color(0xFFEF5C5F);
+  }
+
+  String get shortCode {
+    return courseId == 'internship' ? 'TI' : 'AI';
+  }
 
   @override
   Future<void> onLoad() async {
@@ -136,7 +146,7 @@ class CoursePuck extends BodyComponent with DragCallbacks, ContactCallbacks {
 
     body.type = BodyType.kinematic;
     body.linearVelocity = Vector2.zero();
-    body.angularVelocity = 0.0;
+    body.angularVelocity = 0;
     body.isAwake = true;
 
     _setFilter(heldPuckFilter());
@@ -164,8 +174,6 @@ class CoursePuck extends BodyComponent with DragCallbacks, ContactCallbacks {
       return;
     }
 
-    // Nếu đã có grade rồi mà thả hụt,
-    // quay lại well cũ để không làm mất scenario.
     if (committedPocket != null) {
       _snapTo(committedPocket!, notify: false);
       return;
@@ -202,7 +210,7 @@ class CoursePuck extends BodyComponent with DragCallbacks, ContactCallbacks {
 
     body.type = BodyType.dynamic;
     body.linearVelocity = Vector2.zero();
-    body.angularVelocity = 0.0;
+    body.angularVelocity = 0;
     body.isAwake = true;
 
     _setFilter(freePuckFilter());
@@ -218,7 +226,7 @@ class CoursePuck extends BodyComponent with DragCallbacks, ContactCallbacks {
 
     final targetLift = held ? 1.0 : 0.0;
 
-    final t = math.min(1.0, dt * 14.0);
+    final t = math.min(1.0, dt * 14);
 
     _visualLift += (targetLift - _visualLift) * t;
 
@@ -230,7 +238,6 @@ class CoursePuck extends BodyComponent with DragCallbacks, ContactCallbacks {
       _clampMagnitude(chaseVelocity, _maxChaseSpeed);
 
       body.linearVelocity = chaseVelocity;
-
       return;
     }
 
@@ -258,6 +265,7 @@ class CoursePuck extends BodyComponent with DragCallbacks, ContactCallbacks {
 
       if (distanceSquared < closestDistanceSquared) {
         closestDistanceSquared = distanceSquared;
+
         closest = pocket;
       }
     }
@@ -277,7 +285,7 @@ class CoursePuck extends BodyComponent with DragCallbacks, ContactCallbacks {
     );
 
     body.linearVelocity = Vector2.zero();
-    body.angularVelocity = 0.0;
+    body.angularVelocity = 0;
 
     _setFilter(snappedPuckFilter());
 
@@ -320,87 +328,115 @@ class CoursePuck extends BodyComponent with DragCallbacks, ContactCallbacks {
 
     final snapped = puckState == PuckState.snapped;
 
-    // Lún nhẹ khi snapped.
-    final baseScale = snapped ? 0.90 : 1.0;
+    final baseScale = snapped ? 0.91 : 1.0;
 
-    // Nhấc lên khi held.
     final scale = baseScale + (_visualLift * 0.12);
 
-    final shadowY = radius * (snapped ? 0.03 : 0.15 + _visualLift * 0.31);
-
     canvas.save();
+
     canvas.scale(scale);
 
-    // Shadow — tín hiệu Z-axis chính.
-    canvas.drawCircle(
-      Offset(0, shadowY),
-      radius * (1.0 + _visualLift * 0.13),
+    // ------------------------------
+    // 1. OPTICAL Z SHADOW
+    // ------------------------------
+
+    final shadowOffset = radius * (0.20 + _visualLift * 0.31);
+
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: Offset(0, shadowOffset),
+        width: radius * (1.76 + _visualLift * 0.18),
+        height: radius * (0.64 + _visualLift * 0.08),
+      ),
       Paint()
         ..color = Color.fromRGBO(
-          0,
-          0,
-          0,
-          snapped ? 0.22 : 0.50 - (_visualLift * 0.16),
+          47,
+          30,
+          29,
+          snapped ? 0.18 : 0.28 - (_visualLift * 0.08),
         )
-        ..maskFilter = MaskFilter.blur(
-          BlurStyle.normal,
-          snapped ? 1.8 : 3 + (_visualLift * 11),
-        ),
+        ..maskFilter = MaskFilter.blur(BlurStyle.normal, 4 + (_visualLift * 8)),
     );
 
-    // Red lower rim.
+    // ------------------------------
+    // 2. DEEP BODY
+    // ------------------------------
+
     canvas.drawCircle(
-      Offset(0, radius * 0.10),
+      Offset(0, radius * 0.17),
       radius,
-      Paint()..color = const Color(0xFF59070C),
+      Paint()..color = const Color(0xFF211D1E),
     );
 
-    // Ceramic face.
+    // ------------------------------
+    // 3. MACHINED OUTER RING
+    // ------------------------------
+
     canvas.drawCircle(
       Offset.zero,
       radius,
       Paint()
         ..shader = const RadialGradient(
-          center: Alignment(-0.38, -0.40),
-          radius: 1.08,
-          colors: [Color(0xFF404045), Color(0xFF242428), Color(0xFF111113)],
+          center: Alignment(-0.38, -0.48),
+          radius: 1.10,
+          colors: [Color(0xFF8D8380), Color(0xFF4C4647), Color(0xFF292526)],
         ).createShader(Rect.fromCircle(center: Offset.zero, radius: radius)),
     );
 
-    // Silver top edge.
+    // ------------------------------
+    // 4. FUNCTIONAL COLOR RING
+    // ------------------------------
+
+    canvas.drawCircle(Offset.zero, radius * 0.86, Paint()..color = accentColor);
+
+    // ------------------------------
+    // 5. CERAMIC FACE
+    // ------------------------------
+
     canvas.drawCircle(
       Offset.zero,
-      radius,
+      radius * 0.74,
       Paint()
-        ..color = const Color(0x88FFFFFF)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 0.040,
+        ..shader =
+            const RadialGradient(
+              center: Alignment(-0.40, -0.48),
+              radius: 1.05,
+              colors: [Color(0xFF5D5556), Color(0xFF383233), Color(0xFF242021)],
+            ).createShader(
+              Rect.fromCircle(center: Offset.zero, radius: radius * 0.74),
+            ),
     );
 
-    // Netflix-red inner rim.
-    canvas.drawCircle(
-      Offset.zero,
-      radius * 0.91,
+    // Specular highlight.
+    canvas.drawArc(
+      Rect.fromCircle(center: Offset.zero, radius: radius * 0.64),
+      3.65,
+      1.45,
+      false,
       Paint()
-        ..color = const Color(0x99E50914)
+        ..color = const Color(0x45FFFFFF)
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 0.047 + (_visualLift * 0.025),
+        ..strokeWidth = 0.065,
     );
 
-    _renderCourseLabel(canvas);
+    _renderIdentity(canvas);
 
-    // Foreground lip illusion:
-    // snapped puck trông như nằm TRONG hốc.
-    if (snapped) {
+    // When docked, front lip covers
+    // part of the token to sell depth.
+    if (snapped && committedPocket != null) {
       canvas.drawArc(
-        Rect.fromCircle(center: Offset.zero, radius: radius * 1.03),
-        0,
-        math.pi,
+        Rect.fromCenter(
+          center: Offset(0, radius * 0.10),
+          width: radius * 1.72,
+          height: radius * 1.00,
+        ),
+        0.12,
+        2.90,
         false,
         Paint()
-          ..color = const Color(0xCC070708)
+          ..color = committedPocket!.accentColor.withValues(alpha: 0.52)
           ..style = PaintingStyle.stroke
-          ..strokeWidth = 0.12
+          ..strokeWidth = 0.13
           ..strokeCap = StrokeCap.round,
       );
     }
@@ -408,34 +444,32 @@ class CoursePuck extends BodyComponent with DragCallbacks, ContactCallbacks {
     canvas.restore();
   }
 
-  void _renderCourseLabel(Canvas canvas) {
-    final namePainter = TextPainter(
+  void _renderIdentity(Canvas canvas) {
+    final codePainter = TextPainter(
       text: TextSpan(
-        text: courseName,
+        text: shortCode,
         style: TextStyle(
-          color: const Color(0xFFF4F4F6),
-          fontSize: radius * 0.46,
-          fontWeight: FontWeight.w700,
+          color: const Color(0xFFFDF9F7),
+          fontSize: radius * 0.50,
+          fontWeight: FontWeight.w900,
         ),
       ),
       textAlign: TextAlign.center,
       textDirection: TextDirection.ltr,
-      maxLines: 2,
-      ellipsis: '…',
-    )..layout(maxWidth: radius * 1.48);
+    )..layout();
 
-    namePainter.paint(
+    codePainter.paint(
       canvas,
-      Offset(-namePainter.width / 2, -namePainter.height / 2 - radius * 0.06),
+      Offset(-codePainter.width / 2, -codePainter.height / 2 - radius * 0.09),
     );
 
     final creditPainter = TextPainter(
       text: TextSpan(
         text: '$credits TC',
         style: TextStyle(
-          color: const Color(0xFF9999A3),
-          fontSize: radius * 0.30,
-          fontWeight: FontWeight.w600,
+          color: accentColor,
+          fontSize: radius * 0.27,
+          fontWeight: FontWeight.w800,
         ),
       ),
       textAlign: TextAlign.center,
@@ -444,7 +478,7 @@ class CoursePuck extends BodyComponent with DragCallbacks, ContactCallbacks {
 
     creditPainter.paint(
       canvas,
-      Offset(-creditPainter.width / 2, radius * 0.27),
+      Offset(-creditPainter.width / 2, radius * 0.22),
     );
   }
 }

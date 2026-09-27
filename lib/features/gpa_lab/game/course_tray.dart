@@ -23,11 +23,35 @@ class CourseTray extends PositionComponent {
   void render(Canvas canvas) {
     super.render(canvas);
 
+    final rect = Rect.fromLTWH(0, 0, size.x, size.y);
+
+    final rrect = RRect.fromRectAndRadius(rect, const Radius.circular(0.58));
+
+    // Large soft shadow = physical shelf.
+    canvas.drawRRect(
+      rrect.shift(const Offset(0, 0.12)),
+      Paint()
+        ..color = const Color(0x28000000)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5),
+    );
+
+    // Warm shelf body.
+    canvas.drawRRect(rrect, Paint()..color = const Color(0xFFF1E7E1));
+
+    // Very subtle glass-like top border.
+    canvas.drawRRect(
+      rrect,
+      Paint()
+        ..color = const Color(0x7AFFFFFF)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 0.035,
+    );
+
     _drawTitle(canvas);
 
-    _drawSlot(canvas, center: Offset(leftSlotX, slotY), radius: 1.12);
+    _drawSlot(canvas, center: Offset(leftSlotX, slotY), radius: 1.10);
 
-    _drawSlot(canvas, center: Offset(rightSlotX, slotY), radius: 1.24);
+    _drawSlot(canvas, center: Offset(rightSlotX, slotY), radius: 1.23);
 
     _drawCourseLabel(canvas, text: leftCourse, x: leftSlotX);
 
@@ -37,19 +61,18 @@ class CourseTray extends PositionComponent {
   void _drawTitle(Canvas canvas) {
     final painter = TextPainter(
       text: const TextSpan(
-        text: 'COURSES THIS TERM',
+        text: 'YOUR COURSES',
         style: TextStyle(
-          color: Color(0xFFA79C98),
-          fontSize: 0.23,
+          color: Color(0xFF514441),
+          fontSize: 0.25,
           fontWeight: FontWeight.w800,
-          letterSpacing: 0.055,
+          letterSpacing: 0.07,
         ),
       ),
-      textAlign: TextAlign.center,
       textDirection: TextDirection.ltr,
     )..layout();
 
-    painter.paint(canvas, Offset(size.x / 2 - painter.width / 2, 0.04));
+    painter.paint(canvas, Offset(0.42, 0.26));
   }
 
   void _drawSlot(
@@ -57,31 +80,36 @@ class CourseTray extends PositionComponent {
     required Offset center,
     required double radius,
   }) {
-    // Soft depression, not a bordered card.
-    canvas.drawCircle(
-      Offset(center.dx, center.dy + 0.09),
-      radius,
+    // Shadow inside origin slot.
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: Offset(center.dx, center.dy + 0.09),
+        width: radius * 2.05,
+        height: radius * 0.88,
+      ),
       Paint()
-        ..color = const Color(0x66000000)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4),
+        ..color = const Color(0x25000000)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3),
     );
 
-    canvas.drawCircle(center, radius, Paint()..color = const Color(0x33201617));
-
-    canvas.drawCircle(
-      center,
-      radius * 0.88,
-      Paint()..color = const Color(0x44100E0F),
+    // Shallow physical depression.
+    canvas.drawOval(
+      Rect.fromCenter(center: center, width: radius * 2, height: radius * 0.84),
+      Paint()..color = const Color(0x35A9948C),
     );
 
-    // Tiny upper rim catches the same warm light as the whole app.
+    // Upper reflected light.
     canvas.drawArc(
-      Rect.fromCircle(center: center, radius: radius),
-      3.35,
-      2.7,
+      Rect.fromCenter(
+        center: center,
+        width: radius * 1.92,
+        height: radius * 0.80,
+      ),
+      3.30,
+      2.55,
       false,
       Paint()
-        ..color = const Color(0x22FFE4D8)
+        ..color = const Color(0xA0FFFFFF)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 0.035,
     );
@@ -96,7 +124,7 @@ class CourseTray extends PositionComponent {
       text: TextSpan(
         text: text,
         style: const TextStyle(
-          color: Color(0xFFECE5E2),
+          color: Color(0xFF4B403E),
           fontSize: 0.29,
           fontWeight: FontWeight.w700,
         ),
@@ -105,8 +133,8 @@ class CourseTray extends PositionComponent {
       textDirection: TextDirection.ltr,
       maxLines: 1,
       ellipsis: '…',
-    )..layout(maxWidth: size.x * 0.39);
+    )..layout(maxWidth: size.x * 0.38);
 
-    painter.paint(canvas, Offset(x - painter.width / 2, size.y - 0.40));
+    painter.paint(canvas, Offset(x - painter.width / 2, size.y - 0.48));
   }
 }

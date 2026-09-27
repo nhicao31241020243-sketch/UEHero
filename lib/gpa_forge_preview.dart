@@ -18,10 +18,12 @@ class GpaForgePreviewApp extends StatefulWidget {
 
 class _GpaForgePreviewAppState extends State<GpaForgePreviewApp> {
   static const double currentGpa = 3.47;
+
   static const int completedCredits = 77;
+
   static const double targetGpa = 3.50;
 
-  static const Map<String, String> courseNames = {
+  static const courseNames = {
     'ai_project': 'Dự án A.I.',
     'internship': 'Kiến tập - TI',
   };
@@ -31,6 +33,7 @@ class _GpaForgePreviewAppState extends State<GpaForgePreviewApp> {
   final Map<String, _CommittedGrade> committedGrades = {};
 
   String? lastAction;
+
   double? lastImpact;
 
   @override
@@ -85,223 +88,303 @@ class _GpaForgePreviewAppState extends State<GpaForgePreviewApp> {
     );
   }
 
+  double get delta => projectedGpa - currentGpa;
+
   @override
   Widget build(BuildContext context) {
     final projected = projectedGpa;
 
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(useMaterial3: true, fontFamily: 'Roboto'),
+      theme: ThemeData(
+        useMaterial3: true,
+        brightness: Brightness.light,
+        scaffoldBackgroundColor: const Color(0xFFF7F2EE),
+      ),
       home: Scaffold(
-        backgroundColor: const Color(0xFFF4EEE9),
+        backgroundColor: const Color(0xFFF7F2EE),
         body: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(18, 14, 18, 14),
+            padding: const EdgeInsets.fromLTRB(20, 14, 20, 14),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // ------------------------------------------
-                // Real feature header
-                // ------------------------------------------
+                // ==========================
+                // HEADER
+                // ==========================
 
-                const Text(
-                  'GPA Journey',
-                  style: TextStyle(
-                    color: Color(0xFF211F1E),
-                    fontSize: 27,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.8,
-                  ),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'GPA Journey',
+                            style: TextStyle(
+                              color: Color(0xFF211C1D),
+                              fontSize: 29,
+                              height: 1.05,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: -1,
+                            ),
+                          ),
+                          SizedBox(height: 5),
+                          Text(
+                            'Plan your semester. Shape your outcome.',
+                            style: TextStyle(
+                              color: Color(0xFF81736F),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    Container(
+                      width: 42,
+                      height: 42,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFFBF8),
+                        shape: BoxShape.circle,
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Color(0x16000000),
+                            blurRadius: 18,
+                            offset: Offset(0, 5),
+                          ),
+                        ],
+                      ),
+                      alignment: Alignment.center,
+                      child: const Text(
+                        '•••',
+                        style: TextStyle(
+                          color: Color(0xFF574B49),
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
 
-                const SizedBox(height: 2),
+                const SizedBox(height: 17),
 
-                const Text(
-                  'Plan your semester',
-                  style: TextStyle(
-                    color: Color(0xFF817A76),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-
-                const SizedBox(height: 12),
-
-                // ------------------------------------------
-                // GPA hero card
-                // ------------------------------------------
+                // ==========================
+                // GPA HERO
+                // ==========================
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 13,
-                  ),
+                  padding: const EdgeInsets.fromLTRB(17, 18, 17, 13),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFFFBF8),
-                    borderRadius: BorderRadius.circular(22),
+                    color: const Color(0xFFFFFDFC),
+                    borderRadius: BorderRadius.circular(26),
                     boxShadow: const [
                       BoxShadow(
-                        color: Color(0x17000000),
-                        blurRadius: 22,
-                        offset: Offset(0, 8),
+                        color: Color(0x18000000),
+                        blurRadius: 28,
+                        offset: Offset(0, 9),
                       ),
                     ],
                   ),
-                  child: Row(
+                  child: Column(
                     children: [
-                      const Expanded(
-                        child: _Metric(label: 'CURRENT', value: '3.47'),
-                      ),
+                      Row(
+                        children: [
+                          const Expanded(
+                            child: _Metric(label: 'CURRENT', value: '3.47'),
+                          ),
 
-                      Expanded(
-                        flex: 2,
-                        child: Column(
-                          children: [
-                            const Text(
-                              'PROJECTED',
-                              style: TextStyle(
-                                color: Color(0xFFD81E2F),
-                                fontSize: 9,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: 1.1,
-                              ),
-                            ),
-                            const SizedBox(height: 1),
-                            AnimatedSwitcher(
-                              duration: const Duration(milliseconds: 240),
-                              child: Text(
-                                projected.toStringAsFixed(2),
-                                key: ValueKey(projected.toStringAsFixed(3)),
-                                style: const TextStyle(
-                                  color: Color(0xFFD81E2F),
-                                  fontSize: 34,
-                                  height: 1,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: -1.7,
+                          Expanded(
+                            flex: 2,
+                            child: Column(
+                              children: [
+                                const Text(
+                                  'PROJECTED',
+                                  style: TextStyle(
+                                    color: Color(0xFFD92332),
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: 1.1,
+                                  ),
                                 ),
-                              ),
+
+                                const SizedBox(height: 2),
+
+                                AnimatedSwitcher(
+                                  duration: const Duration(milliseconds: 230),
+                                  child: Text(
+                                    projected.toStringAsFixed(2),
+                                    key: ValueKey(projected.toStringAsFixed(3)),
+                                    style: const TextStyle(
+                                      color: Color(0xFFD92332),
+                                      fontSize: 35,
+                                      height: 1,
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: -1.7,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
+                          ),
+
+                          const Expanded(
+                            child: _Metric(
+                              label: 'TARGET',
+                              value: '3.50',
+                              alignEnd: true,
+                            ),
+                          ),
+                        ],
                       ),
 
-                      const Expanded(
-                        child: _Metric(
-                          label: 'TARGET',
-                          value: '3.50',
-                          alignEnd: true,
+                      const SizedBox(height: 11),
+
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 220),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 7,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFBE2DE),
+                          borderRadius: BorderRadius.circular(99),
+                        ),
+                        child: Text(
+                          '${delta >= 0 ? '+' : ''}${delta.toStringAsFixed(2)} from current',
+                          style: const TextStyle(
+                            color: Color(0xFFC84146),
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                          ),
                         ),
                       ),
                     ],
+                  ),
+                ),
+
+                const SizedBox(height: 17),
+
+                // ==========================
+                // PHYSICAL INTERACTION STAGE
+                // ==========================
+                Expanded(
+                  child: Container(
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Color(0xFFEFE4DE),
+                          Color(0xFFE4D6CF),
+                          Color(0xFFD6C4BB),
+                        ],
+                        stops: [0, 0.47, 1],
+                      ),
+                      borderRadius: BorderRadius.circular(30),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.58),
+                      ),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Color(0x1C4A332D),
+                          blurRadius: 30,
+                          offset: Offset(0, 12),
+                        ),
+                      ],
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: GameWidget(game: game),
                   ),
                 ),
 
                 const SizedBox(height: 13),
 
-                // ------------------------------------------
-                // Dark physical module inside warm app
-                // ------------------------------------------
-                Expanded(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF171719),
-                      borderRadius: BorderRadius.circular(28),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Color(0x33000000),
-                          blurRadius: 28,
-                          offset: Offset(0, 14),
-                        ),
-                      ],
-                    ),
-                    clipBehavior: Clip.antiAlias,
-                    child: Stack(
-                      children: [
-                        Positioned.fill(child: GameWidget(game: game)),
-
-                        // Quiet interaction hint.
-                        const Positioned(
-                          left: 18,
-                          bottom: 14,
-                          child: IgnorePointer(
-                            child: Text(
-                              'Drag a course into a grade',
-                              style: TextStyle(
-                                color: Color(0x668F8F96),
-                                fontSize: 9,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 11),
-
-                // ------------------------------------------
-                // Latest impact only
-                // ------------------------------------------
+                // ==========================
+                // FEEDBACK STRIP
+                // ==========================
                 Container(
-                  height: 42,
                   width: double.infinity,
+                  height: 64,
                   padding: const EdgeInsets.symmetric(horizontal: 14),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFFFBF8),
-                    borderRadius: BorderRadius.circular(15),
+                    color: const Color(0xFFFFFDFC),
+                    borderRadius: BorderRadius.circular(22),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x12000000),
+                        blurRadius: 20,
+                        offset: Offset(0, 6),
+                      ),
+                    ],
                   ),
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 200),
-                    child: lastAction == null
-                        ? const Row(
-                            key: ValueKey('empty'),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFF4E5DB),
+                          shape: BoxShape.circle,
+                        ),
+                        alignment: Alignment.center,
+                        child: const Icon(
+                          Icons.north_east_rounded,
+                          size: 19,
+                          color: Color(0xFFC96A4B),
+                        ),
+                      ),
+
+                      const SizedBox(width: 12),
+
+                      Expanded(
+                        child: AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 180),
+                          child: Column(
+                            key: ValueKey(lastAction ?? 'empty'),
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Icon(
-                                Icons.touch_app_rounded,
-                                size: 16,
-                                color: Color(0xFFACA39E),
-                              ),
-                              SizedBox(width: 8),
                               Text(
-                                'Try a grade scenario',
+                                lastAction ?? 'Drag a course into a grade',
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: Color(0xFF342C2B),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+
+                              const SizedBox(height: 3),
+
+                              Text(
+                                lastImpact == null
+                                    ? 'Projected GPA updates instantly'
+                                    : '${(lastImpact ?? 0) >= 0 ? '+' : ''}${(lastImpact ?? 0).toStringAsFixed(2)} GPA impact',
                                 style: TextStyle(
-                                  color: Color(0xFF817A76),
-                                  fontSize: 11,
+                                  color: lastImpact == null
+                                      ? const Color(0xFF8B7F7B)
+                                      : (lastImpact ?? 0) >= 0
+                                      ? const Color(0xFF428B68)
+                                      : const Color(0xFFB8673A),
+                                  fontSize: 10,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
                             ],
-                          )
-                        : Row(
-                            key: ValueKey(lastAction),
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  lastAction!,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    color: Color(0xFF403C39),
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ),
-                              if ((lastImpact ?? 0).abs() >= 0.0005)
-                                Text(
-                                  '${(lastImpact ?? 0) >= 0 ? '+' : ''}'
-                                  '${(lastImpact ?? 0).toStringAsFixed(2)} GPA',
-                                  style: TextStyle(
-                                    color: (lastImpact ?? 0) >= 0
-                                        ? const Color(0xFF198754)
-                                        : const Color(0xFFB55D00),
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w900,
-                                  ),
-                                ),
-                            ],
                           ),
+                        ),
+                      ),
+
+                      const Icon(
+                        Icons.chevron_right_rounded,
+                        color: Color(0xFF645955),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -346,19 +429,24 @@ class _Metric extends StatelessWidget {
         Text(
           label,
           style: const TextStyle(
-            color: Color(0xFFAAA29D),
+            color: Color(0xFF9C908C),
             fontSize: 8,
             fontWeight: FontWeight.w800,
-            letterSpacing: 0.3,
+            letterSpacing: 0.45,
           ),
         ),
-        const SizedBox(height: 3),
-        Text(
-          value,
-          style: const TextStyle(
-            color: Color(0xFF272321),
-            fontSize: 18,
-            fontWeight: FontWeight.w800,
+
+        const SizedBox(height: 4),
+
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            value,
+            style: const TextStyle(
+              color: Color(0xFF2A2424),
+              fontSize: 20,
+              fontWeight: FontWeight.w900,
+            ),
           ),
         ),
       ],

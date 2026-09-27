@@ -25,9 +25,24 @@ class GradePocket extends BodyComponent with ContactCallbacks {
     required this.label,
     required this.gradePoint,
     required this.worldPosition,
-    this.sensorRadius = 0.64,
-    this.visualRadius = 1.08,
+    this.sensorRadius = 0.60,
+    this.visualRadius = 0.90,
   }) : super(renderBody: false);
+
+  Color get accentColor {
+    switch (label) {
+      case 'B':
+        return const Color(0xFF65C9D1);
+      case 'B+':
+        return const Color(0xFF62C88C);
+      case 'A-':
+        return const Color(0xFFFFA443);
+      case 'A':
+        return const Color(0xFFEF6461);
+      default:
+        return const Color(0xFFE55B5F);
+    }
+  }
 
   @override
   Future<void> onLoad() async {
@@ -60,69 +75,82 @@ class GradePocket extends BodyComponent with ContactCallbacks {
 
     _renderLabel(canvas);
 
-    // Deep lower shadow.
-    canvas.drawCircle(
-      Offset(0, visualRadius * 0.11),
-      visualRadius * 1.04,
-      Paint()
-        ..color = const Color(0xB8000000)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4.5),
+    final outer = Rect.fromCenter(
+      center: Offset.zero,
+      width: visualRadius * 2.05,
+      height: visualRadius * 1.12,
     );
 
-    // Outer physical lip.
-    canvas.drawCircle(
-      Offset.zero,
-      visualRadius,
-      Paint()
-        ..shader =
-            const RadialGradient(
-              center: Alignment(-0.34, -0.42),
-              radius: 1.0,
-              colors: [Color(0xFF5A5050), Color(0xFF312B2C), Color(0xFF171516)],
-            ).createShader(
-              Rect.fromCircle(center: Offset.zero, radius: visualRadius),
-            ),
+    final ring = Rect.fromCenter(
+      center: const Offset(0, -0.01),
+      width: visualRadius * 1.70,
+      height: visualRadius * 0.91,
     );
 
-    final cavityRadius = visualRadius * 0.76;
-
-    // Dark cavity.
-    canvas.drawCircle(
-      Offset(0, visualRadius * 0.045),
-      cavityRadius,
-      Paint()
-        ..shader =
-            const RadialGradient(
-              center: Alignment(0, 0.32),
-              radius: 0.92,
-              colors: [Color(0xFF050405), Color(0xFF0A0809), Color(0xFF211C1D)],
-            ).createShader(
-              Rect.fromCircle(center: Offset.zero, radius: cavityRadius),
-            ),
+    final cavity = Rect.fromCenter(
+      center: const Offset(0, -0.02),
+      width: visualRadius * 1.38,
+      height: visualRadius * 0.70,
     );
 
-    // Inner lower darkness = recessed depth.
+    // Floating hardware shadow.
+    canvas.drawOval(
+      outer.shift(const Offset(0, 0.16)),
+      Paint()
+        ..color = const Color(0x38000000)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4),
+    );
+
+    // Champagne / machined metal outer dock.
+    canvas.drawOval(
+      outer,
+      Paint()
+        ..shader = const RadialGradient(
+          center: Alignment(-0.35, -0.65),
+          radius: 1.18,
+          colors: [Color(0xFFF1E9E4), Color(0xFFB9A9A2), Color(0xFF7D706D)],
+        ).createShader(outer),
+    );
+
+    // Colored functional ring.
+    canvas.drawOval(ring, Paint()..color = accentColor.withValues(alpha: 0.74));
+
+    // Deep cavity.
+    canvas.drawOval(
+      cavity,
+      Paint()
+        ..shader = const RadialGradient(
+          center: Alignment(0, 0.50),
+          radius: 1.0,
+          colors: [Color(0xFF151415), Color(0xFF252426), Color(0xFF484144)],
+        ).createShader(cavity),
+    );
+
+    // Inner shadow.
     canvas.drawArc(
-      Rect.fromCircle(center: Offset.zero, radius: cavityRadius * 0.93),
-      0.15,
-      2.85,
+      cavity,
+      0.12,
+      2.90,
       false,
       Paint()
-        ..color = const Color(0xA8000000)
+        ..color = const Color(0x8A000000)
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 0.11,
+        ..strokeWidth = 0.10,
     );
 
-    // Warm upper highlight.
-    canvas.drawArc(
-      Rect.fromCircle(center: Offset.zero, radius: visualRadius * 0.95),
-      3.35,
-      2.55,
-      false,
+    // Little status LED.
+    canvas.drawCircle(
+      Offset(0, -visualRadius * 0.36),
+      0.105,
       Paint()
-        ..color = const Color(0x38FFE1D5)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 0.045,
+        ..color = accentColor
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 1.8),
+    );
+
+    canvas.drawCircle(
+      Offset(0, -visualRadius * 0.36),
+      0.045,
+      Paint()..color = const Color(0xFFFDFDFD),
     );
   }
 
@@ -131,8 +159,8 @@ class GradePocket extends BodyComponent with ContactCallbacks {
       text: TextSpan(
         text: label,
         style: const TextStyle(
-          color: Color(0xFFF7EFEB),
-          fontSize: 0.36,
+          color: Color(0xFF3D3331),
+          fontSize: 0.40,
           fontWeight: FontWeight.w900,
         ),
       ),
@@ -142,15 +170,15 @@ class GradePocket extends BodyComponent with ContactCallbacks {
 
     labelPainter.paint(
       canvas,
-      Offset(-labelPainter.width / 2, -visualRadius - 0.60),
+      Offset(-labelPainter.width / 2, -visualRadius - 0.75),
     );
 
-    final valuePainter = TextPainter(
+    final scorePainter = TextPainter(
       text: TextSpan(
         text: gradePoint.toStringAsFixed(1),
         style: const TextStyle(
-          color: Color(0xFFAFA3A0),
-          fontSize: 0.20,
+          color: Color(0xFF786A67),
+          fontSize: 0.22,
           fontWeight: FontWeight.w700,
         ),
       ),
@@ -158,9 +186,9 @@ class GradePocket extends BodyComponent with ContactCallbacks {
       textDirection: TextDirection.ltr,
     )..layout();
 
-    valuePainter.paint(
+    scorePainter.paint(
       canvas,
-      Offset(-valuePainter.width / 2, -visualRadius - 0.23),
+      Offset(-scorePainter.width / 2, -visualRadius - 0.33),
     );
   }
 }

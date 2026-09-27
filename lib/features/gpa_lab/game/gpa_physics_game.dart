@@ -1,7 +1,6 @@
 import 'dart:ui';
 
 import 'package:flame_forge2d/flame_forge2d.dart';
-import 'package:flutter/foundation.dart';
 
 import 'course_puck.dart';
 import 'course_tray.dart';
@@ -17,10 +16,6 @@ typedef GradeCommittedCallback = void Function(
 
 class GpaPhysicsGame extends Forge2DGame {
   final GradeCommittedCallback onGradeCommitted;
-
-  final ValueNotifier<String> status = ValueNotifier<String>(
-    'Assign grades to the courses',
-  );
 
   GpaPhysicsGame({required this.onGradeCommitted})
     : super(gravity: Vector2.zero(), metersToPixels: 32);
@@ -38,16 +33,20 @@ class GpaPhysicsGame extends Forge2DGame {
 
     final rect = camera.visibleWorldRect;
 
-    const inset = 0.30;
+    const inset = 0.25;
 
     final left = rect.left + inset;
+
     final right = rect.right - inset;
+
     final top = rect.top + inset;
+
     final bottom = rect.bottom - inset;
 
     final width = right - left;
     final height = bottom - top;
 
+    // Physical boundaries stay invisible.
     await world.addAll([
       TableWall(start: Vector2(left, top), end: Vector2(right, top)),
       TableWall(start: Vector2(right, top), end: Vector2(right, bottom)),
@@ -55,14 +54,13 @@ class GpaPhysicsGame extends Forge2DGame {
       TableWall(start: Vector2(left, bottom), end: Vector2(left, top)),
     ]);
 
-    // ------------------------------------------------------
-    // COURSES
-    // Compact top zone.
-    // ------------------------------------------------------
+    // ---------------------------------
+    // TOP COURSE SHELF
+    // ---------------------------------
 
-    final trayPosition = Vector2(left + 0.30, top + 0.30);
+    final trayPosition = Vector2(left + 0.30, top + 0.28);
 
-    final traySize = Vector2(width - 0.60, height * 0.31);
+    final traySize = Vector2(width - 0.60, height * 0.38);
 
     final tray = CourseTray(
       position: trayPosition,
@@ -73,11 +71,15 @@ class GpaPhysicsGame extends Forge2DGame {
 
     await world.add(tray);
 
-    final puckY = trayPosition.y + tray.slotY;
+    final aiHome = Vector2(
+      trayPosition.x + tray.leftSlotX,
+      trayPosition.y + tray.slotY,
+    );
 
-    final aiHome = Vector2(trayPosition.x + tray.leftSlotX, puckY);
-
-    final internshipHome = Vector2(trayPosition.x + tray.rightSlotX, puckY);
+    final internshipHome = Vector2(
+      trayPosition.x + tray.rightSlotX,
+      trayPosition.y + tray.slotY,
+    );
 
     await world.add(
       CoursePuck(
@@ -99,25 +101,22 @@ class GpaPhysicsGame extends Forge2DGame {
       ),
     );
 
-    // ------------------------------------------------------
-    // GRADE TARGETS
-    // Move upward strongly: short, controllable runway.
-    // ------------------------------------------------------
+    // ---------------------------------
+    // LOWER HARDWARE DOCKS
+    // ---------------------------------
 
     const grades = [('B', 3.0), ('B+', 3.5), ('A-', 3.7), ('A', 4.0)];
 
-    final pocketY = top + height * 0.72;
+    final pocketY = top + height * 0.84;
 
-    final pocketLeft = left + 1.02;
+    final pocketLeft = left + 0.92;
 
-    final pocketRight = right - 1.02;
+    final pocketRight = right - 0.92;
 
-    final pocketSpan = pocketRight - pocketLeft;
+    final span = pocketRight - pocketLeft;
 
     for (var i = 0; i < grades.length; i++) {
-      final ratio = i / (grades.length - 1);
-
-      final x = pocketLeft + pocketSpan * ratio;
+      final t = i / (grades.length - 1);
 
       final grade = grades[i];
 
@@ -125,9 +124,9 @@ class GpaPhysicsGame extends Forge2DGame {
         GradePocket(
           label: grade.$1,
           gradePoint: grade.$2,
-          worldPosition: Vector2(x, pocketY),
-          sensorRadius: 0.64,
-          visualRadius: 1.08,
+          worldPosition: Vector2(pocketLeft + span * t, pocketY),
+          sensorRadius: 0.60,
+          visualRadius: 0.90,
         ),
       );
     }
@@ -139,14 +138,6 @@ class GpaPhysicsGame extends Forge2DGame {
     String gradeLabel,
     double gradePoint,
   ) {
-    status.value = '$courseId → $gradeLabel ($gradePoint)';
-
     onGradeCommitted(courseId, credits, gradeLabel, gradePoint);
-  }
-
-  @override
-  void onRemove() {
-    status.dispose();
-    super.onRemove();
   }
 }
