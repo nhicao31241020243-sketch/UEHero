@@ -5,12 +5,22 @@ import 'course_puck.dart';
 import 'grade_pocket.dart';
 import 'table_wall.dart';
 
+typedef GradeCommittedCallback = void Function(
+  String courseId,
+  int credits,
+  String gradeLabel,
+  double gradePoint,
+);
+
 class GpaPhysicsGame extends Forge2DGame {
+  final GradeCommittedCallback onGradeCommitted;
+
   final ValueNotifier<String> status = ValueNotifier<String>(
-    'Drag or fling the puck into A',
+    'Assign grades to the courses',
   );
 
-  GpaPhysicsGame() : super(gravity: Vector2.zero(), metersToPixels: 32);
+  GpaPhysicsGame({required this.onGradeCommitted})
+    : super(gravity: Vector2.zero(), metersToPixels: 32);
 
   @override
   Future<void> onLoad() async {
@@ -34,25 +44,65 @@ class GpaPhysicsGame extends Forge2DGame {
       TableWall(start: Vector2(left, bottom), end: Vector2(left, top)),
     ]);
 
-    final pocket = GradePocket(
-      label: 'A',
-      gradePoint: 4.0,
-      worldPosition: Vector2(0, bottom - 2.0),
-      sensorRadius: 1.15,
-    );
+    // Four evenly spaced grade pockets.
+    const grades = [('B', 3.0), ('B+', 3.5), ('A-', 3.7), ('A', 4.0)];
 
-    await world.add(pocket);
+    final pocketY = bottom - 1.35;
 
+    final pocketLeft = left + 1.15;
+    final pocketRight = right - 1.15;
+
+    final pocketSpan = pocketRight - pocketLeft;
+
+    for (var i = 0; i < grades.length; i++) {
+      final t = i / (grades.length - 1);
+
+      final x = pocketLeft + (pocketSpan * t);
+
+      final grade = grades[i];
+
+      await world.add(
+        GradePocket(
+          label: grade.$1,
+          gradePoint: grade.$2,
+          worldPosition: Vector2(x, pocketY),
+          sensorRadius: 0.78,
+        ),
+      );
+    }
+
+    // Course 1: real anonymized transcript data.
     await world.add(
       CoursePuck(
+        courseId: 'ai_project',
         courseName: 'Dự án A.I.',
         credits: 3,
-        position: Vector2(0, top + 3.0),
-        onSnapped: (gradeLabel, gradePoint) {
-          status.value = 'SNAPPED → $gradeLabel ($gradePoint)';
-        },
+        position: Vector2(left + 2.0, top + 2.5),
+        onSnapped: _handleSnap,
       ),
     );
+
+    // Course 2: 5-credit course gives visible mass/size contrast.
+    await world.add(
+      CoursePuck(
+        courseId: 'internship',
+        courseName: 'Kiến tập - TI',
+        credits: 5,
+        position: Vector2(right - 2.0, top + 2.5),
+        onSnapped: _handleSnap,
+      ),
+    );
+  }
+
+  void _handleSnap(
+    String courseId,
+    int credits,
+    String gradeLabel,
+    double gradePoint,
+  ) {
+    status.value = '$courseId → $gradeLabel ($gradePoint)';
+
+    onGradeCommitted(courseId, credits, gradeLabel, gradePoint);
   }
 
   @override

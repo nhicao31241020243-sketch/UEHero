@@ -10,9 +10,15 @@ import 'physics_filters.dart';
 
 enum PuckState { idle, held, flying, candidate, snapped }
 
-typedef PuckSnapCallback = void Function(String gradeLabel, double gradePoint);
+typedef PuckSnapCallback = void Function(
+  String courseId,
+  int credits,
+  String gradeLabel,
+  double gradePoint,
+);
 
 class CoursePuck extends BodyComponent with DragCallbacks, ContactCallbacks {
+  final String courseId;
   final String courseName;
   final int credits;
   final double radius;
@@ -32,10 +38,10 @@ class CoursePuck extends BodyComponent with DragCallbacks, ContactCallbacks {
   static const double _chaseGain = 15.0;
   static const double _maxChaseSpeed = 18.0;
   static const double _maxFlingSpeed = 14.0;
-
   static const double _autoSnapSpeed = 1.2;
 
   CoursePuck({
+    required this.courseId,
     required this.courseName,
     required this.credits,
     required Vector2 position,
@@ -70,13 +76,10 @@ class CoursePuck extends BodyComponent with DragCallbacks, ContactCallbacks {
   Future<void> onLoad() async {
     await super.onLoad();
 
-    // ContactEventsDispatcher resolves components through userData.
     body.userData = this;
 
     for (final shape in body.shapes) {
       shape.userData = this;
-
-      // Both visitor and sensor must opt in.
       shape.sensorEventsEnabled = true;
       shape.contactEventsEnabled = true;
     }
@@ -86,9 +89,7 @@ class CoursePuck extends BodyComponent with DragCallbacks, ContactCallbacks {
   void beginContact(Object other, Contact contact) {
     super.beginContact(other, contact);
 
-    if (!contact.isSensorEvent) {
-      return;
-    }
+    if (!contact.isSensorEvent) return;
 
     if (other is GradePocket) {
       activePockets.add(other);
@@ -103,9 +104,7 @@ class CoursePuck extends BodyComponent with DragCallbacks, ContactCallbacks {
   void endContact(Object other, Contact contact) {
     super.endContact(other, contact);
 
-    if (!contact.isSensorEvent) {
-      return;
-    }
+    if (!contact.isSensorEvent) return;
 
     if (other is GradePocket) {
       activePockets.remove(other);
@@ -147,7 +146,7 @@ class CoursePuck extends BodyComponent with DragCallbacks, ContactCallbacks {
 
     _targetWorldPosition = null;
 
-    // Intentional drop inside a pocket -> immediate snap.
+    // Thả trực tiếp vào một well mới.
     final pocket = _closestActivePocket();
 
     if (pocket != null) {
@@ -155,6 +154,14 @@ class CoursePuck extends BodyComponent with DragCallbacks, ContactCallbacks {
       return;
     }
 
+    // Nếu puck trước đó đã có grade mà user thả hụt,
+    // quay về assignment cũ thay vì âm thầm xóa scenario.
+    if (committedPocket != null) {
+      _snapTo(committedPocket!, notify: false);
+      return;
+    }
+
+    // Puck chưa từng assign → fling bình thường.
     puckState = PuckState.flying;
 
     body.type = BodyType.dynamic;
@@ -186,6 +193,7 @@ class CoursePuck extends BodyComponent with DragCallbacks, ContactCallbacks {
 
     body.type = BodyType.dynamic;
     body.linearVelocity = Vector2.zero();
+    body.angularVelocity = 0.0;
     body.isAwake = true;
 
     _setFilter(freePuckFilter());
@@ -199,7 +207,6 @@ class CoursePuck extends BodyComponent with DragCallbacks, ContactCallbacks {
 
     final held = puckState == PuckState.held;
 
-    // Optical Z lift.
     final targetLift = held ? 1.0 : 0.0;
     final t = math.min(1.0, dt * 14.0);
 
@@ -217,7 +224,8 @@ class CoursePuck extends BodyComponent with DragCallbacks, ContactCallbacks {
       return;
     }
 
-    // A flung puck can also settle into a pocket.
+    // Một puck được fling vào well và đã chậm đủ
+    // cũng có thể tự snap.
     if ((puckState == PuckState.flying || puckState == PuckState.candidate) &&
         activePockets.isNotEmpty &&
         body.linearVelocity.length <= _autoSnapSpeed) {
@@ -230,12 +238,10 @@ class CoursePuck extends BodyComponent with DragCallbacks, ContactCallbacks {
   }
 
   GradePocket? _closestActivePocket() {
-    if (activePockets.isEmpty) {
-      return null;
-    }
+    if (activePockets.isEmpty) return null;
 
     GradePocket? closest;
-    double closestDistanceSquared = double.infinity;
+    var closestDistanceSquared = double.infinity;
 
     for (final pocket in activePockets) {
       final delta = pocket.body.position - body.position;
@@ -270,7 +276,7 @@ class CoursePuck extends BodyComponent with DragCallbacks, ContactCallbacks {
     priority = 0;
 
     if (notify) {
-      onSnapped?.call(pocket.label, pocket.gradePoint);
+      onSnapped?.call(courseId, credits, pocket.label, pocket.gradePoint);
     }
   }
 
@@ -329,14 +335,12 @@ class CoursePuck extends BodyComponent with DragCallbacks, ContactCallbacks {
         ),
     );
 
-    // Red under-rim.
     canvas.drawCircle(
       Offset(0, radius * 0.11),
       radius,
       Paint()..color = const Color(0xFF57070C),
     );
 
-    // Ceramic face.
     canvas.drawCircle(
       Offset.zero,
       radius,
@@ -348,7 +352,6 @@ class CoursePuck extends BodyComponent with DragCallbacks, ContactCallbacks {
         ).createShader(Rect.fromCircle(center: Offset.zero, radius: radius)),
     );
 
-    // Silver top edge.
     canvas.drawCircle(
       Offset.zero,
       radius,
@@ -358,7 +361,6 @@ class CoursePuck extends BodyComponent with DragCallbacks, ContactCallbacks {
         ..strokeWidth = 0.045,
     );
 
-    // Netflix rim.
     canvas.drawCircle(
       Offset.zero,
       radius * 0.91,
