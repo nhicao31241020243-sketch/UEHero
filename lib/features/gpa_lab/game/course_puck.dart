@@ -4,13 +4,15 @@ import 'dart:ui';
 import 'package:flame/components.dart' show Sprite;
 import 'package:flame/events.dart';
 import 'package:flame_forge2d/flame_forge2d.dart';
+import 'package:flutter/material.dart'
+    show FontWeight, TextAlign, TextPainter, TextSpan, TextStyle;
 import 'package:flutter/services.dart';
 
 import 'gpa_lab_art.dart';
 import 'grade_pocket.dart';
 import 'physics_filters.dart';
 
-enum PuckState { idle, held, flying, candidate, snapped }
+enum PuckState { home, held, flying, candidate, stamping, returning }
 
 typedef PuckSnapCallback = void Function(
   String courseId,
@@ -22,7 +24,11 @@ typedef PuckSnapCallback = void Function(
 class CoursePuck extends BodyComponent with DragCallbacks, ContactCallbacks {
   final String courseId;
   final String courseName;
+  final String shortCode;
   final int credits;
+
+  final Vector2 homePosition;
+
   final double radius;
 
   final PuckSnapCallback? onSnapped;
@@ -31,9 +37,12 @@ class CoursePuck extends BodyComponent with DragCallbacks, ContactCallbacks {
 
   Vector2? _targetWorldPosition;
 
-  PuckState puckState = PuckState.idle;
+  PuckState puckState = PuckState.home;
 
-  GradePocket? committedPocket;
+  String? committedGradeLabel;
+  double? committedGradePoint;
+
+  GradePocket? _stampPocket;
 
   late final Sprite _tokenSprite;
 
@@ -41,25 +50,34 @@ class CoursePuck extends BodyComponent with DragCallbacks, ContactCallbacks {
 
   double _visualLift = 0.0;
 
+  double _stampElapsed = 0.0;
+  double _returnElapsed = 0.0;
+
+  Vector2? _returnStart;
+
   static const double _chaseGain = 15.0;
   static const double _maxChaseSpeed = 18.0;
   static const double _maxFlingSpeed = 14.0;
   static const double _autoSnapSpeed = 1.2;
 
+  // Feedback timing.
+  static const double _stampDuration = 0.40;
+  static const double _returnDuration = 0.46;
+
   CoursePuck({
     required this.courseId,
     required this.courseName,
+    required this.shortCode,
     required this.credits,
     required Vector2 position,
-    Vector2? initialVelocity,
     this.onSnapped,
-  }) : radius = credits >= 5 ? 2.05 : 1.82,
+  }) : homePosition = position.clone(),
+       radius = credits >= 5 ? 2.05 : 1.82,
        super(
          renderBody: false,
          bodyDef: BodyDef(
            type: BodyType.dynamic,
            position: position,
-           linearVelocity: initialVelocity ?? Vector2.zero(),
            linearDamping: 0.70,
            angularDamping: 1.8,
            fixedRotation: true,
@@ -77,6 +95,8 @@ class CoursePuck extends BodyComponent with DragCallbacks, ContactCallbacks {
            ),
          ],
        );
+
+  bool get isAssigned => committedGradeLabel != null;
 
   @override
   Future<void> onLoad() async {
@@ -100,9 +120,7 @@ class CoursePuck extends BodyComponent with DragCallbacks, ContactCallbacks {
   void beginContact(Object other, Contact contact) {
     super.beginContact(other, contact);
 
-    if (!contact.isSensorEvent) {
-      return;
-    }
+    if (!contact.isSensorEvent) return;
 
     if (other is GradePocket) {
       activePockets.add(other);
@@ -117,9 +135,7 @@ class CoursePuck extends BodyComponent with DragCallbacks, ContactCallbacks {
   void endContact(Object other, Contact contact) {
     super.endContact(other, contact);
 
-    if (!contact.isSensorEvent) {
-      return;
-    }
+    if (!contact.isSensorEvent) return;
 
     if (other is GradePocket) {
       activePockets.remove(other);
@@ -134,6 +150,11 @@ class CoursePuck extends BodyComponent with DragCallbacks, ContactCallbacks {
   void onDragStart(DragStartEvent event) {
     super.onDragStart(event);
 
+    // Ignore touches during automatic animation.
+    if (puckState == PuckState.stamping || puckState == PuckState.returning) {
+      return;
+    }
+
     HapticFeedback.lightImpact();
 
     puckState = PuckState.held;
@@ -141,10 +162,8 @@ class CoursePuck extends BodyComponent with DragCallbacks, ContactCallbacks {
     _targetWorldPosition = game.screenToWorld(event.canvasPosition);
 
     body.type = BodyType.kinematic;
-
     body.linearVelocity = Vector2.zero();
-
-    body.angularVelocity = 0;
+    body.angularVelocity = 0.0;
     body.isAwake = true;
 
     _setFilter(heldPuckFilter());
@@ -156,6 +175,8 @@ class CoursePuck extends BodyComponent with DragCallbacks, ContactCallbacks {
   void onDragUpdate(DragUpdateEvent event) {
     super.onDragUpdate(event);
 
+    if (puckState != PuckState.held) return;
+
     _targetWorldPosition = game.screenToWorld(event.canvasEndPosition);
   }
 
@@ -163,36 +184,20 @@ class CoursePuck extends BodyComponent with DragCallbacks, ContactCallbacks {
   void onDragEnd(DragEndEvent event) {
     super.onDragEnd(event);
 
+    if (puckState != PuckState.held) return;
+
     _targetWorldPosition = null;
 
     final pocket = _closestActivePocket();
 
     if (pocket != null) {
-      _snapTo(pocket);
+      _beginStamp(pocket);
       return;
     }
 
-    // Preserve the old committed grade
-    // if the user drops outside a new dock.
-    if (committedPocket != null) {
-      _snapTo(committedPocket!, notify: false);
-      return;
-    }
-
-    puckState = PuckState.flying;
-
-    body.type = BodyType.dynamic;
-    body.isAwake = true;
-
-    _setFilter(freePuckFilter());
-
-    final releaseVelocity = _canvasVelocityToWorld(event.velocity);
-
-    _clampMagnitude(releaseVelocity, _maxFlingSpeed);
-
-    body.linearVelocity = releaseVelocity;
-
-    priority = 0;
+    // Miss-drop = cancel assignment change.
+    // Existing grade remains untouched.
+    _beginReturn();
   }
 
   @override
@@ -201,23 +206,9 @@ class CoursePuck extends BodyComponent with DragCallbacks, ContactCallbacks {
 
     _targetWorldPosition = null;
 
-    if (committedPocket != null) {
-      _snapTo(committedPocket!, notify: false);
-      return;
+    if (puckState == PuckState.held) {
+      _beginReturn();
     }
-
-    puckState = PuckState.idle;
-
-    body.type = BodyType.dynamic;
-
-    body.linearVelocity = Vector2.zero();
-
-    body.angularVelocity = 0;
-    body.isAwake = true;
-
-    _setFilter(freePuckFilter());
-
-    priority = 0;
   }
 
   @override
@@ -228,9 +219,9 @@ class CoursePuck extends BodyComponent with DragCallbacks, ContactCallbacks {
 
     final targetLift = held ? 1.0 : 0.0;
 
-    final t = math.min(1.0, dt * 14);
+    final liftT = math.min(1.0, dt * 14.0);
 
-    _visualLift += (targetLift - _visualLift) * t;
+    _visualLift += (targetLift - _visualLift) * liftT;
 
     if (held && _targetWorldPosition != null) {
       final displacement = _targetWorldPosition! - body.position;
@@ -244,21 +235,140 @@ class CoursePuck extends BodyComponent with DragCallbacks, ContactCallbacks {
       return;
     }
 
+    if (puckState == PuckState.stamping) {
+      _updateStamp(dt);
+      return;
+    }
+
+    if (puckState == PuckState.returning) {
+      _updateReturn(dt);
+      return;
+    }
+
+    // Fling can still physically enter a dock.
     if ((puckState == PuckState.flying || puckState == PuckState.candidate) &&
         activePockets.isNotEmpty &&
         body.linearVelocity.length <= _autoSnapSpeed) {
       final pocket = _closestActivePocket();
 
       if (pocket != null) {
-        _snapTo(pocket);
+        _beginStamp(pocket);
       }
     }
   }
 
-  GradePocket? _closestActivePocket() {
-    if (activePockets.isEmpty) {
-      return null;
+  void _beginStamp(GradePocket pocket) {
+    puckState = PuckState.stamping;
+
+    _stampPocket = pocket;
+    _stampElapsed = 0.0;
+
+    body.type = BodyType.kinematic;
+
+    body.setTransform(pocket.body.position.clone(), Rot.fromAngle(0));
+
+    body.linearVelocity = Vector2.zero();
+    body.angularVelocity = 0.0;
+
+    _setFilter(heldPuckFilter());
+
+    priority = 100;
+
+    // DATA COMMITS AT THE PHYSICAL "CLICK".
+    committedGradeLabel = pocket.label;
+    committedGradePoint = pocket.gradePoint;
+
+    HapticFeedback.mediumImpact();
+
+    onSnapped?.call(courseId, credits, pocket.label, pocket.gradePoint);
+  }
+
+  void _updateStamp(double dt) {
+    _stampElapsed += dt;
+
+    final pocket = _stampPocket;
+
+    if (pocket != null) {
+      // Hold token firmly at the grading station.
+      body.setTransform(pocket.body.position.clone(), Rot.fromAngle(0));
     }
+
+    if (_stampElapsed >= _stampDuration) {
+      _beginReturn();
+    }
+  }
+
+  void _beginReturn() {
+    _targetWorldPosition = null;
+
+    _returnElapsed = 0.0;
+    _returnStart = body.position.clone();
+
+    puckState = PuckState.returning;
+
+    body.type = BodyType.kinematic;
+    body.linearVelocity = Vector2.zero();
+    body.angularVelocity = 0.0;
+
+    _setFilter(heldPuckFilter());
+
+    priority = 100;
+  }
+
+  void _updateReturn(double dt) {
+    final start = _returnStart;
+
+    if (start == null) {
+      _finishReturn();
+      return;
+    }
+
+    _returnElapsed += dt;
+
+    var t = _returnElapsed / _returnDuration;
+
+    if (t >= 1.0) {
+      _finishReturn();
+      return;
+    }
+
+    // Smooth cubic ease.
+    final eased = 1.0 - math.pow(1.0 - t, 3).toDouble();
+
+    final x = start.x + (homePosition.x - start.x) * eased;
+
+    final linearY = start.y + (homePosition.y - start.y) * eased;
+
+    // Small boomerang arc.
+    final arcHeight = 1.10;
+
+    final arc = -4.0 * arcHeight * t * (1.0 - t);
+
+    final y = linearY + arc;
+
+    body.setTransform(Vector2(x, y), Rot.fromAngle(0));
+  }
+
+  void _finishReturn() {
+    body.setTransform(homePosition.clone(), Rot.fromAngle(0));
+
+    body.linearVelocity = Vector2.zero();
+    body.angularVelocity = 0.0;
+
+    body.type = BodyType.static;
+
+    _setFilter(snappedPuckFilter());
+
+    puckState = PuckState.home;
+
+    _stampPocket = null;
+    _returnStart = null;
+
+    priority = 0;
+  }
+
+  GradePocket? _closestActivePocket() {
+    if (activePockets.isEmpty) return null;
 
     GradePocket? closest;
 
@@ -271,7 +381,6 @@ class CoursePuck extends BodyComponent with DragCallbacks, ContactCallbacks {
 
       if (distanceSquared < closestDistanceSquared) {
         closestDistanceSquared = distanceSquared;
-
         closest = pocket;
       }
     }
@@ -279,45 +388,10 @@ class CoursePuck extends BodyComponent with DragCallbacks, ContactCallbacks {
     return closest;
   }
 
-  void _snapTo(GradePocket pocket, {bool notify = true}) {
-    puckState = PuckState.snapped;
-
-    committedPocket = pocket;
-
-    body.type = BodyType.static;
-
-    body.setTransform(
-      Vector2(pocket.body.position.x, pocket.body.position.y),
-      Rot.fromAngle(body.angle),
-    );
-
-    body.linearVelocity = Vector2.zero();
-
-    body.angularVelocity = 0;
-
-    _setFilter(snappedPuckFilter());
-
-    priority = 0;
-
-    if (notify) {
-      HapticFeedback.mediumImpact();
-
-      onSnapped?.call(courseId, credits, pocket.label, pocket.gradePoint);
-    }
-  }
-
   void _setFilter(Filter filter) {
     for (final shape in body.shapes) {
       shape.filter = filter;
     }
-  }
-
-  Vector2 _canvasVelocityToWorld(Vector2 canvasVelocity) {
-    final worldOrigin = game.screenToWorld(Vector2.zero());
-
-    final worldTip = game.screenToWorld(canvasVelocity);
-
-    return worldTip - worldOrigin;
   }
 
   void _clampMagnitude(Vector2 vector, double maxMagnitude) {
@@ -334,23 +408,16 @@ class CoursePuck extends BodyComponent with DragCallbacks, ContactCallbacks {
   void render(Canvas canvas) {
     super.render(canvas);
 
-    if (!_artLoaded) {
-      return;
-    }
+    if (!_artLoaded) return;
 
-    final snapped = puckState == PuckState.snapped;
+    final stamping = puckState == PuckState.stamping;
 
-    // Docked token visually sinks.
-    final baseScale = snapped ? 0.90 : 1.0;
-
-    // Touch = optical Z lift.
-    final scale = baseScale + (_visualLift * 0.10);
+    final scale = stamping ? 0.92 : 1.0 + (_visualLift * 0.10);
 
     canvas.save();
     canvas.scale(scale);
 
-    // Dynamic shadow remains realtime,
-    // while the actual object is Blender-rendered.
+    // Real-time optical shadow.
     final shadowY = radius * (0.22 + _visualLift * 0.25);
 
     canvas.drawOval(
@@ -364,14 +431,11 @@ class CoursePuck extends BodyComponent with DragCallbacks, ContactCallbacks {
           62,
           40,
           38,
-          snapped ? 0.11 : 0.22 - (_visualLift * 0.06),
+          stamping ? 0.10 : 0.22 - (_visualLift * 0.06),
         )
         ..maskFilter = MaskFilter.blur(BlurStyle.normal, 4 + (_visualLift * 7)),
     );
 
-    // Blender PNG has transparent margins.
-    // TI is already ~12% larger in Blender,
-    // so compensate slightly to avoid double-scaling.
     final artExtent = radius * (courseId == 'internship' ? 2.55 : 2.84);
 
     _tokenSprite.render(
@@ -380,26 +444,65 @@ class CoursePuck extends BodyComponent with DragCallbacks, ContactCallbacks {
       size: Vector2.all(artExtent),
     );
 
-    // Foreground lip sells the illusion
-    // that a snapped token sits inside the dock.
-    if (snapped && committedPocket != null) {
-      canvas.drawArc(
-        Rect.fromCenter(
-          center: Offset(0, radius * 0.22),
-          width: radius * 1.67,
-          height: radius * 0.78,
-        ),
-        0.12,
-        2.90,
-        false,
-        Paint()
-          ..color = committedPocket!.accentColor.withValues(alpha: 0.42)
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = radius * 0.07
-          ..strokeCap = StrokeCap.round,
-      );
+    // Persistent grade badge belongs to COURSE state,
+    // not to the dock.
+    if (committedGradeLabel != null && puckState == PuckState.home) {
+      _renderGradeBadge(canvas);
     }
 
     canvas.restore();
+  }
+
+  void _renderGradeBadge(Canvas canvas) {
+    final label = committedGradeLabel!;
+
+    final color = switch (label) {
+      'B' => const Color(0xFF63C6CD),
+      'B+' => const Color(0xFF63C98D),
+      'A-' => const Color(0xFFF3A24A),
+      'A' => const Color(0xFFEF6863),
+      _ => const Color(0xFFEF6863),
+    };
+
+    final center = Offset(radius * 0.66, radius * 0.63);
+
+    final badgeRadius = radius * 0.31;
+
+    canvas.drawCircle(
+      Offset(center.dx, center.dy + 0.05),
+      badgeRadius * 1.08,
+      Paint()
+        ..color = const Color(0x38000000)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2.2),
+    );
+
+    canvas.drawCircle(center, badgeRadius, Paint()..color = color);
+
+    canvas.drawCircle(
+      center,
+      badgeRadius,
+      Paint()
+        ..color = const Color(0x90FFFFFF)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 0.035,
+    );
+
+    final painter = TextPainter(
+      text: TextSpan(
+        text: label,
+        style: TextStyle(
+          color: const Color(0xFFFFFFFF),
+          fontSize: radius * 0.23,
+          fontWeight: FontWeight.w900,
+        ),
+      ),
+      textAlign: TextAlign.center,
+      textDirection: TextDirection.ltr,
+    )..layout();
+
+    painter.paint(
+      canvas,
+      Offset(center.dx - painter.width / 2, center.dy - painter.height / 2),
+    );
   }
 }

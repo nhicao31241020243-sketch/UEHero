@@ -89,6 +89,7 @@ class GpaPhysicsGame extends Forge2DGame {
       CoursePuck(
         courseId: 'ai_project',
         courseName: 'Dự án A.I.',
+        shortCode: 'AI',
         credits: 3,
         position: aiHome,
         onSnapped: _handleSnap,
@@ -99,6 +100,7 @@ class GpaPhysicsGame extends Forge2DGame {
       CoursePuck(
         courseId: 'internship',
         courseName: 'Kiến tập - TI',
+        shortCode: 'TI',
         credits: 5,
         position: internshipHome,
         onSnapped: _handleSnap,
