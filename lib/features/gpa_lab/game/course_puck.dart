@@ -1,19 +1,12 @@
 import 'dart:math' as math;
 import 'dart:ui';
 
+import 'package:flame/components.dart' show Sprite;
 import 'package:flame/events.dart';
 import 'package:flame_forge2d/flame_forge2d.dart';
-import 'package:flutter/material.dart'
-    show
-        Alignment,
-        FontWeight,
-        RadialGradient,
-        TextAlign,
-        TextPainter,
-        TextSpan,
-        TextStyle;
 import 'package:flutter/services.dart';
 
+import 'gpa_lab_art.dart';
 import 'grade_pocket.dart';
 import 'physics_filters.dart';
 
@@ -42,6 +35,10 @@ class CoursePuck extends BodyComponent with DragCallbacks, ContactCallbacks {
 
   GradePocket? committedPocket;
 
+  late final Sprite _tokenSprite;
+
+  bool _artLoaded = false;
+
   double _visualLift = 0.0;
 
   static const double _chaseGain = 15.0;
@@ -56,7 +53,7 @@ class CoursePuck extends BodyComponent with DragCallbacks, ContactCallbacks {
     required Vector2 position,
     Vector2? initialVelocity,
     this.onSnapped,
-  }) : radius = credits >= 5 ? 1.08 : 0.96,
+  }) : radius = credits >= 5 ? 2.05 : 1.82,
        super(
          renderBody: false,
          bodyDef: BodyDef(
@@ -69,7 +66,7 @@ class CoursePuck extends BodyComponent with DragCallbacks, ContactCallbacks {
          ),
          shapeSpecs: [
            ShapeSpec(
-             Circle(radius: credits >= 5 ? 1.08 : 0.96),
+             Circle(radius: credits >= 5 ? 2.05 : 1.82),
              ShapeDef(
                density: credits >= 5 ? 1.25 : 1.0,
                filter: freePuckFilter(),
@@ -81,19 +78,14 @@ class CoursePuck extends BodyComponent with DragCallbacks, ContactCallbacks {
          ],
        );
 
-  Color get accentColor {
-    return courseId == 'internship'
-        ? const Color(0xFFFF9B55)
-        : const Color(0xFFEF5C5F);
-  }
-
-  String get shortCode {
-    return courseId == 'internship' ? 'TI' : 'AI';
-  }
-
   @override
   Future<void> onLoad() async {
     await super.onLoad();
+
+    final image = await game.images.load(GpaLabArt.tokenForCourse(courseId));
+
+    _tokenSprite = Sprite(image);
+    _artLoaded = true;
 
     body.userData = this;
 
@@ -108,7 +100,9 @@ class CoursePuck extends BodyComponent with DragCallbacks, ContactCallbacks {
   void beginContact(Object other, Contact contact) {
     super.beginContact(other, contact);
 
-    if (!contact.isSensorEvent) return;
+    if (!contact.isSensorEvent) {
+      return;
+    }
 
     if (other is GradePocket) {
       activePockets.add(other);
@@ -123,7 +117,9 @@ class CoursePuck extends BodyComponent with DragCallbacks, ContactCallbacks {
   void endContact(Object other, Contact contact) {
     super.endContact(other, contact);
 
-    if (!contact.isSensorEvent) return;
+    if (!contact.isSensorEvent) {
+      return;
+    }
 
     if (other is GradePocket) {
       activePockets.remove(other);
@@ -145,7 +141,9 @@ class CoursePuck extends BodyComponent with DragCallbacks, ContactCallbacks {
     _targetWorldPosition = game.screenToWorld(event.canvasPosition);
 
     body.type = BodyType.kinematic;
+
     body.linearVelocity = Vector2.zero();
+
     body.angularVelocity = 0;
     body.isAwake = true;
 
@@ -174,6 +172,8 @@ class CoursePuck extends BodyComponent with DragCallbacks, ContactCallbacks {
       return;
     }
 
+    // Preserve the old committed grade
+    // if the user drops outside a new dock.
     if (committedPocket != null) {
       _snapTo(committedPocket!, notify: false);
       return;
@@ -209,7 +209,9 @@ class CoursePuck extends BodyComponent with DragCallbacks, ContactCallbacks {
     puckState = PuckState.idle;
 
     body.type = BodyType.dynamic;
+
     body.linearVelocity = Vector2.zero();
+
     body.angularVelocity = 0;
     body.isAwake = true;
 
@@ -238,6 +240,7 @@ class CoursePuck extends BodyComponent with DragCallbacks, ContactCallbacks {
       _clampMagnitude(chaseVelocity, _maxChaseSpeed);
 
       body.linearVelocity = chaseVelocity;
+
       return;
     }
 
@@ -253,9 +256,12 @@ class CoursePuck extends BodyComponent with DragCallbacks, ContactCallbacks {
   }
 
   GradePocket? _closestActivePocket() {
-    if (activePockets.isEmpty) return null;
+    if (activePockets.isEmpty) {
+      return null;
+    }
 
     GradePocket? closest;
+
     var closestDistanceSquared = double.infinity;
 
     for (final pocket in activePockets) {
@@ -275,6 +281,7 @@ class CoursePuck extends BodyComponent with DragCallbacks, ContactCallbacks {
 
   void _snapTo(GradePocket pocket, {bool notify = true}) {
     puckState = PuckState.snapped;
+
     committedPocket = pocket;
 
     body.type = BodyType.static;
@@ -285,6 +292,7 @@ class CoursePuck extends BodyComponent with DragCallbacks, ContactCallbacks {
     );
 
     body.linearVelocity = Vector2.zero();
+
     body.angularVelocity = 0;
 
     _setFilter(snappedPuckFilter());
@@ -326,159 +334,72 @@ class CoursePuck extends BodyComponent with DragCallbacks, ContactCallbacks {
   void render(Canvas canvas) {
     super.render(canvas);
 
+    if (!_artLoaded) {
+      return;
+    }
+
     final snapped = puckState == PuckState.snapped;
 
-    final baseScale = snapped ? 0.91 : 1.0;
+    // Docked token visually sinks.
+    final baseScale = snapped ? 0.90 : 1.0;
 
-    final scale = baseScale + (_visualLift * 0.12);
+    // Touch = optical Z lift.
+    final scale = baseScale + (_visualLift * 0.10);
 
     canvas.save();
-
     canvas.scale(scale);
 
-    // ------------------------------
-    // 1. OPTICAL Z SHADOW
-    // ------------------------------
-
-    final shadowOffset = radius * (0.20 + _visualLift * 0.31);
+    // Dynamic shadow remains realtime,
+    // while the actual object is Blender-rendered.
+    final shadowY = radius * (0.22 + _visualLift * 0.25);
 
     canvas.drawOval(
       Rect.fromCenter(
-        center: Offset(0, shadowOffset),
+        center: Offset(0, shadowY),
         width: radius * (1.76 + _visualLift * 0.18),
-        height: radius * (0.64 + _visualLift * 0.08),
+        height: radius * (0.54 + _visualLift * 0.10),
       ),
       Paint()
         ..color = Color.fromRGBO(
-          47,
-          30,
-          29,
-          snapped ? 0.18 : 0.28 - (_visualLift * 0.08),
+          62,
+          40,
+          38,
+          snapped ? 0.11 : 0.22 - (_visualLift * 0.06),
         )
-        ..maskFilter = MaskFilter.blur(BlurStyle.normal, 4 + (_visualLift * 8)),
+        ..maskFilter = MaskFilter.blur(BlurStyle.normal, 4 + (_visualLift * 7)),
     );
 
-    // ------------------------------
-    // 2. DEEP BODY
-    // ------------------------------
+    // Blender PNG has transparent margins.
+    // TI is already ~12% larger in Blender,
+    // so compensate slightly to avoid double-scaling.
+    final artExtent = radius * (courseId == 'internship' ? 2.55 : 2.84);
 
-    canvas.drawCircle(
-      Offset(0, radius * 0.17),
-      radius,
-      Paint()..color = const Color(0xFF211D1E),
+    _tokenSprite.render(
+      canvas,
+      position: Vector2(-artExtent / 2, -artExtent / 2),
+      size: Vector2.all(artExtent),
     );
 
-    // ------------------------------
-    // 3. MACHINED OUTER RING
-    // ------------------------------
-
-    canvas.drawCircle(
-      Offset.zero,
-      radius,
-      Paint()
-        ..shader = const RadialGradient(
-          center: Alignment(-0.38, -0.48),
-          radius: 1.10,
-          colors: [Color(0xFF8D8380), Color(0xFF4C4647), Color(0xFF292526)],
-        ).createShader(Rect.fromCircle(center: Offset.zero, radius: radius)),
-    );
-
-    // ------------------------------
-    // 4. FUNCTIONAL COLOR RING
-    // ------------------------------
-
-    canvas.drawCircle(Offset.zero, radius * 0.86, Paint()..color = accentColor);
-
-    // ------------------------------
-    // 5. CERAMIC FACE
-    // ------------------------------
-
-    canvas.drawCircle(
-      Offset.zero,
-      radius * 0.74,
-      Paint()
-        ..shader =
-            const RadialGradient(
-              center: Alignment(-0.40, -0.48),
-              radius: 1.05,
-              colors: [Color(0xFF5D5556), Color(0xFF383233), Color(0xFF242021)],
-            ).createShader(
-              Rect.fromCircle(center: Offset.zero, radius: radius * 0.74),
-            ),
-    );
-
-    // Specular highlight.
-    canvas.drawArc(
-      Rect.fromCircle(center: Offset.zero, radius: radius * 0.64),
-      3.65,
-      1.45,
-      false,
-      Paint()
-        ..color = const Color(0x45FFFFFF)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 0.065,
-    );
-
-    _renderIdentity(canvas);
-
-    // When docked, front lip covers
-    // part of the token to sell depth.
+    // Foreground lip sells the illusion
+    // that a snapped token sits inside the dock.
     if (snapped && committedPocket != null) {
       canvas.drawArc(
         Rect.fromCenter(
-          center: Offset(0, radius * 0.10),
-          width: radius * 1.72,
-          height: radius * 1.00,
+          center: Offset(0, radius * 0.22),
+          width: radius * 1.67,
+          height: radius * 0.78,
         ),
         0.12,
         2.90,
         false,
         Paint()
-          ..color = committedPocket!.accentColor.withValues(alpha: 0.52)
+          ..color = committedPocket!.accentColor.withValues(alpha: 0.42)
           ..style = PaintingStyle.stroke
-          ..strokeWidth = 0.13
+          ..strokeWidth = radius * 0.07
           ..strokeCap = StrokeCap.round,
       );
     }
 
     canvas.restore();
-  }
-
-  void _renderIdentity(Canvas canvas) {
-    final codePainter = TextPainter(
-      text: TextSpan(
-        text: shortCode,
-        style: TextStyle(
-          color: const Color(0xFFFDF9F7),
-          fontSize: radius * 0.50,
-          fontWeight: FontWeight.w900,
-        ),
-      ),
-      textAlign: TextAlign.center,
-      textDirection: TextDirection.ltr,
-    )..layout();
-
-    codePainter.paint(
-      canvas,
-      Offset(-codePainter.width / 2, -codePainter.height / 2 - radius * 0.09),
-    );
-
-    final creditPainter = TextPainter(
-      text: TextSpan(
-        text: '$credits TC',
-        style: TextStyle(
-          color: accentColor,
-          fontSize: radius * 0.27,
-          fontWeight: FontWeight.w800,
-        ),
-      ),
-      textAlign: TextAlign.center,
-      textDirection: TextDirection.ltr,
-    )..layout();
-
-    creditPainter.paint(
-      canvas,
-      Offset(-creditPainter.width / 2, radius * 0.22),
-    );
   }
 }

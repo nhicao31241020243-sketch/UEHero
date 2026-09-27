@@ -5,6 +5,7 @@ import 'package:flame_forge2d/flame_forge2d.dart';
 import 'course_puck.dart';
 import 'course_tray.dart';
 import 'grade_pocket.dart';
+import 'runway_surface.dart';
 import 'table_wall.dart';
 
 typedef GradeCommittedCallback = void Function(
@@ -29,24 +30,25 @@ class GpaPhysicsGame extends Forge2DGame {
   Future<void> onLoad() async {
     await super.onLoad();
 
+    // Our Blender sprites live at assets/gpa_lab/3d/
+    // instead of Flame's default assets/images/.
+    images.prefix = '';
+
     debugMode = false;
 
     final rect = camera.visibleWorldRect;
 
-    const inset = 0.25;
+    const inset = 0.22;
 
     final left = rect.left + inset;
-
     final right = rect.right - inset;
-
     final top = rect.top + inset;
-
     final bottom = rect.bottom - inset;
 
     final width = right - left;
     final height = bottom - top;
 
-    // Physical boundaries stay invisible.
+    // Invisible physics bounds.
     await world.addAll([
       TableWall(start: Vector2(left, top), end: Vector2(right, top)),
       TableWall(start: Vector2(right, top), end: Vector2(right, bottom)),
@@ -54,31 +56,33 @@ class GpaPhysicsGame extends Forge2DGame {
       TableWall(start: Vector2(left, bottom), end: Vector2(left, top)),
     ]);
 
-    // ---------------------------------
-    // TOP COURSE SHELF
-    // ---------------------------------
+    // ------------------------------------------------------
+    // V2 STAGE HEADER
+    // Reserve ~8% before platform.
+    // ------------------------------------------------------
 
-    final trayPosition = Vector2(left + 0.30, top + 0.28);
+    final platformPosition = Vector2(left + 0.38, top + height * 0.10);
 
-    final traySize = Vector2(width - 0.60, height * 0.38);
+    final platformSize = Vector2(width - 0.76, height * 0.35);
 
     final tray = CourseTray(
-      position: trayPosition,
-      size: traySize,
+      position: platformPosition,
+      size: platformSize,
       leftCourse: 'Dự án A.I.',
       rightCourse: 'Kiến tập - TI',
     );
 
     await world.add(tray);
 
+    // Course tokens.
     final aiHome = Vector2(
-      trayPosition.x + tray.leftSlotX,
-      trayPosition.y + tray.slotY,
+      platformPosition.x + tray.leftSlotX,
+      platformPosition.y + tray.slotY,
     );
 
     final internshipHome = Vector2(
-      trayPosition.x + tray.rightSlotX,
-      trayPosition.y + tray.slotY,
+      platformPosition.x + tray.rightSlotX,
+      platformPosition.y + tray.slotY,
     );
 
     await world.add(
@@ -101,32 +105,39 @@ class GpaPhysicsGame extends Forge2DGame {
       ),
     );
 
-    // ---------------------------------
-    // LOWER HARDWARE DOCKS
-    // ---------------------------------
+    // ------------------------------------------------------
+    // RUNWAY
+    // ------------------------------------------------------
+
+    final runwayPosition = Vector2(left + 0.38, top + height * 0.49);
+
+    final runwaySize = Vector2(width - 0.76, height * 0.20);
+
+    await world.add(RunwaySurface(position: runwayPosition, size: runwaySize));
+
+    // ------------------------------------------------------
+    // GRADE DOCKS
+    // ------------------------------------------------------
 
     const grades = [('B', 3.0), ('B+', 3.5), ('A-', 3.7), ('A', 4.0)];
 
-    final pocketY = top + height * 0.84;
+    final pocketY = top + height * 0.85;
 
-    final pocketLeft = left + 0.92;
-
-    final pocketRight = right - 0.92;
-
-    final span = pocketRight - pocketLeft;
+    final pocketLeft = left + 1.04;
+    final pocketRight = right - 1.04;
+    final pocketSpan = pocketRight - pocketLeft;
 
     for (var i = 0; i < grades.length; i++) {
-      final t = i / (grades.length - 1);
-
+      final ratio = i / (grades.length - 1);
       final grade = grades[i];
 
       await world.add(
         GradePocket(
           label: grade.$1,
           gradePoint: grade.$2,
-          worldPosition: Vector2(pocketLeft + span * t, pocketY),
-          sensorRadius: 0.60,
-          visualRadius: 0.90,
+          worldPosition: Vector2(pocketLeft + pocketSpan * ratio, pocketY),
+          sensorRadius: 0.68,
+          visualRadius: 1.16,
         ),
       );
     }
