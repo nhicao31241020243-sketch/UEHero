@@ -27,7 +27,7 @@ class GpaPhysicsGame extends Forge2DGame {
 
   @override
   Color backgroundColor() {
-    return const Color(0xFF171719);
+    return const Color(0x00000000);
   }
 
   @override
@@ -38,7 +38,7 @@ class GpaPhysicsGame extends Forge2DGame {
 
     final rect = camera.visibleWorldRect;
 
-    const inset = 0.32;
+    const inset = 0.30;
 
     final left = rect.left + inset;
     final right = rect.right - inset;
@@ -55,13 +55,14 @@ class GpaPhysicsGame extends Forge2DGame {
       TableWall(start: Vector2(left, bottom), end: Vector2(left, top)),
     ]);
 
-    // --------------------------------------------------------
-    // UNIFIED COURSE TRAY
-    // --------------------------------------------------------
+    // ------------------------------------------------------
+    // COURSES
+    // Compact top zone.
+    // ------------------------------------------------------
 
-    final trayPosition = Vector2(left + 0.42, top + 0.50);
+    final trayPosition = Vector2(left + 0.30, top + 0.30);
 
-    final traySize = Vector2(width - 0.84, height * 0.29);
+    final traySize = Vector2(width - 0.60, height * 0.31);
 
     final tray = CourseTray(
       position: trayPosition,
@@ -98,19 +99,18 @@ class GpaPhysicsGame extends Forge2DGame {
       ),
     );
 
-    // --------------------------------------------------------
-    // GRADE WELLS
-    //
-    // Much closer to the tray than Checkpoint 4.
-    // --------------------------------------------------------
+    // ------------------------------------------------------
+    // GRADE TARGETS
+    // Move upward strongly: short, controllable runway.
+    // ------------------------------------------------------
 
     const grades = [('B', 3.0), ('B+', 3.5), ('A-', 3.7), ('A', 4.0)];
 
-    final pocketY = top + height * 0.78;
+    final pocketY = top + height * 0.72;
 
-    final pocketLeft = left + 0.88;
+    final pocketLeft = left + 1.02;
 
-    final pocketRight = right - 0.88;
+    final pocketRight = right - 1.02;
 
     final pocketSpan = pocketRight - pocketLeft;
 
@@ -126,8 +126,8 @@ class GpaPhysicsGame extends Forge2DGame {
           label: grade.$1,
           gradePoint: grade.$2,
           worldPosition: Vector2(x, pocketY),
-          sensorRadius: 0.60,
-          visualRadius: 0.96,
+          sensorRadius: 0.64,
+          visualRadius: 1.08,
         ),
       );
     }

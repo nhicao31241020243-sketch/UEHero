@@ -324,9 +324,9 @@ class CoursePuck extends BodyComponent with DragCallbacks, ContactCallbacks {
     final baseScale = snapped ? 0.90 : 1.0;
 
     // Nhấc lên khi held.
-    final scale = baseScale + (_visualLift * 0.07);
+    final scale = baseScale + (_visualLift * 0.12);
 
-    final shadowY = radius * (snapped ? 0.03 : 0.13 + _visualLift * 0.22);
+    final shadowY = radius * (snapped ? 0.03 : 0.15 + _visualLift * 0.31);
 
     canvas.save();
     canvas.scale(scale);
@@ -334,7 +334,7 @@ class CoursePuck extends BodyComponent with DragCallbacks, ContactCallbacks {
     // Shadow — tín hiệu Z-axis chính.
     canvas.drawCircle(
       Offset(0, shadowY),
-      radius * (1.0 + _visualLift * 0.08),
+      radius * (1.0 + _visualLift * 0.13),
       Paint()
         ..color = Color.fromRGBO(
           0,
@@ -344,7 +344,7 @@ class CoursePuck extends BodyComponent with DragCallbacks, ContactCallbacks {
         )
         ..maskFilter = MaskFilter.blur(
           BlurStyle.normal,
-          snapped ? 1.8 : 3 + (_visualLift * 8),
+          snapped ? 1.8 : 3 + (_visualLift * 11),
         ),
     );
 
