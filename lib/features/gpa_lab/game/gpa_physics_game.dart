@@ -3,8 +3,8 @@ import 'dart:ui';
 import 'package:flame_forge2d/flame_forge2d.dart';
 import 'package:flutter/foundation.dart';
 
-import 'course_home_marker.dart';
 import 'course_puck.dart';
+import 'course_tray.dart';
 import 'grade_pocket.dart';
 import 'table_wall.dart';
 
@@ -27,26 +27,27 @@ class GpaPhysicsGame extends Forge2DGame {
 
   @override
   Color backgroundColor() {
-    return const Color(0xFF111113);
+    return const Color(0xFF171719);
   }
 
   @override
   Future<void> onLoad() async {
     await super.onLoad();
 
-    // Visual production mode.
     debugMode = false;
 
     final rect = camera.visibleWorldRect;
 
-    const inset = 0.35;
+    const inset = 0.32;
 
     final left = rect.left + inset;
     final right = rect.right - inset;
     final top = rect.top + inset;
     final bottom = rect.bottom - inset;
 
-    // Invisible physical table boundaries.
+    final width = right - left;
+    final height = bottom - top;
+
     await world.addAll([
       TableWall(start: Vector2(left, top), end: Vector2(right, top)),
       TableWall(start: Vector2(right, top), end: Vector2(right, bottom)),
@@ -54,59 +55,28 @@ class GpaPhysicsGame extends Forge2DGame {
       TableWall(start: Vector2(left, bottom), end: Vector2(left, top)),
     ]);
 
-    // -------------------------
-    // GRADE WELLS
-    // -------------------------
+    // --------------------------------------------------------
+    // UNIFIED COURSE TRAY
+    // --------------------------------------------------------
 
-    const grades = [('B', 3.0), ('B+', 3.5), ('A-', 3.7), ('A', 4.0)];
+    final trayPosition = Vector2(left + 0.42, top + 0.50);
 
-    // Keep wells near the bottom while leaving a physics runway.
-    final pocketY = bottom - 1.15;
+    final traySize = Vector2(width - 0.84, height * 0.29);
 
-    final pocketLeft = left + 1.0;
-    final pocketRight = right - 1.0;
+    final tray = CourseTray(
+      position: trayPosition,
+      size: traySize,
+      leftCourse: 'Dự án A.I.',
+      rightCourse: 'Kiến tập - TI',
+    );
 
-    final pocketSpan = pocketRight - pocketLeft;
+    await world.add(tray);
 
-    for (var i = 0; i < grades.length; i++) {
-      final ratio = i / (grades.length - 1);
+    final puckY = trayPosition.y + tray.slotY;
 
-      final x = pocketLeft + (pocketSpan * ratio);
+    final aiHome = Vector2(trayPosition.x + tray.leftSlotX, puckY);
 
-      final grade = grades[i];
-
-      await world.add(
-        GradePocket(
-          label: grade.$1,
-          gradePoint: grade.$2,
-          worldPosition: Vector2(x, pocketY),
-
-          // Physics area intentionally smaller
-          // than the visual socket.
-          sensorRadius: 0.56,
-          visualRadius: 0.82,
-        ),
-      );
-    }
-
-    // -------------------------
-    // COURSE HOME POSITIONS
-    // -------------------------
-
-    final aiHome = Vector2(left + 1.75, top + 1.85);
-
-    final internshipHome = Vector2(right - 1.75, top + 1.85);
-
-    // Dashed origin sockets remain visible
-    // after a puck is picked up.
-    await world.addAll([
-      CourseHomeMarker(position: aiHome, radius: 0.70),
-      CourseHomeMarker(position: internshipHome, radius: 0.78),
-    ]);
-
-    // -------------------------
-    // REAL ANONYMIZED COURSES
-    // -------------------------
+    final internshipHome = Vector2(trayPosition.x + tray.rightSlotX, puckY);
 
     await world.add(
       CoursePuck(
@@ -127,6 +97,40 @@ class GpaPhysicsGame extends Forge2DGame {
         onSnapped: _handleSnap,
       ),
     );
+
+    // --------------------------------------------------------
+    // GRADE WELLS
+    //
+    // Much closer to the tray than Checkpoint 4.
+    // --------------------------------------------------------
+
+    const grades = [('B', 3.0), ('B+', 3.5), ('A-', 3.7), ('A', 4.0)];
+
+    final pocketY = top + height * 0.78;
+
+    final pocketLeft = left + 0.88;
+
+    final pocketRight = right - 0.88;
+
+    final pocketSpan = pocketRight - pocketLeft;
+
+    for (var i = 0; i < grades.length; i++) {
+      final ratio = i / (grades.length - 1);
+
+      final x = pocketLeft + pocketSpan * ratio;
+
+      final grade = grades[i];
+
+      await world.add(
+        GradePocket(
+          label: grade.$1,
+          gradePoint: grade.$2,
+          worldPosition: Vector2(x, pocketY),
+          sensorRadius: 0.60,
+          visualRadius: 0.96,
+        ),
+      );
+    }
   }
 
   void _handleSnap(
@@ -135,6 +139,14 @@ class GpaPhysicsGame extends Forge2DGame {
     String gradeLabel,
     double gradePoint,
   ) {
+    status.value = '$courseId → $gradeLabel ($gradePoint)';
+
     onGradeCommitted(courseId, credits, gradeLabel, gradePoint);
+  }
+
+  @override
+  void onRemove() {
+    status.dispose();
+    super.onRemove();
   }
 }
