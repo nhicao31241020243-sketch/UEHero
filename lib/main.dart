@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'home_event_screen.dart';
 
 void main() {
   runApp(const UEHeroApp());
@@ -9,10 +10,13 @@ class UEHeroApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
+    return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'UEHero',
-      home: WelcomeScreen(),
+      theme: ThemeData.dark().copyWith(
+        scaffoldBackgroundColor: const Color(0xFF0D0C13),
+      ),
+      home: const WelcomeScreen(),
     );
   }
 }
@@ -75,7 +79,7 @@ class WelcomeScreen extends StatelessWidget {
               ),
               const SizedBox(height: 36),
 
-              // Nút SIGN IN (Nền trong suốt, viền trắng)
+              // Nút SIGN IN -> Chuyển sang Màn hình Event Dashboard
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 48),
                 child: SizedBox(
@@ -83,7 +87,12 @@ class WelcomeScreen extends StatelessWidget {
                   height: 48,
                   child: OutlinedButton(
                     onPressed: () {
-                      // Xử lý sự kiện bấm Sign In
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const MainNavigationScreen(),
+                        ),
+                      );
                     },
                     style: OutlinedButton.styleFrom(
                       side: const BorderSide(color: Colors.white, width: 1.5),
@@ -104,7 +113,7 @@ class WelcomeScreen extends StatelessWidget {
               ),
               const SizedBox(height: 16),
 
-              // Nút SIGN UP (Nền màu trắng)
+              // Nút SIGN UP
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 48),
                 child: SizedBox(
@@ -112,7 +121,12 @@ class WelcomeScreen extends StatelessWidget {
                   height: 48,
                   child: ElevatedButton(
                     onPressed: () {
-                      // Xử lý sự kiện bấm Sign Up
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const MainNavigationScreen(),
+                        ),
+                      );
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.white,
@@ -167,6 +181,50 @@ class WelcomeScreen extends StatelessWidget {
         shape: BoxShape.circle,
       ),
       child: Icon(icon, color: Colors.white, size: 18),
+    );
+  }
+}
+
+// Màn hình chứa Bottom Navigation Bar ghép Màn hình Sự kiện
+class MainNavigationScreen extends StatefulWidget {
+  const MainNavigationScreen({Key? key}) : super(key: key);
+
+  @override
+  State<MainNavigationScreen> createState() => _MainNavigationScreenState();
+}
+
+class _MainNavigationScreenState extends State<MainNavigationScreen> {
+  int _currentIndex = 0;
+
+  final List<Widget> _screens = [
+    const HomeEventScreen(),
+    const Center(child: Text("Explore Page", style: TextStyle(color: Colors.white))),
+    const Center(child: Text("My List Page", style: TextStyle(color: Colors.white))),
+    const Center(child: Text("Profile Page", style: TextStyle(color: Colors.white))),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: _screens[_currentIndex],
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentIndex,
+        onTap: (index) {
+          setState(() {
+            _currentIndex = index;
+          });
+        },
+        backgroundColor: const Color(0xFF0D0C13),
+        selectedItemColor: const Color(0xFF8B5CF6),
+        unselectedItemColor: Colors.grey[600],
+        type: BottomNavigationBarType.fixed,
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.home_filled), label: 'Home'),
+          BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Explore'),
+          BottomNavigationBarItem(icon: Icon(Icons.bookmark_outline), label: 'My List'),
+          BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: 'Profile'),
+        ],
+      ),
     );
   }
 }
