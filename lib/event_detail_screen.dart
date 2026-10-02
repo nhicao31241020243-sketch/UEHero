@@ -40,7 +40,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                         begin: Alignment.bottomCenter,
                         end: Alignment.topCenter,
                         colors: [
-                          Colors.black.withOpacity(0.85),
+                          Colors.black.withValues(alpha: 0.85),
                           Colors.transparent,
                         ],
                       ),
@@ -72,7 +72,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF8B5CF6).withOpacity(0.15),
+                      color: const Color(0xFF8B5CF6).withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(color: const Color(0xFF8B5CF6)),
                     ),

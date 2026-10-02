@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+
 import 'home_event_screen.dart';
+import 'screens/signup_screen.dart';
 
 void main() {
   runApp(const UEHeroApp());
@@ -16,7 +18,7 @@ class UEHeroApp extends StatelessWidget {
       theme: ThemeData.dark().copyWith(
         scaffoldBackgroundColor: const Color(0xFF0D0C13),
       ),
-      home: const WelcomeScreen(),
+      home: const SignUpScreen(),
     );
   }
 }
@@ -41,132 +43,150 @@ class WelcomeScreen extends StatelessWidget {
           ),
         ),
         child: SafeArea(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Spacer(flex: 2),
+          child: LayoutBuilder(
+            builder: (context, constraints) => SingleChildScrollView(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: IntrinsicHeight(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Spacer(flex: 2),
 
-              // Logo & App Name
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.white, width: 2),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.school, size: 40, color: Colors.white),
-              ),
-              const SizedBox(height: 12),
-              const Text(
-                'UEHero',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 2,
-                ),
-              ),
-
-              const Spacer(flex: 2),
-
-              // Text Welcome Back
-              const Text(
-                'Welcome Back',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 28,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 36),
-
-              // Nút SIGN IN -> Chuyển sang Màn hình Event Dashboard
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 48),
-                child: SizedBox(
-                  width: double.infinity,
-                  height: 48,
-                  child: OutlinedButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const MainNavigationScreen(),
+                      // Logo & App Name
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.white, width: 2),
+                          shape: BoxShape.circle,
                         ),
-                      );
-                    },
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: Colors.white, width: 1.5),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(24),
+                        child: const Icon(
+                          Icons.school,
+                          size: 40,
+                          color: Colors.white,
+                        ),
                       ),
-                    ),
-                    child: const Text(
-                      'SIGN IN',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
+                      const SizedBox(height: 12),
+                      const Text(
+                        'UEHero',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 2,
+                        ),
                       ),
-                    ),
+
+                      const Spacer(flex: 2),
+
+                      // Text Welcome Back
+                      const Text(
+                        'Welcome Back',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 28,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 36),
+
+                      // Nút SIGN IN -> Chuyển sang Màn hình Event Dashboard
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 48),
+                        child: SizedBox(
+                          width: double.infinity,
+                          height: 48,
+                          child: OutlinedButton(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      const MainNavigationScreen(),
+                                ),
+                              );
+                            },
+                            style: OutlinedButton.styleFrom(
+                              side: const BorderSide(
+                                color: Colors.white,
+                                width: 1.5,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(24),
+                              ),
+                            ),
+                            child: const Text(
+                              'SIGN IN',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Nút SIGN UP
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 48),
+                        child: SizedBox(
+                          width: double.infinity,
+                          height: 48,
+                          child: ElevatedButton(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      const MainNavigationScreen(),
+                                ),
+                              );
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.white,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(24),
+                              ),
+                            ),
+                            child: const Text(
+                              'SIGN UP',
+                              style: TextStyle(
+                                color: Colors.black,
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      const Spacer(flex: 2),
+
+                      // Social Media Icons
+                      const Text(
+                        'Login with Social Media',
+                        style: TextStyle(color: Colors.white70, fontSize: 12),
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          _buildSocialIcon(Icons.camera_alt_outlined),
+                          const SizedBox(width: 16),
+                          _buildSocialIcon(Icons.language),
+                          const SizedBox(width: 16),
+                          _buildSocialIcon(Icons.facebook),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+                    ],
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
-
-              // Nút SIGN UP
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 48),
-                child: SizedBox(
-                  width: double.infinity,
-                  height: 48,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const MainNavigationScreen(),
-                        ),
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(24),
-                      ),
-                    ),
-                    child: const Text(
-                      'SIGN UP',
-                      style: TextStyle(
-                        color: Colors.black,
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-
-              const Spacer(flex: 2),
-
-              // Social Media Icons
-              const Text(
-                'Login with Social Media',
-                style: TextStyle(color: Colors.white70, fontSize: 12),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _buildSocialIcon(Icons.camera_alt_outlined),
-                  const SizedBox(width: 16),
-                  _buildSocialIcon(Icons.language),
-                  const SizedBox(width: 16),
-                  _buildSocialIcon(Icons.facebook),
-                ],
-              ),
-              const SizedBox(height: 24),
-            ],
+            ),
           ),
         ),
       ),
@@ -187,7 +207,7 @@ class WelcomeScreen extends StatelessWidget {
 
 // Màn hình chứa Bottom Navigation Bar ghép Màn hình Sự kiện
 class MainNavigationScreen extends StatefulWidget {
-  const MainNavigationScreen({Key? key}) : super(key: key);
+  const MainNavigationScreen({super.key});
 
   @override
   State<MainNavigationScreen> createState() => _MainNavigationScreenState();
@@ -198,9 +218,15 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   final List<Widget> _screens = [
     const HomeEventScreen(),
-    const Center(child: Text("Explore Page", style: TextStyle(color: Colors.white))),
-    const Center(child: Text("My List Page", style: TextStyle(color: Colors.white))),
-    const Center(child: Text("Profile Page", style: TextStyle(color: Colors.white))),
+    const Center(
+      child: Text("Explore Page", style: TextStyle(color: Colors.white)),
+    ),
+    const Center(
+      child: Text("My List Page", style: TextStyle(color: Colors.white)),
+    ),
+    const Center(
+      child: Text("Profile Page", style: TextStyle(color: Colors.white)),
+    ),
   ];
 
   @override
@@ -221,8 +247,14 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home_filled), label: 'Home'),
           BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Explore'),
-          BottomNavigationBarItem(icon: Icon(Icons.bookmark_outline), label: 'My List'),
-          BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: 'Profile'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.bookmark_outline),
+            label: 'My List',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person_outline),
+            label: 'Profile',
+          ),
         ],
       ),
     );

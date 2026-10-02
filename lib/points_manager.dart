@@ -7,7 +7,7 @@ import 'event_detail_screen.dart';
 import 'widgets/event_poster.dart';
 
 class HomeEventScreen extends StatefulWidget {
-  const HomeEventScreen({Key? key}) : super(key: key);
+  const HomeEventScreen({super.key});
 
   @override
   State<HomeEventScreen> createState() => _HomeEventScreenState();
@@ -108,7 +108,7 @@ class _HomeEventScreenState extends State<HomeEventScreen> {
               return Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF8B5CF6).withOpacity(0.15),
+                  color: const Color(0xFF8B5CF6).withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(color: const Color(0xFF8B5CF6)),
                 ),
@@ -224,7 +224,7 @@ class _HomeEventScreenState extends State<HomeEventScreen> {
                           gradient: LinearGradient(
                             begin: Alignment.bottomCenter,
                             end: Alignment.topCenter,
-                            colors: [Colors.black.withOpacity(0.9), Colors.transparent],
+                            colors: [Colors.black.withValues(alpha: 0.9), Colors.transparent],
                           ),
                         ),
                       ),
@@ -245,7 +245,7 @@ class _HomeEventScreenState extends State<HomeEventScreen> {
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFF8B5CF6).withOpacity(0.25),
+                                    color: const Color(0xFF8B5CF6).withValues(alpha: 0.25),
                                     borderRadius: BorderRadius.circular(10),
                                   ),
                                   child: Text(event.tag,
@@ -474,7 +474,7 @@ class _HomeEventScreenState extends State<HomeEventScreen> {
                     Container(
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(14),
-                        color: Colors.black.withOpacity(0.25),
+                        color: Colors.black.withValues(alpha: 0.25),
                       ),
                       alignment: Alignment.center,
                       child: Text(genre,

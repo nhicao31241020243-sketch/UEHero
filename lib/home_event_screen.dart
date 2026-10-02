@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 
 class HomeEventScreen extends StatefulWidget {
-  const HomeEventScreen({Key? key}) : super(key: key);
+  const HomeEventScreen({super.key});
 
   @override
   State<HomeEventScreen> createState() => _HomeEventScreenState();
@@ -12,7 +12,13 @@ class _HomeEventScreenState extends State<HomeEventScreen> {
   int _currentBannerIndex = 0;
   int _selectedCategoryIndex = 0;
 
-  final List<String> categories = ['Tất cả', 'Âm nhạc', 'Hội thảo', 'Sân khấu', 'Thể thao'];
+  final List<String> categories = [
+    'Tất cả',
+    'Âm nhạc',
+    'Hội thảo',
+    'Sân khấu',
+    'Thể thao',
+  ];
 
   // Dữ liệu sự kiện mẫu
   final List<Map<String, String>> featuredEvents = [
@@ -36,6 +42,54 @@ class _HomeEventScreenState extends State<HomeEventScreen> {
     },
   ];
 
+  final List<Map<String, String>> eventPosters = [
+    {
+      'title': 'CHUYỆN SÀI GÒN: GÁNH SHOW',
+      'organizer': '4ll-In Performance Art',
+      'image': 'https://picsum.photos/300/450?random=10',
+      'tag': 'Sân khấu',
+    },
+    {
+      'title': 'PERSPECTIVES 2027',
+      'organizer': 'Robb Report Vietnam',
+      'image': 'https://picsum.photos/300/450?random=11',
+      'tag': 'Hội thảo',
+    },
+    {
+      'title': '1T SUMMIT - THE NEW RACE',
+      'organizer': 'Vietnam Vanguard',
+      'image': 'https://picsum.photos/300/450?random=12',
+      'tag': 'Công nghệ',
+    },
+    {
+      'title': 'SAIGON MUSIC WEEK',
+      'organizer': 'UEH Music Club',
+      'image': 'https://picsum.photos/300/450?random=13',
+      'tag': 'Âm nhạc',
+    },
+    {
+      'title': 'GREEN CAMPUS DAY',
+      'organizer': 'UEH Green Campus',
+      'image': 'https://picsum.photos/300/450?random=14',
+      'tag': 'Cộng đồng',
+    },
+    {
+      'title': 'STARTUP LAUNCHPAD',
+      'organizer': 'UEH Innovation',
+      'image': 'https://picsum.photos/300/450?random=15',
+      'tag': 'Khởi nghiệp',
+    },
+  ];
+
+  final List<List<Color>> _posterPalettes = const [
+    [Color(0xFFB3264A), Color(0xFF38162F)],
+    [Color(0xFF176B87), Color(0xFF172541)],
+    [Color(0xFF8752A1), Color(0xFF302044)],
+    [Color(0xFFD36B34), Color(0xFF492333)],
+    [Color(0xFF34836E), Color(0xFF173A42)],
+    [Color(0xFFB48B35), Color(0xFF443020)],
+  ];
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -47,7 +101,14 @@ class _HomeEventScreenState extends State<HomeEventScreen> {
           children: const [
             Icon(Icons.play_circle_fill, color: Color(0xFF8B5CF6), size: 28),
             SizedBox(width: 8),
-            Text('UEHEvent', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Colors.white)),
+            Text(
+              'UEHEvent',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 20,
+                color: Colors.white,
+              ),
+            ),
           ],
         ),
         actions: [
@@ -122,7 +183,7 @@ class _HomeEventScreenState extends State<HomeEventScreen> {
                           begin: Alignment.bottomCenter,
                           end: Alignment.topCenter,
                           colors: [
-                            Colors.black.withOpacity(0.85),
+                            Colors.black.withValues(alpha: 0.85),
                             Colors.transparent,
                           ],
                         ),
@@ -137,14 +198,21 @@ class _HomeEventScreenState extends State<HomeEventScreen> {
                         children: [
                           Text(
                             event['title']!,
-                            style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                           const SizedBox(height: 4),
                           Text(
                             event['organizer']!,
-                            style: TextStyle(color: Colors.grey[400], fontSize: 12),
+                            style: TextStyle(
+                              color: Colors.grey[400],
+                              fontSize: 12,
+                            ),
                           ),
                           const SizedBox(height: 10),
                           Row(
@@ -153,20 +221,43 @@ class _HomeEventScreenState extends State<HomeEventScreen> {
                                 onPressed: () {},
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: const Color(0xFF8B5CF6),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 18,
+                                    vertical: 8,
+                                  ),
                                 ),
-                                child: const Text("Mua Vé Ngay", style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+                                child: const Text(
+                                  "Mua Vé Ngay",
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
                               ),
                               const SizedBox(width: 8),
                               OutlinedButton(
                                 onPressed: () {},
                                 style: OutlinedButton.styleFrom(
                                   side: const BorderSide(color: Colors.white54),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 8,
+                                  ),
                                 ),
-                                child: const Text("Chi Tiết", style: TextStyle(color: Colors.white, fontSize: 12)),
+                                child: const Text(
+                                  "Chi Tiết",
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 12,
+                                  ),
+                                ),
                               ),
                             ],
                           ),
@@ -189,7 +280,9 @@ class _HomeEventScreenState extends State<HomeEventScreen> {
               margin: const EdgeInsets.symmetric(horizontal: 3.0),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(4),
-                color: _currentBannerIndex == entry.key ? const Color(0xFF8B5CF6) : Colors.grey[700],
+                color: _currentBannerIndex == entry.key
+                    ? const Color(0xFF8B5CF6)
+                    : Colors.grey[700],
               ),
             );
           }).toList(),
@@ -218,7 +311,9 @@ class _HomeEventScreenState extends State<HomeEventScreen> {
               margin: const EdgeInsets.only(right: 10),
               padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
               decoration: BoxDecoration(
-                color: isSelected ? const Color(0xFF8B5CF6) : const Color(0xFF1F1D2B),
+                color: isSelected
+                    ? const Color(0xFF8B5CF6)
+                    : const Color(0xFF1F1D2B),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
@@ -238,6 +333,11 @@ class _HomeEventScreenState extends State<HomeEventScreen> {
 
   // Section Poster Sự Kiện Đứng
   Widget _buildEventSection(String title) {
+    final isTrending = title.contains('Trending');
+    final events = isTrending
+        ? eventPosters.take(3).toList()
+        : eventPosters.skip(3).toList();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -245,7 +345,11 @@ class _HomeEventScreenState extends State<HomeEventScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 16.0),
           child: Text(
             title,
-            style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ),
         const SizedBox(height: 12),
@@ -254,16 +358,103 @@ class _HomeEventScreenState extends State<HomeEventScreen> {
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: 6,
+            itemCount: events.length,
             itemBuilder: (context, index) {
+              final event = events[index];
+              final palette = _posterPalettes[index + (isTrending ? 0 : 3)];
+
               return Container(
-                width: 125,
+                width: 132,
                 margin: const EdgeInsets.only(right: 12),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(14),
-                  image: DecorationImage(
-                    image: NetworkImage('https://picsum.photos/300/450?random=${index + 10}'),
-                    fit: BoxFit.cover,
+                  boxShadow: [
+                    BoxShadow(
+                      color: palette.first.withValues(alpha: 0.2),
+                      blurRadius: 12,
+                      offset: const Offset(0, 5),
+                    ),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(14),
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      Image.network(
+                        event['image']!,
+                        fit: BoxFit.cover,
+                        loadingBuilder: (context, child, progress) =>
+                            progress == null
+                            ? child
+                            : _posterArtwork(event, palette),
+                        errorBuilder: (context, error, stackTrace) =>
+                            _posterArtwork(event, palette),
+                      ),
+                      const DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [Colors.transparent, Colors.black87],
+                            stops: [0.35, 1],
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        top: 9,
+                        left: 9,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 7,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.42),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            event['tag']!,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 9,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        left: 10,
+                        right: 8,
+                        bottom: 10,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              event['title']!,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              event['organizer']!,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 9,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               );
@@ -271,6 +462,49 @@ class _HomeEventScreenState extends State<HomeEventScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _posterArtwork(Map<String, String> event, List<Color> palette) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: palette,
+        ),
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            top: 34,
+            right: -12,
+            child: Icon(
+              Icons.circle,
+              size: 100,
+              color: Colors.white.withValues(alpha: 0.08),
+            ),
+          ),
+          Positioned(
+            top: 48,
+            left: 12,
+            child: Icon(
+              Icons.auto_awesome,
+              size: 34,
+              color: Colors.white.withValues(alpha: 0.78),
+            ),
+          ),
+          Positioned(
+            top: 92,
+            right: 18,
+            child: Icon(
+              Icons.star,
+              size: 22,
+              color: Colors.white.withValues(alpha: 0.55),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
