@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:model_viewer_plus/model_viewer_plus.dart';
 
-import '../home_event_screen.dart';
+import '../home_widgets_screen.dart';
 import '../models/character_data.dart';
 
 class MascotCarouselScreen extends StatefulWidget {
@@ -31,7 +31,7 @@ class _MascotCarouselScreenState extends State<MascotCarouselScreen> {
     CharacterSelection.selected = character;
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute<void>(builder: (_) => const HomeEventScreen()),
+      MaterialPageRoute<void>(builder: (_) => const HomeWidgetsScreen()),
     );
   }
 
