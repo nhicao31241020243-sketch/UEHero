@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_3d_controller/flutter_3d_controller.dart';
+import 'package:model_viewer_plus/model_viewer_plus.dart';
 
 import '../home_event_screen.dart';
-import '../models/mascot_model.dart';
+import '../models/character_data.dart';
 
 class MascotCarouselScreen extends StatefulWidget {
   const MascotCarouselScreen({super.key});
@@ -27,8 +27,8 @@ class _MascotCarouselScreenState extends State<MascotCarouselScreen> {
     super.dispose();
   }
 
-  void _selectMascot(Mascot mascot) {
-    MascotSelection.selected = mascot;
+  void _selectCharacter(CharacterData character) {
+    CharacterSelection.selected = character;
     Navigator.pushReplacement(
       context,
       MaterialPageRoute<void>(builder: (_) => const HomeEventScreen()),
@@ -37,21 +37,24 @@ class _MascotCarouselScreenState extends State<MascotCarouselScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final mascots = Mascot.collection;
+    final characters = characterData
+        .where((character) => character.group == 'blob')
+        .toList(growable: false);
 
     return Scaffold(
       body: AnimatedContainer(
         duration: const Duration(milliseconds: 300),
-        color: mascots[_currentIndex].primaryColor,
+        color: characters[_currentIndex].primaryColor,
         child: PageView.builder(
           controller: _pageController,
-          itemCount: mascots.length,
+          itemCount: characters.length,
           onPageChanged: (index) => setState(() => _currentIndex = index),
-          itemBuilder: (context, index) => _MascotCarouselPage(
-            mascot: mascots[index],
+          itemBuilder: (context, index) => _CharacterCarouselPage(
+            character: characters[index],
             index: index,
-            total: mascots.length,
-            onSelect: () => _selectMascot(mascots[index]),
+            total: characters.length,
+            showViewer: index == _currentIndex,
+            onSelect: () => _selectCharacter(characters[index]),
           ),
         ),
       ),
@@ -59,39 +62,23 @@ class _MascotCarouselScreenState extends State<MascotCarouselScreen> {
   }
 }
 
-class _MascotCarouselPage extends StatefulWidget {
-  const _MascotCarouselPage({
-    required this.mascot,
+class _CharacterCarouselPage extends StatelessWidget {
+  const _CharacterCarouselPage({
+    required this.character,
     required this.index,
     required this.total,
+    required this.showViewer,
     required this.onSelect,
   });
 
-  final Mascot mascot;
+  final CharacterData character;
   final int index;
   final int total;
+  final bool showViewer;
   final VoidCallback onSelect;
 
   @override
-  State<_MascotCarouselPage> createState() => _MascotCarouselPageState();
-}
-
-class _MascotCarouselPageState extends State<_MascotCarouselPage> {
-  final _controller = Flutter3DController();
-  double _loadProgress = 0;
-  bool _loaded = false;
-  bool _failed = false;
-
-  Future<void> _playFirstAnimation() async {
-    final animations = await _controller.getAvailableAnimations();
-    if (!mounted || animations.isEmpty) return;
-    _controller.playAnimation(animationName: animations.first);
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final mascot = widget.mascot;
-
     return SafeArea(
       child: LayoutBuilder(
         builder: (context, constraints) {
@@ -125,38 +112,24 @@ class _MascotCarouselPageState extends State<_MascotCarouselPage> {
                             ),
                           ),
                         ),
-                        Center(
-                          child: Text(
-                            mascot.emoji,
-                            style: const TextStyle(fontSize: 96),
-                          ),
-                        ),
-                        if (!_failed)
-                          Flutter3DViewer(
-                            src: mascot.model3dUrl,
-                            controller: _controller,
-                            enableTouch: true,
-                            activeGestureInterceptor: true,
-                            progressBarColor: Colors.transparent,
-                            onProgress: (progress) {
-                              if (mounted) {
-                                setState(() => _loadProgress = progress);
-                              }
-                            },
-                            onLoad: (_) {
-                              if (mounted) setState(() => _loaded = true);
-                              _playFirstAnimation();
-                            },
-                            onError: (_) {
-                              if (mounted) setState(() => _failed = true);
-                            },
-                          ),
-                        if (!_loaded && !_failed)
+                        if (showViewer)
+                          ModelViewer(
+                            src: character.modelPath,
+                            alt: character.name,
+                            autoPlay: true,
+                            animationName: character.animationName,
+                            autoRotate: true,
+                            autoRotateDelay: 0,
+                            cameraControls: true,
+                            disableZoom: true,
+                            backgroundColor: Colors.transparent,
+                            debugLogging: true,
+                          )
+                        else
                           Center(
-                            child: CircularProgressIndicator(
-                              value: _loadProgress > 0 ? _loadProgress : null,
-                              color: Colors.white,
-                              strokeWidth: 3,
+                            child: Text(
+                              character.emoji,
+                              style: const TextStyle(fontSize: 96),
                             ),
                           ),
                         Positioned(
@@ -187,7 +160,7 @@ class _MascotCarouselPageState extends State<_MascotCarouselPage> {
                               borderRadius: BorderRadius.circular(24),
                             ),
                             child: Text(
-                              '${widget.index + 1} / ${widget.total}',
+                              '${index + 1} / $total',
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,
@@ -225,8 +198,8 @@ class _MascotCarouselPageState extends State<_MascotCarouselPage> {
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
                           colors: [
-                            mascot.primaryColor.withValues(alpha: 0),
-                            mascot.primaryColor.withValues(alpha: 0.28),
+                            character.primaryColor.withValues(alpha: 0),
+                            character.primaryColor.withValues(alpha: 0.28),
                           ],
                         ),
                       ),
@@ -234,7 +207,7 @@ class _MascotCarouselPageState extends State<_MascotCarouselPage> {
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           Text(
-                            mascot.name.toUpperCase(),
+                            character.name.toUpperCase(),
                             textAlign: TextAlign.center,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -255,7 +228,7 @@ class _MascotCarouselPageState extends State<_MascotCarouselPage> {
                           ),
                           const SizedBox(height: 9),
                           Text(
-                            '“${mascot.title}”',
+                            '“${character.description}”',
                             textAlign: TextAlign.center,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
@@ -269,43 +242,44 @@ class _MascotCarouselPageState extends State<_MascotCarouselPage> {
                             ),
                           ),
                           const SizedBox(height: 19),
-                          SizedBox(
-                            height: 38,
-                            child: ListView.separated(
-                              scrollDirection: Axis.horizontal,
-                              shrinkWrap: true,
-                              itemCount: mascot.traits.length,
-                              separatorBuilder: (_, _) =>
-                                  const SizedBox(width: 8),
-                              itemBuilder: (context, index) => Container(
-                                alignment: Alignment.center,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 13,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.22),
-                                  borderRadius: BorderRadius.circular(24),
-                                  border: Border.all(
-                                    color: Colors.white.withValues(alpha: 0.45),
+                          Wrap(
+                            alignment: WrapAlignment.center,
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              for (final tag in character.tags)
+                                Container(
+                                  alignment: Alignment.center,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 13,
+                                    vertical: 10,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: 0.22),
+                                    borderRadius: BorderRadius.circular(24),
+                                    border: Border.all(
+                                      color: Colors.white.withValues(
+                                        alpha: 0.45,
+                                      ),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    tag,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                    ),
                                   ),
                                 ),
-                                child: Text(
-                                  mascot.traits[index],
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ),
-                            ),
+                            ],
                           ),
                           const Spacer(),
                           SizedBox(
                             width: double.infinity,
                             height: 58,
                             child: ElevatedButton(
-                              onPressed: widget.onSelect,
+                              onPressed: onSelect,
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFF30215F),
                                 foregroundColor: Colors.white,
