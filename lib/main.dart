@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'home_event_screen.dart';
+import 'screen/book_exchange_home.dart';
 
 void main() {
   runApp(const UEHeroApp());
@@ -186,7 +187,7 @@ class WelcomeScreen extends StatelessWidget {
   }
 }
 
-// Màn hình chứa Bottom Navigation Bar ghép Màn hình Sự kiện
+// Màn hình chứa Bottom Navigation Bar ghép Màn hình Sự kiện & Chợ Sách
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({Key? key}) : super(key: key);
 
@@ -199,9 +200,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   final List<Widget> _screens = [
     const HomeEventScreen(),
-    const Center(
-      child: Text("Explore Page", style: TextStyle(color: Colors.white)),
-    ),
+    BookExchangeHome(), // Tích hợp Chợ Sách & Tài Liệu làm Tab thứ 2
     const Center(
       child: Text("My List Page", style: TextStyle(color: Colors.white)),
     ),
@@ -227,7 +226,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         type: BottomNavigationBarType.fixed,
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home_filled), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Explore'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.menu_book),
+            label: 'Chợ Sách',
+          ),
           BottomNavigationBarItem(
             icon: Icon(Icons.bookmark_outline),
             label: 'My List',
