@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
@@ -19,7 +18,6 @@ class HomeWidgetsScreen extends StatefulWidget {
 class _HomeWidgetsScreenState extends State<HomeWidgetsScreen>
     with TickerProviderStateMixin {
   static const _backgroundColor = Color(0xFF100E19);
-  static const _surfaceColor = Color(0xFF211E2D);
   static const _accentColor = Color(0xFFBFA8FF);
 
   static const _features = [
@@ -67,165 +65,13 @@ class _HomeWidgetsScreenState extends State<HomeWidgetsScreen>
     ], 'assets/images/planets/neptune.png'),
   ];
 
-  static const _defaultFeed = [
-    _FeedItem(
-      eyebrow: 'SỰ KIỆN HOT',
-      title: 'Khám phá những trải nghiệm mới tại UEH',
-      subtitle: 'Sự kiện nổi bật • Cập nhật hôm nay',
-      icon: Icons.local_fire_department_rounded,
-      color: Color(0xFFFF8A75),
-      action: 'Khám phá',
-    ),
-    _FeedItem(
-      eyebrow: 'NHIỆM VỤ NỔI BẬT',
-      title: 'Hoàn thiện hồ sơ, sẵn sàng cho cơ hội mới',
-      subtitle: 'Career Map • 3 bước gợi ý',
-      icon: Icons.flag_rounded,
-      color: Color(0xFFBFA8FF),
-      action: 'Xem nhiệm vụ',
-    ),
-  ];
-
-  static const _feedByFeature = <int, List<_FeedItem>>{
-    0: [
-      _FeedItem(
-        eyebrow: 'CƠ HỘI MỚI',
-        title: 'Thực tập sinh Marketing',
-        subtitle: 'Bán thời gian • TP. Hồ Chí Minh',
-        icon: Icons.campaign_rounded,
-        color: Color(0xFFB9A2FF),
-        action: 'Xem công việc',
-      ),
-      _FeedItem(
-        eyebrow: 'ĐANG TUYỂN',
-        title: 'Thực tập sinh Phân tích kinh doanh',
-        subtitle: 'Linh hoạt • Sinh viên năm 3-4',
-        icon: Icons.query_stats_rounded,
-        color: Color(0xFF8DD8D1),
-        action: 'Tìm hiểu',
-      ),
-    ],
-    1: [
-      _FeedItem(
-        eyebrow: 'CHỢ ĐỒ CŨ',
-        title: 'Giáo trình Kinh tế vi mô',
-        subtitle: 'Sách học tập • Đăng gần đây',
-        icon: Icons.menu_book_rounded,
-        color: Color(0xFFFFC18E),
-        action: 'Xem món đồ',
-      ),
-      _FeedItem(
-        eyebrow: 'GÓC SINH VIÊN',
-        title: 'Máy tính cầm tay còn tốt',
-        subtitle: 'Đồ dùng học tập • Có thể thương lượng',
-        icon: Icons.calculate_rounded,
-        color: Color(0xFFFFD36E),
-        action: 'Xem món đồ',
-      ),
-    ],
-    2: [
-      _FeedItem(
-        eyebrow: 'CẦN HỖ TRỢ',
-        title: 'Bạn học đang cần trợ giúp môn Thống kê',
-        subtitle: 'Câu hỏi mới • Thống kê ứng dụng',
-        icon: Icons.query_stats_rounded,
-        color: Color(0xFF8DD8D1),
-        action: 'Mở trợ lý AI',
-      ),
-      _FeedItem(
-        eyebrow: 'CÙNG HỌC UEH',
-        title: 'Thảo luận bài tập Kinh tế lượng',
-        subtitle: 'Đang chờ câu trả lời từ cộng đồng',
-        icon: Icons.forum_rounded,
-        color: Color(0xFF9DBBFF),
-        action: 'Tham gia',
-      ),
-    ],
-    3: [
-      _FeedItem(
-        eyebrow: 'NHIỆM VỤ CỦA BẠN',
-        title: 'Hoàn thành bài tập nhóm',
-        subtitle: 'Hạn chót hôm nay • Học tập',
-        icon: Icons.groups_rounded,
-        color: Color(0xFFFF9EBD),
-        action: 'Cập nhật tiến độ',
-      ),
-      _FeedItem(
-        eyebrow: 'SẮP ĐẾN HẠN',
-        title: 'Ôn tập trước buổi thuyết trình',
-        subtitle: 'Còn 2 ngày • Ưu tiên cao',
-        icon: Icons.alarm_rounded,
-        color: Color(0xFFFFC18E),
-        action: 'Xem To-Do List',
-      ),
-    ],
-    4: [
-      _FeedItem(
-        eyebrow: 'MÓN HOT HÔM NAY',
-        title: 'Cơm gà sốt mật ong',
-        subtitle: 'Căn tin UEH • Gợi ý hôm nay',
-        icon: Icons.lunch_dining_rounded,
-        color: Color(0xFFFFD36E),
-        action: 'Xem thực đơn',
-      ),
-      _FeedItem(
-        eyebrow: 'ĂN NGON Ở UEH',
-        title: 'Trà đào cam sả',
-        subtitle: 'Đồ uống được yêu thích trong campus',
-        icon: Icons.local_cafe_rounded,
-        color: Color(0xFFFFA878),
-        action: 'Khám phá',
-      ),
-    ],
-    5: [
-      _FeedItem(
-        eyebrow: 'ÔN TẬP NHANH',
-        title: 'Flashcard Marketing căn bản',
-        subtitle: '12 thẻ • Ôn tập 5 phút',
-        icon: Icons.style_rounded,
-        color: Color(0xFF9DBBFF),
-        action: 'Bắt đầu học',
-      ),
-      _FeedItem(
-        eyebrow: 'GỢI Ý CHO BẠN',
-        title: 'Thuật ngữ Tài chính doanh nghiệp',
-        subtitle: '18 thẻ • Đang chờ bạn khám phá',
-        icon: Icons.auto_stories_rounded,
-        color: Color(0xFFBFA8FF),
-        action: 'Mở flashcard',
-      ),
-    ],
-    6: [
-      _FeedItem(
-        eyebrow: 'HỒ SƠ NGHỀ NGHIỆP',
-        title: 'Quét CV để nhận gợi ý hoàn thiện',
-        subtitle: 'Theo dõi tiến độ tích điểm của bạn',
-        icon: Icons.document_scanner_rounded,
-        color: Color(0xFFB7E59B),
-        action: 'Xem hồ sơ',
-      ),
-    ],
-    7: [
-      _FeedItem(
-        eyebrow: 'CAREER MAP',
-        title: 'Khám phá lộ trình nghề nghiệp phù hợp',
-        subtitle: 'Bắt đầu từ kỹ năng và mục tiêu của bạn',
-        icon: Icons.map_rounded,
-        color: Color(0xFFFFA878),
-        action: 'Mở bản đồ',
-      ),
-    ],
-  };
-
   late final AnimationController _floatController;
   late final AnimationController _planetController;
   late final Animation<double> _floatOffset;
-  late final PageController _feedPageController;
-  Timer? _feedAutoScrollTimer;
+  late final Animation<double> _ufoFloatOffset;
   final _searchController = TextEditingController();
   int _selectedTab = 0;
   int? _selectedFeatureIndex;
-  int _currentFeedPage = 0;
   String _searchQuery = '';
 
   CharacterData get _companion =>
@@ -243,26 +89,9 @@ class _HomeWidgetsScreenState extends State<HomeWidgetsScreen>
         .toList(growable: false);
   }
 
-  List<_FeedItem> get _visibleFeed {
-    final items = _selectedFeatureIndex == null
-        ? _defaultFeed
-        : _feedByFeature[_selectedFeatureIndex] ?? _defaultFeed;
-    final query = _searchQuery.trim().toLowerCase();
-    if (query.isEmpty) return items;
-    return items
-        .where(
-          (item) =>
-              item.title.toLowerCase().contains(query) ||
-              item.subtitle.toLowerCase().contains(query) ||
-              item.eyebrow.toLowerCase().contains(query),
-        )
-        .toList(growable: false);
-  }
-
   @override
   void initState() {
     super.initState();
-    _feedPageController = PageController();
     _floatController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1900),
@@ -274,65 +103,28 @@ class _HomeWidgetsScreenState extends State<HomeWidgetsScreen>
     _floatOffset = Tween<double>(begin: -5, end: 5).animate(
       CurvedAnimation(parent: _floatController, curve: Curves.easeInOut),
     );
-    _startFeedAutoScroll();
+    _ufoFloatOffset = Tween<double>(begin: -4, end: 4).animate(
+      CurvedAnimation(parent: _floatController, curve: Curves.easeInOut),
+    );
   }
 
   @override
   void dispose() {
-    _feedAutoScrollTimer?.cancel();
-    _feedPageController.dispose();
     _floatController.dispose();
     _planetController.dispose();
     _searchController.dispose();
     super.dispose();
   }
 
-  void _startFeedAutoScroll() {
-    _feedAutoScrollTimer?.cancel();
-    _feedAutoScrollTimer = Timer.periodic(const Duration(seconds: 4), (_) {
-      final pageCount = _visibleFeed.length;
-      if (!mounted || _selectedTab != 0 || pageCount < 2) return;
-      _currentFeedPage = (_currentFeedPage + 1) % pageCount;
-      _feedPageController.animateToPage(
-        _currentFeedPage,
-        duration: const Duration(milliseconds: 450),
-        curve: Curves.easeInOut,
-      );
-    });
-  }
-
-  void _resetFeedCarousel() {
-    _currentFeedPage = 0;
-    if (_feedPageController.hasClients) {
-      _feedPageController.jumpToPage(0);
-    }
-  }
-
   void _selectFeature(int index) {
     setState(() {
       _selectedFeatureIndex = index == _selectedFeatureIndex ? null : index;
-      _resetFeedCarousel();
     });
   }
 
   void _openChatbot() {
     Navigator.of(context)
         .push(MaterialPageRoute<void>(builder: (_) => const ChatbotScreen()));
-  }
-
-  void _onFeedItemTap(_FeedItem item) {
-    if (item.action == 'Mở trợ lý AI') {
-      _openChatbot();
-      return;
-    }
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text('${item.action} sẽ sớm có mặt trong UEH Hero.'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
   }
 
   @override
@@ -362,14 +154,38 @@ class _HomeWidgetsScreenState extends State<HomeWidgetsScreen>
       backgroundColor: _backgroundColor,
       body: IndexedStack(index: _selectedTab, children: tabs),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      floatingActionButton: FloatingActionButton(
-        onPressed: _openChatbot,
-        tooltip: 'Mở UEH AI Assistant',
-        backgroundColor: const Color(0xFFBFA8FF),
-        foregroundColor: const Color(0xFF201A35),
-        elevation: 8,
-        shape: const CircleBorder(),
-        child: const Text('🌍', style: TextStyle(fontSize: 27)),
+      floatingActionButton: Semantics(
+        button: true,
+        label: 'Mở UEH AI Assistant',
+        child: SizedBox(
+          width: 64,
+          height: 64,
+          child: Material(
+            color: const Color(0xFFBFA8FF),
+            elevation: 2,
+            shape: const CircleBorder(),
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              customBorder: const CircleBorder(),
+              onTap: _openChatbot,
+              child: AnimatedBuilder(
+                animation: _ufoFloatOffset,
+                child: Image.asset(
+                  'assets/images/rocket-removebg-preview.png',
+                  width: 50,
+                  height: 50,
+                  fit: BoxFit.contain,
+                  filterQuality: FilterQuality.high,
+                  semanticLabel: 'Tên lửa UEH Hero',
+                ),
+                builder: (context, child) => Transform.translate(
+                  offset: Offset(0, _ufoFloatOffset.value),
+                  child: child,
+                ),
+              ),
+            ),
+          ),
+        ),
       ),
       bottomNavigationBar: SafeArea(
         top: false,
@@ -443,9 +259,8 @@ class _HomeWidgetsScreenState extends State<HomeWidgetsScreen>
 
   Widget _buildHomeTab() {
     final screenHeight = MediaQuery.sizeOf(context).height;
-    final headerHeight = screenHeight * 0.33;
+    final headerHeight = (screenHeight * 0.66).clamp(380.0, 420.0).toDouble();
     final features = _visibleFeatures;
-    final feed = _visibleFeed;
 
     return CustomScrollView(
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
@@ -515,94 +330,6 @@ class _HomeWidgetsScreenState extends State<HomeWidgetsScreen>
             ),
           ),
         ),
-        SliverPadding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 26),
-          sliver: SliverToBoxAdapter(child: _buildFeedCarousel(feed)),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildFeedCarousel(List<_FeedItem> feed) {
-    final selected = _selectedFeatureIndex == null
-        ? 'Dành cho bạn'
-        : _features[_selectedFeatureIndex!].label;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                selected,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ),
-            if (_selectedFeatureIndex != null)
-              TextButton(
-                onPressed: () => setState(() {
-                  _selectedFeatureIndex = null;
-                  _resetFeedCarousel();
-                }),
-                child: const Text('Xóa lọc'),
-              ),
-          ],
-        ),
-        if (feed.isEmpty)
-          const SizedBox(
-            height: 150,
-            child: Center(
-              child: Text(
-                'Không có nội dung khớp từ khóa tìm kiếm.',
-                style: TextStyle(color: Color(0xFFAAA5B8)),
-                textAlign: TextAlign.center,
-              ),
-            ),
-          )
-        else ...[
-          SizedBox(
-            height: 164,
-            child: PageView.builder(
-              controller: _feedPageController,
-              itemCount: feed.length,
-              onPageChanged: (index) => setState(() {
-                _currentFeedPage = index;
-              }),
-              itemBuilder: (context, index) {
-                final item = feed[index];
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 3),
-                  child: _FeedCard(
-                    item: item,
-                    onTap: () => _onFeedItemTap(item),
-                  ),
-                );
-              },
-            ),
-          ),
-          const SizedBox(height: 11),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(feed.length, (index) {
-              final active = index == _currentFeedPage;
-              return AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
-                width: active ? 20 : 6,
-                height: 6,
-                margin: const EdgeInsets.symmetric(horizontal: 3),
-                decoration: BoxDecoration(
-                  color: active ? _accentColor : const Color(0xFF575263),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-              );
-            }),
-          ),
-        ],
       ],
     );
   }
@@ -610,6 +337,7 @@ class _HomeWidgetsScreenState extends State<HomeWidgetsScreen>
   Widget _buildGalaxyHeader(double height) {
     final topInset = MediaQuery.paddingOf(context).top;
     final companion = _companion;
+    final mascotSize = math.min(284.0, height - topInset - 99);
 
     return SizedBox(
       height: height,
@@ -683,18 +411,16 @@ class _HomeWidgetsScreenState extends State<HomeWidgetsScreen>
             ),
           ),
           Positioned.fill(
-            top: topInset + 48,
-            right: 10,
-            bottom: 69,
-            child: Align(
-              alignment: Alignment.centerRight,
-              child: TickerMode(
-                enabled: _selectedTab == 0,
+            top: topInset + 32,
+            bottom: 67,
+            child: TickerMode(
+              enabled: _selectedTab == 0,
+              child: Center(
                 child: AnimatedBuilder(
                   animation: _floatOffset,
                   child: SizedBox(
-                    width: 142,
-                    height: 142,
+                    width: mascotSize,
+                    height: mascotSize,
                     child: ModelViewer(
                       key: ValueKey(companion.modelPath),
                       src: companion.modelPath,
@@ -710,7 +436,7 @@ class _HomeWidgetsScreenState extends State<HomeWidgetsScreen>
                     ),
                   ),
                   builder: (context, child) => Transform.translate(
-                    offset: Offset(0, _floatOffset.value + 20),
+                    offset: Offset(0, _floatOffset.value),
                     child: child,
                   ),
                 ),
@@ -718,9 +444,9 @@ class _HomeWidgetsScreenState extends State<HomeWidgetsScreen>
             ),
           ),
           Positioned(
-            top: topInset + 47,
-            left: 17,
-            child: _SpeechBubble(text: 'Chào bạn! Cùng khám phá UEH nhé! 🚀'),
+            top: topInset + 52,
+            left: 12,
+            child: const _SpeechBubble(),
           ),
           Positioned(
             left: 16,
@@ -750,7 +476,6 @@ class _HomeWidgetsScreenState extends State<HomeWidgetsScreen>
             onChanged: (value) => setState(() {
               _searchQuery = value;
               if (value.isNotEmpty) _selectedFeatureIndex = null;
-              _resetFeedCarousel();
             }),
             style: const TextStyle(color: Colors.white, fontSize: 13),
             textInputAction: TextInputAction.search,
@@ -777,7 +502,6 @@ class _HomeWidgetsScreenState extends State<HomeWidgetsScreen>
                         _searchController.clear();
                         setState(() {
                           _searchQuery = '';
-                          _resetFeedCarousel();
                         });
                       },
                       icon: const Icon(
@@ -839,44 +563,20 @@ class _HomeWidgetsScreenState extends State<HomeWidgetsScreen>
 }
 
 class _SpeechBubble extends StatelessWidget {
-  const _SpeechBubble({required this.text});
-
-  final String text;
+  const _SpeechBubble();
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(16),
-      child: BackdropFilter(
-        filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-        child: Container(
-          width: 165,
-          padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 9),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.16),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x22000000),
-                blurRadius: 12,
-                offset: Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Text(
-            text,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 11,
-              height: 1.3,
-              fontWeight: FontWeight.w800,
-              shadows: [
-                Shadow(color: Color(0xCC070311), blurRadius: 10),
-                Shadow(color: Color(0xAA9C77FF), blurRadius: 15),
-              ],
-            ),
-          ),
+    return const SizedBox(
+      width: 125,
+      child: Text(
+        'Chào bạn!\nKhám phá UEH nhé! 🚀',
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: 12,
+          height: 1.3,
+          fontWeight: FontWeight.bold,
+          shadows: [Shadow(color: Color(0xCC100E19), blurRadius: 5)],
         ),
       ),
     );
@@ -1013,116 +713,6 @@ class _PlanetButton extends StatelessWidget {
   }
 }
 
-class _FeedCard extends StatelessWidget {
-  const _FeedCard({required this.item, required this.onTap});
-
-  final _FeedItem item;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: _HomeWidgetsScreenState._surfaceColor,
-      borderRadius: BorderRadius.circular(21),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(21),
-        child: Container(
-          constraints: const BoxConstraints(minHeight: 142),
-          padding: const EdgeInsets.all(17),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(21),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                item.color.withValues(alpha: 0.2),
-                _HomeWidgetsScreenState._surfaceColor,
-              ],
-            ),
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      item.eyebrow,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: item.color,
-                        fontSize: 9,
-                        letterSpacing: 1,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    const SizedBox(height: 7),
-                    Text(
-                      item.title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        height: 1.2,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 5),
-                    Text(
-                      item.subtitle,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Color(0xFFBEB9C8),
-                        fontSize: 11,
-                        height: 1.25,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Row(
-                      children: [
-                        Text(
-                          item.action,
-                          style: TextStyle(
-                            color: item.color,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        Icon(
-                          Icons.arrow_forward_rounded,
-                          color: item.color,
-                          size: 14,
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 13),
-              Container(
-                width: 58,
-                height: 58,
-                decoration: BoxDecoration(
-                  color: item.color.withValues(alpha: 0.18),
-                  borderRadius: BorderRadius.circular(18),
-                ),
-                child: Icon(item.icon, color: item.color, size: 29),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _GalaxyWaveClipper extends CustomClipper<Path> {
   @override
   Path getClip(Size size) {
@@ -1159,22 +749,4 @@ class _DashboardFeature {
   final Color color;
   final List<Color> gradientColors;
   final String imagePath;
-}
-
-class _FeedItem {
-  const _FeedItem({
-    required this.eyebrow,
-    required this.title,
-    required this.subtitle,
-    required this.icon,
-    required this.color,
-    required this.action,
-  });
-
-  final String eyebrow;
-  final String title;
-  final String subtitle;
-  final IconData icon;
-  final Color color;
-  final String action;
 }
