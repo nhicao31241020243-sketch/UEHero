@@ -1,6 +1,13 @@
-import 'package:flutter/material.dart';
+import 'dart:async';
+import 'dart:math' as math;
+import 'dart:ui' as ui;
 
+import 'package:flutter/material.dart';
+import 'package:model_viewer_plus/model_viewer_plus.dart';
+
+import 'home_event_screen.dart';
 import 'models/character_data.dart';
+import 'screens/chatbot_screen.dart';
 
 class HomeWidgetsScreen extends StatefulWidget {
   const HomeWidgetsScreen({super.key});
@@ -9,609 +16,1088 @@ class HomeWidgetsScreen extends StatefulWidget {
   State<HomeWidgetsScreen> createState() => _HomeWidgetsScreenState();
 }
 
-class _HomeWidgetsScreenState extends State<HomeWidgetsScreen> {
-  static const _backgroundColor = Color(0xFF0D0C13);
-  static const _surfaceColor = Color(0xFF1A1824);
-  static const _accentColor = Color(0xFF9A78FF);
-  static const _backgroundImageUrl =
-      'https://i.pinimg.com/736x/3d/87/97/3d8797deef62a5812b394ea3a1a762a0.jpg';
+class _HomeWidgetsScreenState extends State<HomeWidgetsScreen>
+    with TickerProviderStateMixin {
+  static const _backgroundColor = Color(0xFF100E19);
+  static const _surfaceColor = Color(0xFF211E2D);
+  static const _accentColor = Color(0xFFBFA8FF);
 
-  static const _categories = [
-    _EventCategory('Tất cả', Icons.grid_view_rounded),
-    _EventCategory('Âm nhạc', Icons.music_note_rounded),
-    _EventCategory('Hội thảo', Icons.lightbulb_outline_rounded),
-    _EventCategory('Sân khấu', Icons.theater_comedy_rounded),
-    _EventCategory('Thể thao', Icons.sports_basketball_rounded),
+  static const _features = [
+    _DashboardFeature('Sao Thủy', 'Xem Job sinh viên', Color(0xFFB9A2FF), [
+      Color(0xFFEEE6FF),
+      Color(0xFFA98DFF),
+      Color(0xFF5033A8),
+    ], 'assets/images/planets/mercury.png'),
+    _DashboardFeature('Sao Kim', 'Chợ đồ cũ', Color(0xFFFFC18E), [
+      Color(0xFFFFE7C9),
+      Color(0xFFFFB56F),
+      Color(0xFFB35445),
+    ], 'assets/images/planets/venus.png'),
+    _DashboardFeature('Trái Đất', 'Hỏi bài', Color(0xFF8DD8D1), [
+      Color(0xFFB3F4DF),
+      Color(0xFF55BFA6),
+      Color(0xFF246E82),
+    ], 'assets/images/planets/earth.png'),
+    _DashboardFeature('Sao Hỏa', 'To-Do List', Color(0xFFFF9EBD), [
+      Color(0xFFFFC19E),
+      Color(0xFFFF704E),
+      Color(0xFF9B263D),
+    ], 'assets/images/planets/mars.png'),
+    _DashboardFeature('Sao Mộc', 'Đồ ăn Căn tin', Color(0xFFFFD36E), [
+      Color(0xFFFFE8A1),
+      Color(0xFFE6A83F),
+      Color(0xFF8F4C2C),
+    ], 'assets/images/planets/jupiter.png'),
+    _DashboardFeature('Sao Thổ', 'Flashcard', Color(0xFF9DBBFF), [
+      Color(0xFFFFE6A2),
+      Color(0xFFCC9F55),
+      Color(0xFF704A56),
+    ], 'assets/images/planets/saturn.png'),
+    _DashboardFeature(
+      'Sao Thiên Vương',
+      'Quét & tích điểm CV',
+      Color(0xFFB7E59B),
+      [Color(0xFFD8FFF4), Color(0xFF73D7CF), Color(0xFF287AA3)],
+      'assets/images/planets/uranus.png',
+    ),
+    _DashboardFeature('Sao Hải Vương', 'Career Map', Color(0xFFFFA878), [
+      Color(0xFF90E8FF),
+      Color(0xFF278BFF),
+      Color(0xFF2430A8),
+    ], 'assets/images/planets/neptune.png'),
   ];
 
-  static const _events = [
-    _FeaturedEvent(
-      title: 'CHUYỆN SÀI GÒN: GÁNH SHOW',
-      organizer: '4ll-In Performance Art',
-      category: 'Sân khấu',
-      date: '20 THÁNG 10',
-      icon: Icons.theater_comedy_rounded,
-      colors: [Color(0xFFB3264A), Color(0xFF38162F)],
+  static const _defaultFeed = [
+    _FeedItem(
+      eyebrow: 'SỰ KIỆN HOT',
+      title: 'Khám phá những trải nghiệm mới tại UEH',
+      subtitle: 'Sự kiện nổi bật • Cập nhật hôm nay',
+      icon: Icons.local_fire_department_rounded,
+      color: Color(0xFFFF8A75),
+      action: 'Khám phá',
     ),
-    _FeaturedEvent(
-      title: 'PERSPECTIVES 2027',
-      organizer: 'Robb Report Vietnam',
-      category: 'Hội thảo',
-      date: '25 THÁNG 10',
-      icon: Icons.lightbulb_outline_rounded,
-      colors: [Color(0xFF176B87), Color(0xFF172541)],
-    ),
-    _FeaturedEvent(
-      title: '1T SUMMIT — THE NEW RACE',
-      organizer: 'Vietnam Vanguard',
-      category: 'Công nghệ',
-      date: '02 THÁNG 11',
-      icon: Icons.rocket_launch_rounded,
-      colors: [Color(0xFF8752A1), Color(0xFF302044)],
-    ),
-    _FeaturedEvent(
-      title: 'SAIGON MUSIC WEEK',
-      organizer: 'UEH Music Club',
-      category: 'Âm nhạc',
-      date: '08 THÁNG 11',
-      icon: Icons.graphic_eq_rounded,
-      colors: [Color(0xFFD36B34), Color(0xFF492333)],
-    ),
-    _FeaturedEvent(
-      title: 'GREEN CAMPUS DAY',
-      organizer: 'UEH Green Campus',
-      category: 'Cộng đồng',
-      date: '12 THÁNG 11',
-      icon: Icons.eco_rounded,
-      colors: [Color(0xFF34836E), Color(0xFF173A42)],
-    ),
-    _FeaturedEvent(
-      title: 'STARTUP LAUNCHPAD',
-      organizer: 'UEH Innovation',
-      category: 'Khởi nghiệp',
-      date: '18 THÁNG 11',
-      icon: Icons.rocket_launch_rounded,
-      colors: [Color(0xFFB48B35), Color(0xFF443020)],
+    _FeedItem(
+      eyebrow: 'NHIỆM VỤ NỔI BẬT',
+      title: 'Hoàn thiện hồ sơ, sẵn sàng cho cơ hội mới',
+      subtitle: 'Career Map • 3 bước gợi ý',
+      icon: Icons.flag_rounded,
+      color: Color(0xFFBFA8FF),
+      action: 'Xem nhiệm vụ',
     ),
   ];
 
+  static const _feedByFeature = <int, List<_FeedItem>>{
+    0: [
+      _FeedItem(
+        eyebrow: 'CƠ HỘI MỚI',
+        title: 'Thực tập sinh Marketing',
+        subtitle: 'Bán thời gian • TP. Hồ Chí Minh',
+        icon: Icons.campaign_rounded,
+        color: Color(0xFFB9A2FF),
+        action: 'Xem công việc',
+      ),
+      _FeedItem(
+        eyebrow: 'ĐANG TUYỂN',
+        title: 'Thực tập sinh Phân tích kinh doanh',
+        subtitle: 'Linh hoạt • Sinh viên năm 3-4',
+        icon: Icons.query_stats_rounded,
+        color: Color(0xFF8DD8D1),
+        action: 'Tìm hiểu',
+      ),
+    ],
+    1: [
+      _FeedItem(
+        eyebrow: 'CHỢ ĐỒ CŨ',
+        title: 'Giáo trình Kinh tế vi mô',
+        subtitle: 'Sách học tập • Đăng gần đây',
+        icon: Icons.menu_book_rounded,
+        color: Color(0xFFFFC18E),
+        action: 'Xem món đồ',
+      ),
+      _FeedItem(
+        eyebrow: 'GÓC SINH VIÊN',
+        title: 'Máy tính cầm tay còn tốt',
+        subtitle: 'Đồ dùng học tập • Có thể thương lượng',
+        icon: Icons.calculate_rounded,
+        color: Color(0xFFFFD36E),
+        action: 'Xem món đồ',
+      ),
+    ],
+    2: [
+      _FeedItem(
+        eyebrow: 'CẦN HỖ TRỢ',
+        title: 'Bạn học đang cần trợ giúp môn Thống kê',
+        subtitle: 'Câu hỏi mới • Thống kê ứng dụng',
+        icon: Icons.query_stats_rounded,
+        color: Color(0xFF8DD8D1),
+        action: 'Mở trợ lý AI',
+      ),
+      _FeedItem(
+        eyebrow: 'CÙNG HỌC UEH',
+        title: 'Thảo luận bài tập Kinh tế lượng',
+        subtitle: 'Đang chờ câu trả lời từ cộng đồng',
+        icon: Icons.forum_rounded,
+        color: Color(0xFF9DBBFF),
+        action: 'Tham gia',
+      ),
+    ],
+    3: [
+      _FeedItem(
+        eyebrow: 'NHIỆM VỤ CỦA BẠN',
+        title: 'Hoàn thành bài tập nhóm',
+        subtitle: 'Hạn chót hôm nay • Học tập',
+        icon: Icons.groups_rounded,
+        color: Color(0xFFFF9EBD),
+        action: 'Cập nhật tiến độ',
+      ),
+      _FeedItem(
+        eyebrow: 'SẮP ĐẾN HẠN',
+        title: 'Ôn tập trước buổi thuyết trình',
+        subtitle: 'Còn 2 ngày • Ưu tiên cao',
+        icon: Icons.alarm_rounded,
+        color: Color(0xFFFFC18E),
+        action: 'Xem To-Do List',
+      ),
+    ],
+    4: [
+      _FeedItem(
+        eyebrow: 'MÓN HOT HÔM NAY',
+        title: 'Cơm gà sốt mật ong',
+        subtitle: 'Căn tin UEH • Gợi ý hôm nay',
+        icon: Icons.lunch_dining_rounded,
+        color: Color(0xFFFFD36E),
+        action: 'Xem thực đơn',
+      ),
+      _FeedItem(
+        eyebrow: 'ĂN NGON Ở UEH',
+        title: 'Trà đào cam sả',
+        subtitle: 'Đồ uống được yêu thích trong campus',
+        icon: Icons.local_cafe_rounded,
+        color: Color(0xFFFFA878),
+        action: 'Khám phá',
+      ),
+    ],
+    5: [
+      _FeedItem(
+        eyebrow: 'ÔN TẬP NHANH',
+        title: 'Flashcard Marketing căn bản',
+        subtitle: '12 thẻ • Ôn tập 5 phút',
+        icon: Icons.style_rounded,
+        color: Color(0xFF9DBBFF),
+        action: 'Bắt đầu học',
+      ),
+      _FeedItem(
+        eyebrow: 'GỢI Ý CHO BẠN',
+        title: 'Thuật ngữ Tài chính doanh nghiệp',
+        subtitle: '18 thẻ • Đang chờ bạn khám phá',
+        icon: Icons.auto_stories_rounded,
+        color: Color(0xFFBFA8FF),
+        action: 'Mở flashcard',
+      ),
+    ],
+    6: [
+      _FeedItem(
+        eyebrow: 'HỒ SƠ NGHỀ NGHIỆP',
+        title: 'Quét CV để nhận gợi ý hoàn thiện',
+        subtitle: 'Theo dõi tiến độ tích điểm của bạn',
+        icon: Icons.document_scanner_rounded,
+        color: Color(0xFFB7E59B),
+        action: 'Xem hồ sơ',
+      ),
+    ],
+    7: [
+      _FeedItem(
+        eyebrow: 'CAREER MAP',
+        title: 'Khám phá lộ trình nghề nghiệp phù hợp',
+        subtitle: 'Bắt đầu từ kỹ năng và mục tiêu của bạn',
+        icon: Icons.map_rounded,
+        color: Color(0xFFFFA878),
+        action: 'Mở bản đồ',
+      ),
+    ],
+  };
+
+  late final AnimationController _floatController;
+  late final AnimationController _planetController;
+  late final Animation<double> _floatOffset;
+  late final PageController _feedPageController;
+  Timer? _feedAutoScrollTimer;
   final _searchController = TextEditingController();
-  final _eventsSearchController = TextEditingController();
   int _selectedTab = 0;
-  int _selectedCategory = 0;
+  int? _selectedFeatureIndex;
+  int _currentFeedPage = 0;
   String _searchQuery = '';
 
   CharacterData get _companion =>
       CharacterSelection.selected ?? characterData.first;
 
-  List<_FeaturedEvent> get _filteredEvents {
-    final category = _categories[_selectedCategory].label;
-    return _events
-        .where((event) {
-          final matchesCategory =
-              category == 'Tất cả' || event.category == category;
-          final query = _searchQuery.trim().toLowerCase();
-          final matchesSearch =
-              query.isEmpty ||
-              event.title.toLowerCase().contains(query) ||
-              event.organizer.toLowerCase().contains(query) ||
-              event.category.toLowerCase().contains(query);
-          return matchesCategory && matchesSearch;
-        })
+  List<_DashboardFeature> get _visibleFeatures {
+    final query = _searchQuery.trim().toLowerCase();
+    if (query.isEmpty) return _features;
+    return _features
+        .where(
+          (feature) =>
+              feature.planet.toLowerCase().contains(query) ||
+              feature.label.toLowerCase().contains(query),
+        )
+        .toList(growable: false);
+  }
+
+  List<_FeedItem> get _visibleFeed {
+    final items = _selectedFeatureIndex == null
+        ? _defaultFeed
+        : _feedByFeature[_selectedFeatureIndex] ?? _defaultFeed;
+    final query = _searchQuery.trim().toLowerCase();
+    if (query.isEmpty) return items;
+    return items
+        .where(
+          (item) =>
+              item.title.toLowerCase().contains(query) ||
+              item.subtitle.toLowerCase().contains(query) ||
+              item.eyebrow.toLowerCase().contains(query),
+        )
         .toList(growable: false);
   }
 
   @override
+  void initState() {
+    super.initState();
+    _feedPageController = PageController();
+    _floatController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1900),
+    )..repeat(reverse: true);
+    _planetController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 16),
+    )..repeat();
+    _floatOffset = Tween<double>(begin: -5, end: 5).animate(
+      CurvedAnimation(parent: _floatController, curve: Curves.easeInOut),
+    );
+    _startFeedAutoScroll();
+  }
+
+  @override
   void dispose() {
+    _feedAutoScrollTimer?.cancel();
+    _feedPageController.dispose();
+    _floatController.dispose();
+    _planetController.dispose();
     _searchController.dispose();
-    _eventsSearchController.dispose();
     super.dispose();
+  }
+
+  void _startFeedAutoScroll() {
+    _feedAutoScrollTimer?.cancel();
+    _feedAutoScrollTimer = Timer.periodic(const Duration(seconds: 4), (_) {
+      final pageCount = _visibleFeed.length;
+      if (!mounted || _selectedTab != 0 || pageCount < 2) return;
+      _currentFeedPage = (_currentFeedPage + 1) % pageCount;
+      _feedPageController.animateToPage(
+        _currentFeedPage,
+        duration: const Duration(milliseconds: 450),
+        curve: Curves.easeInOut,
+      );
+    });
+  }
+
+  void _resetFeedCarousel() {
+    _currentFeedPage = 0;
+    if (_feedPageController.hasClients) {
+      _feedPageController.jumpToPage(0);
+    }
+  }
+
+  void _selectFeature(int index) {
+    setState(() {
+      _selectedFeatureIndex = index == _selectedFeatureIndex ? null : index;
+      _resetFeedCarousel();
+    });
+  }
+
+  void _openChatbot() {
+    Navigator.of(context)
+        .push(MaterialPageRoute<void>(builder: (_) => const ChatbotScreen()));
+  }
+
+  void _onFeedItemTap(_FeedItem item) {
+    if (item.action == 'Mở trợ lý AI') {
+      _openChatbot();
+      return;
+    }
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text('${item.action} sẽ sớm có mặt trong UEH Hero.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
   }
 
   @override
   Widget build(BuildContext context) {
+    final tabs = [
+      _buildHomeTab(),
+      const HomeEventScreen(),
+      _buildInfoTab(
+        icon: Icons.map_rounded,
+        title: 'Bản đồ 3D UEH',
+        description: 'Khám phá các cơ sở và không gian học tập UEH.',
+      ),
+      _buildInfoTab(
+        icon: Icons.calculate_rounded,
+        title: 'Tính toán GPA',
+        description: 'Theo dõi kết quả học tập và mục tiêu GPA của bạn.',
+      ),
+      _buildInfoTab(
+        icon: Icons.account_circle_rounded,
+        title: 'Hồ sơ của bạn',
+        description:
+            'Linh vật ${_companion.name} luôn sẵn sàng đồng hành cùng bạn.',
+      ),
+    ];
+
     return Scaffold(
       backgroundColor: _backgroundColor,
-      body: Container(
-        decoration: const BoxDecoration(
-          image: DecorationImage(
-            image: NetworkImage(_backgroundImageUrl),
-            fit: BoxFit.cover,
-          ),
-        ),
-        child: SafeArea(
-          bottom: false,
-          child: IndexedStack(
-            index: _selectedTab,
-            children: [
-              _buildHomeTab(),
-              _buildEventsTab(),
-              _buildSimpleTab(
-                icon: Icons.card_giftcard_rounded,
-                title: 'Đổi quà cùng UEH Hero',
-                description: 'Khám phá ưu đãi và phần quà dành riêng cho những sự kiện bạn yêu thích.',
-                actionLabel: 'Khám phá sự kiện',
-                onAction: () => setState(() => _selectedTab = 1),
-              ),
-              _buildSimpleTab(
-                icon: Icons.account_circle_rounded,
-                title: 'Hồ sơ của bạn',
-                description:
-                    'Linh vật ${_companion.name} luôn sẵn sàng đồng hành trong mỗi hành trình.',
-                actionLabel: 'Về trang chủ',
-                onAction: () => setState(() => _selectedTab = 0),
-              ),
-            ],
-          ),
-        ),
+      body: IndexedStack(index: _selectedTab, children: tabs),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      floatingActionButton: FloatingActionButton(
+        onPressed: _openChatbot,
+        tooltip: 'Mở UEH AI Assistant',
+        backgroundColor: const Color(0xFFBFA8FF),
+        foregroundColor: const Color(0xFF201A35),
+        elevation: 8,
+        shape: const CircleBorder(),
+        child: const Text('🌍', style: TextStyle(fontSize: 27)),
       ),
-      bottomNavigationBar: NavigationBar(
-        backgroundColor: const Color(0xFF15131D),
-        indicatorColor: _accentColor.withValues(alpha: 0.22),
-        selectedIndex: _selectedTab,
-        onDestinationSelected: (index) => setState(() => _selectedTab = index),
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home_rounded),
-            label: 'Home',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.confirmation_num_outlined),
-            selectedIcon: Icon(Icons.confirmation_num_rounded),
-            label: 'Events',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.card_giftcard_outlined),
-            selectedIcon: Icon(Icons.card_giftcard_rounded),
-            label: 'Rewards',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.person_outline_rounded),
-            selectedIcon: Icon(Icons.person_rounded),
-            label: 'Profile',
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHomeTab() {
-    final companion = _companion;
-
-    return CustomScrollView(
-      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-      slivers: [
-        SliverPadding(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
-          sliver: SliverList(
-            delegate: SliverChildListDelegate([
-              _buildTopBar(),
-              const SizedBox(height: 22),
-              _buildSearchField(_searchController),
-              const SizedBox(height: 20),
-              _buildCompanionBanner(companion),
-              const SizedBox(height: 28),
-              _buildSectionHeading('Khám phá theo sở thích', 'Xem tất cả'),
-              const SizedBox(height: 14),
-              _buildCategoryRail(),
-              const SizedBox(height: 28),
-              _buildOfferCard(),
-              const SizedBox(height: 28),
-              _buildSectionHeading('Sự kiện nổi bật', 'Xem tất cả'),
-              const SizedBox(height: 14),
-              _buildFeaturedEvents(),
-              const SizedBox(height: 20),
-            ]),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTopBar() {
-    return Row(
-      children: [
-        Container(
-          width: 46,
-          height: 46,
-          decoration: BoxDecoration(
-            color: _accentColor.withValues(alpha: 0.16),
-            borderRadius: BorderRadius.circular(15),
-          ),
-          child: const Icon(
-            Icons.auto_awesome_rounded,
-            color: _accentColor,
-            size: 25,
-          ),
-        ),
-        const SizedBox(width: 12),
-        const Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: BottomAppBar(
+          height: 68,
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 5),
+          color: const Color(0xFF191622),
+          elevation: 16,
+          shape: const CircularNotchedRectangle(),
+          notchMargin: 7,
+          child: Row(
             children: [
-              Text(
-                'UEH HERO',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 17,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 1,
+              Expanded(
+                child: _buildNavButton(
+                  1,
+                  Icons.calendar_month_rounded,
+                  'Events',
                 ),
               ),
-              SizedBox(height: 3),
-              Row(
-                children: [
-                  Icon(
-                    Icons.location_on_rounded,
-                    color: _accentColor,
-                    size: 13,
-                  ),
-                  SizedBox(width: 3),
-                  Text(
-                    'TP. Hồ Chí Minh',
-                    style: TextStyle(color: Color(0xFFAAA6B8), fontSize: 12),
-                  ),
-                ],
+              Expanded(child: _buildNavButton(2, Icons.map_rounded, '3D Map')),
+              const SizedBox(width: 58),
+              Expanded(
+                child: _buildNavButton(3, Icons.calculate_rounded, 'GPA Calc'),
+              ),
+              Expanded(
+                child: _buildNavButton(4, Icons.person_rounded, 'Profile'),
               ),
             ],
           ),
         ),
-        IconButton(
-          tooltip: 'Thông báo',
-          onPressed: () {},
-          icon: const Icon(
-            Icons.notifications_none_rounded,
-            color: Colors.white,
-            size: 25,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSearchField(TextEditingController controller) {
-    return Container(
-      height: 54,
-      decoration: BoxDecoration(
-        color: _surfaceColor,
-        borderRadius: BorderRadius.circular(17),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
-      ),
-      child: TextField(
-        controller: controller,
-        onChanged: (value) => setState(() => _searchQuery = value),
-        style: const TextStyle(color: Colors.white, fontSize: 14),
-        textInputAction: TextInputAction.search,
-        decoration: InputDecoration(
-          hintText: 'Tìm sự kiện, hoạt động...',
-          hintStyle: const TextStyle(color: Color(0xFF807B8C), fontSize: 14),
-          prefixIcon: const Icon(
-            Icons.search_rounded,
-            color: _accentColor,
-            size: 22,
-          ),
-          suffixIcon: IconButton(
-            tooltip: 'Chọn địa điểm',
-            onPressed: () {},
-            icon: const Icon(
-              Icons.tune_rounded,
-              color: Color(0xFFA9A4B5),
-              size: 20,
-            ),
-          ),
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(vertical: 17),
-        ),
       ),
     );
   }
 
-  Widget _buildCompanionBanner(CharacterData companion) {
-    return Container(
-      constraints: const BoxConstraints(minHeight: 174),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(25),
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF38286D), Color(0xFF211B3D), Color(0xFF1B1930)],
-        ),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-        boxShadow: [
-          BoxShadow(
-            color: _accentColor.withValues(alpha: 0.12),
-            blurRadius: 24,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Stack(
-        children: [
-          Positioned(
-            right: -34,
-            top: -52,
-            child: Container(
-              width: 155,
-              height: 155,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withValues(alpha: 0.045),
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(19, 19, 14, 18),
-            child: Row(
+  Widget _buildNavButton(int index, IconData icon, String label) {
+    final selected = _selectedTab == index;
+    final color = selected ? _accentColor : const Color(0xFF928DA0);
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: label,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: () => setState(() => _selectedTab = index),
+        child: SizedBox(
+          height: 54,
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text(
-                        'CHÀO MỪNG BẠN TRỞ LẠI',
-                        style: TextStyle(
-                          color: Color(0xFFC8B9FF),
-                          fontSize: 10,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 1.1,
-                        ),
-                      ),
-                      const SizedBox(height: 7),
-                      Text(
-                        companion.name,
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 17,
-                          height: 1.2,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      const SizedBox(height: 3),
-                      const Text(
-                        'đang đồng hành cùng bạn 🚀',
-                        style: TextStyle(
-                          color: Color(0xFFE7E2F4),
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 11,
-                          vertical: 9,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(13),
-                        ),
-                        child: const Text(
-                          'Hãy chọn sự kiện bên dưới để bắt đầu hành trình nhé! ✨',
-                          style: TextStyle(
-                            color: Color(0xFFE7E2F4),
-                            fontSize: 11,
-                            height: 1.35,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 5),
-                SizedBox(
-                  width: 91,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        width: 78,
-                        height: 78,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: companion.primaryColor.withValues(alpha: 0.2),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.3),
-                            width: 1.5,
-                          ),
-                        ),
-                        child: Center(
-                          child: Text(
-                            companion.emoji,
-                            style: const TextStyle(fontSize: 42),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 7),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 9,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: const Text(
-                          'CÙNG BẠN',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 8,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0.4,
-                          ),
-                        ),
-                      ),
-                    ],
+                Icon(icon, color: color, size: 21),
+                const SizedBox(height: 2),
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 9,
+                    height: 1,
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
                   ),
                 ),
               ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildSectionHeading(String title, String action) {
-    return Row(
-      children: [
-        Expanded(
-          child: Text(
-            title,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 17,
-              fontWeight: FontWeight.w800,
+  Widget _buildHomeTab() {
+    final screenHeight = MediaQuery.sizeOf(context).height;
+    final headerHeight = screenHeight * 0.33;
+    final features = _visibleFeatures;
+    final feed = _visibleFeed;
+
+    return CustomScrollView(
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+      slivers: [
+        SliverToBoxAdapter(child: _buildGalaxyHeader(headerHeight)),
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 7),
+          sliver: SliverToBoxAdapter(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Expanded(
+                      child: Text(
+                        'Khám phá UEH',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      '${features.length} hành tinh',
+                      style: const TextStyle(
+                        color: Color(0xFFAAA5B8),
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 11),
+                if (features.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 24),
+                    child: Text(
+                      'Không tìm thấy tính năng phù hợp.',
+                      style: TextStyle(color: Color(0xFFAAA5B8)),
+                    ),
+                  )
+                else
+                  GridView.builder(
+                    itemCount: features.length,
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                          childAspectRatio: 1,
+                        ),
+                    itemBuilder: (context, index) {
+                      final feature = features[index];
+                      final featureIndex = _features.indexOf(feature);
+                      return _PlanetButton(
+                        feature: feature,
+                        selected: featureIndex == _selectedFeatureIndex,
+                        rotation: _planetController,
+                        phase: featureIndex * 0.8,
+                        onTap: () => _selectFeature(featureIndex),
+                      );
+                    },
+                  ),
+              ],
             ),
           ),
         ),
-        TextButton(
-          onPressed: () => setState(() => _selectedTab = 1),
-          style: TextButton.styleFrom(
-            foregroundColor: const Color(0xFFB8A5FF),
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-          ),
-          child: Text(action, style: const TextStyle(fontSize: 12)),
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 26),
+          sliver: SliverToBoxAdapter(child: _buildFeedCarousel(feed)),
         ),
       ],
     );
   }
 
-  Widget _buildCategoryRail() {
-    return SizedBox(
-      height: 91,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: _categories.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 12),
-        itemBuilder: (context, index) {
-          final category = _categories[index];
-          final selected = index == _selectedCategory;
-          return GestureDetector(
-            onTap: () => setState(() => _selectedCategory = index),
-            child: SizedBox(
-              width: 70,
-              child: Column(
-                children: [
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 180),
-                    width: 58,
-                    height: 58,
-                    decoration: BoxDecoration(
-                      color: selected ? _accentColor : _surfaceColor,
-                      borderRadius: BorderRadius.circular(19),
-                      border: Border.all(
-                        color: selected
-                            ? _accentColor
-                            : Colors.white.withValues(alpha: 0.06),
-                      ),
-                    ),
-                    child: Icon(
-                      category.icon,
-                      color: selected ? Colors.white : const Color(0xFFB7B2C3),
-                      size: 23,
-                    ),
-                  ),
-                  const SizedBox(height: 7),
-                  Text(
-                    category.label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: selected ? Colors.white : const Color(0xFFAAA6B8),
-                      fontSize: 10,
-                      fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                    ),
-                  ),
-                ],
+  Widget _buildFeedCarousel(List<_FeedItem> feed) {
+    final selected = _selectedFeatureIndex == null
+        ? 'Dành cho bạn'
+        : _features[_selectedFeatureIndex!].label;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                selected,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
             ),
-          );
-        },
+            if (_selectedFeatureIndex != null)
+              TextButton(
+                onPressed: () => setState(() {
+                  _selectedFeatureIndex = null;
+                  _resetFeedCarousel();
+                }),
+                child: const Text('Xóa lọc'),
+              ),
+          ],
+        ),
+        if (feed.isEmpty)
+          const SizedBox(
+            height: 150,
+            child: Center(
+              child: Text(
+                'Không có nội dung khớp từ khóa tìm kiếm.',
+                style: TextStyle(color: Color(0xFFAAA5B8)),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          )
+        else ...[
+          SizedBox(
+            height: 164,
+            child: PageView.builder(
+              controller: _feedPageController,
+              itemCount: feed.length,
+              onPageChanged: (index) => setState(() {
+                _currentFeedPage = index;
+              }),
+              itemBuilder: (context, index) {
+                final item = feed[index];
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 3),
+                  child: _FeedCard(
+                    item: item,
+                    onTap: () => _onFeedItemTap(item),
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 11),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(feed.length, (index) {
+              final active = index == _currentFeedPage;
+              return AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                width: active ? 20 : 6,
+                height: 6,
+                margin: const EdgeInsets.symmetric(horizontal: 3),
+                decoration: BoxDecoration(
+                  color: active ? _accentColor : const Color(0xFF575263),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              );
+            }),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildGalaxyHeader(double height) {
+    final topInset = MediaQuery.paddingOf(context).top;
+    final companion = _companion;
+
+    return SizedBox(
+      height: height,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          ClipPath(
+            clipper: _GalaxyWaveClipper(),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                Image.asset(
+                  'assets/images/welcome_bg.jpg',
+                  fit: BoxFit.cover,
+                  alignment: Alignment.topCenter,
+                ),
+                const DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Color(0x660B0718),
+                        Color(0x33130D23),
+                        Color(0xCC100E19),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Positioned(
+            top: topInset + 8,
+            left: 20,
+            right: 20,
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.auto_awesome_rounded,
+                  color: _accentColor,
+                  size: 23,
+                ),
+                const SizedBox(width: 8),
+                const Text(
+                  'UEH HERO',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    letterSpacing: 1.4,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  'TP. HỒ CHÍ MINH',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.82),
+                    fontSize: 9,
+                    letterSpacing: 0.7,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                const Icon(
+                  Icons.location_on_rounded,
+                  color: _accentColor,
+                  size: 15,
+                ),
+              ],
+            ),
+          ),
+          Positioned.fill(
+            top: topInset + 48,
+            right: 10,
+            bottom: 69,
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: TickerMode(
+                enabled: _selectedTab == 0,
+                child: AnimatedBuilder(
+                  animation: _floatOffset,
+                  child: SizedBox(
+                    width: 142,
+                    height: 142,
+                    child: ModelViewer(
+                      key: ValueKey(companion.modelPath),
+                      src: companion.modelPath,
+                      alt: companion.name,
+                      autoPlay: true,
+                      animationName: companion.animationName,
+                      autoRotate: false,
+                      autoRotateDelay: 0,
+                      cameraControls: true,
+                      disableZoom: true,
+                      backgroundColor: Colors.transparent,
+                      debugLogging: false,
+                    ),
+                  ),
+                  builder: (context, child) => Transform.translate(
+                    offset: Offset(0, _floatOffset.value + 20),
+                    child: child,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            top: topInset + 47,
+            left: 17,
+            child: _SpeechBubble(text: 'Chào bạn! Cùng khám phá UEH nhé! 🚀'),
+          ),
+          Positioned(
+            left: 16,
+            right: 16,
+            bottom: 25,
+            child: _buildSearchField(),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildOfferCard() {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () => setState(() => _selectedTab = 2),
-        borderRadius: BorderRadius.circular(22),
-        child: Ink(
-          height: 137,
+  Widget _buildSearchField() {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(17),
+      child: BackdropFilter(
+        filter: ui.ImageFilter.blur(sigmaX: 13, sigmaY: 13),
+        child: Container(
+          height: 51,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(22),
-            gradient: const LinearGradient(
-              colors: [Color(0xFF6442C5), Color(0xFFB05BC8)],
-              begin: Alignment.centerLeft,
-              end: Alignment.centerRight,
+            color: Colors.white.withValues(alpha: 0.2),
+            borderRadius: BorderRadius.circular(17),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.32)),
+          ),
+          child: TextField(
+            controller: _searchController,
+            onChanged: (value) => setState(() {
+              _searchQuery = value;
+              if (value.isNotEmpty) _selectedFeatureIndex = null;
+              _resetFeedCarousel();
+            }),
+            style: const TextStyle(color: Colors.white, fontSize: 13),
+            textInputAction: TextInputAction.search,
+            decoration: InputDecoration(
+              hintText: 'Tìm sự kiện, món ăn, cơ hội...',
+              hintStyle: const TextStyle(
+                color: Color(0xFFE1DFE8),
+                fontSize: 13,
+              ),
+              prefixIcon: const Icon(
+                Icons.search_rounded,
+                color: Colors.white,
+                size: 21,
+              ),
+              suffixIcon: _searchQuery.isEmpty
+                  ? const Icon(
+                      Icons.tune_rounded,
+                      color: Colors.white,
+                      size: 19,
+                    )
+                  : IconButton(
+                      tooltip: 'Xóa tìm kiếm',
+                      onPressed: () {
+                        _searchController.clear();
+                        setState(() {
+                          _searchQuery = '';
+                          _resetFeedCarousel();
+                        });
+                      },
+                      icon: const Icon(
+                        Icons.close_rounded,
+                        color: Colors.white,
+                        size: 19,
+                      ),
+                    ),
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(vertical: 15),
             ),
           ),
-          child: Stack(
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoTab({
+    required IconData icon,
+    required String title,
+    required String description,
+  }) {
+    return SafeArea(
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Positioned(
-                right: -6,
-                bottom: -25,
-                child: Icon(
-                  Icons.confirmation_num_rounded,
-                  size: 139,
-                  color: Colors.white.withValues(alpha: 0.11),
+              Icon(icon, color: _accentColor, size: 54),
+              const SizedBox(height: 16),
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 17, 105, 15),
+              const SizedBox(height: 10),
+              Text(
+                description,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Color(0xFFB4B0BE), height: 1.5),
+              ),
+              const SizedBox(height: 20),
+              OutlinedButton.icon(
+                onPressed: () => setState(() => _selectedTab = 0),
+                icon: const Icon(Icons.home_rounded),
+                label: const Text('Về trang chủ'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SpeechBubble extends StatelessWidget {
+  const _SpeechBubble({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: BackdropFilter(
+        filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Container(
+          width: 165,
+          padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 9),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.16),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x22000000),
+                blurRadius: 12,
+                offset: Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Text(
+            text,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 11,
+              height: 1.3,
+              fontWeight: FontWeight.w800,
+              shadows: [
+                Shadow(color: Color(0xCC070311), blurRadius: 10),
+                Shadow(color: Color(0xAA9C77FF), blurRadius: 15),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PlanetButton extends StatelessWidget {
+  const _PlanetButton({
+    required this.feature,
+    required this.selected,
+    required this.rotation,
+    required this.phase,
+    required this.onTap,
+  });
+
+  final _DashboardFeature feature;
+  final bool selected;
+  final Animation<double> rotation;
+  final double phase;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: '${feature.planet}: ${feature.label}',
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(25),
+        child: Padding(
+          padding: const EdgeInsets.all(4),
+          child: AnimatedScale(
+            scale: selected ? 1.035 : 1,
+            duration: const Duration(milliseconds: 180),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(25),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: selected
+                      ? [
+                          feature.gradientColors[1].withValues(alpha: 0.4),
+                          const Color(0xFF211C31),
+                        ]
+                      : [
+                          feature.gradientColors[2].withValues(alpha: 0.32),
+                          const Color(0xFF1B1825),
+                        ],
+                ),
+                border: Border.all(
+                  color: selected
+                      ? feature.color.withValues(alpha: 0.95)
+                      : feature.color.withValues(alpha: 0.48),
+                  width: selected ? 2 : 1,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: feature.color.withValues(
+                      alpha: selected ? 0.38 : 0.16,
+                    ),
+                    blurRadius: selected ? 22 : 12,
+                    spreadRadius: selected ? 1 : 0,
+                  ),
+                  const BoxShadow(
+                    color: Color(0xAA07050D),
+                    blurRadius: 12,
+                    offset: Offset(0, 7),
+                  ),
+                ],
+              ),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(8, 7, 8, 11),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 9,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.18),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: const Text(
-                        'ĐẶC QUYỀN UEH HERO',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 9,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.5,
+                    Expanded(
+                      child: RepaintBoundary(
+                        child: AnimatedBuilder(
+                          animation: rotation,
+                          child: Image.asset(
+                            feature.imagePath,
+                            fit: BoxFit.contain,
+                            filterQuality: FilterQuality.high,
+                          ),
+                          builder: (context, child) {
+                            final angle = rotation.value * 2 * math.pi + phase;
+                            return Transform.translate(
+                              offset: Offset(0, math.sin(angle * 2) * 3),
+                              child: Transform.rotate(
+                                angle: angle,
+                                child: child,
+                              ),
+                            );
+                          },
                         ),
                       ),
                     ),
-                    const SizedBox(height: 9),
-                    const Text(
-                      'Sẵn sàng cho\nsự kiện tiếp theo?',
+                    const SizedBox(height: 5),
+                    Text(
+                      feature.planet,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
                       style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        height: 1.12,
+                        color: selected ? feature.color : Colors.white,
+                        fontSize: 11,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
-                    const Spacer(),
-                    const Row(
+                    const SizedBox(height: 3),
+                    Text(
+                      feature.label,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Color(0xFFD0CBD9),
+                        fontSize: 10,
+                        height: 1.15,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FeedCard extends StatelessWidget {
+  const _FeedCard({required this.item, required this.onTap});
+
+  final _FeedItem item;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: _HomeWidgetsScreenState._surfaceColor,
+      borderRadius: BorderRadius.circular(21),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(21),
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 142),
+          padding: const EdgeInsets.all(17),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(21),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                item.color.withValues(alpha: 0.2),
+                _HomeWidgetsScreenState._surfaceColor,
+              ],
+            ),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      item.eyebrow,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: item.color,
+                        fontSize: 9,
+                        letterSpacing: 1,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 7),
+                    Text(
+                      item.title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        height: 1.2,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      item.subtitle,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Color(0xFFBEB9C8),
+                        fontSize: 11,
+                        height: 1.25,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
                       children: [
                         Text(
-                          'Khám phá ngay',
+                          item.action,
                           style: TextStyle(
-                            color: Colors.white,
+                            color: item.color,
                             fontSize: 11,
-                            fontWeight: FontWeight.w700,
+                            fontWeight: FontWeight.w800,
                           ),
                         ),
-                        SizedBox(width: 5),
+                        const SizedBox(width: 4),
                         Icon(
                           Icons.arrow_forward_rounded,
-                          color: Colors.white,
+                          color: item.color,
                           size: 14,
                         ),
                       ],
@@ -619,392 +1105,76 @@ class _HomeWidgetsScreenState extends State<HomeWidgetsScreen> {
                   ],
                 ),
               ),
+              const SizedBox(width: 13),
+              Container(
+                width: 58,
+                height: 58,
+                decoration: BoxDecoration(
+                  color: item.color.withValues(alpha: 0.18),
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: Icon(item.icon, color: item.color, size: 29),
+              ),
             ],
           ),
         ),
       ),
     );
   }
-
-  Widget _buildFeaturedEvents() {
-    final events = _filteredEvents;
-    if (events.isEmpty) {
-      return Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: _surfaceColor,
-          borderRadius: BorderRadius.circular(18),
-        ),
-        child: const Text(
-          'Chưa tìm thấy sự kiện phù hợp. Thử từ khóa khác nhé!',
-          style: TextStyle(color: Color(0xFFAAA6B8), fontSize: 13),
-          textAlign: TextAlign.center,
-        ),
-      );
-    }
-
-    return SizedBox(
-      height: 207,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: events.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 13),
-        itemBuilder: (context, index) => _buildEventCard(events[index]),
-      ),
-    );
-  }
-
-  Widget _buildEventCard(_FeaturedEvent event) {
-    return Container(
-      width: 258,
-      decoration: BoxDecoration(
-        color: _surfaceColor,
-        borderRadius: BorderRadius.circular(19),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            height: 112,
-            decoration: BoxDecoration(
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(19),
-              ),
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: event.colors,
-              ),
-            ),
-            child: Stack(
-              children: [
-                Positioned(
-                  right: 12,
-                  top: 0,
-                  bottom: 0,
-                  child: Icon(
-                    event.icon,
-                    size: 76,
-                    color: Colors.white.withValues(alpha: 0.2),
-                  ),
-                ),
-                Positioned(
-                  left: 12,
-                  top: 12,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 9,
-                      vertical: 5,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.24),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      event.category.toUpperCase(),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 9,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.4,
-                      ),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  left: 13,
-                  bottom: 11,
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.calendar_month_rounded,
-                        color: Colors.white,
-                        size: 14,
-                      ),
-                      const SizedBox(width: 5),
-                      Text(
-                        event.date,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(13, 10, 13, 11),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  event.title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.groups_2_outlined,
-                      size: 13,
-                      color: Color(0xFFA39EAF),
-                    ),
-                    const SizedBox(width: 5),
-                    Expanded(
-                      child: Text(
-                        event.organizer,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Color(0xFFA39EAF),
-                          fontSize: 10,
-                        ),
-                      ),
-                    ),
-                    const Icon(
-                      Icons.favorite_border_rounded,
-                      color: Color(0xFFA39EAF),
-                      size: 17,
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEventsTab() {
-    final events = _filteredEvents;
-
-    return CustomScrollView(
-      slivers: [
-        SliverPadding(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
-          sliver: SliverList(
-            delegate: SliverChildListDelegate([
-              const Text(
-                'Khám phá sự kiện',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 25,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 6),
-              const Text(
-                'Những trải nghiệm đang chờ bạn ở TP. Hồ Chí Minh',
-                style: TextStyle(color: Color(0xFFAAA6B8), fontSize: 13),
-              ),
-              const SizedBox(height: 19),
-              _buildSearchField(_eventsSearchController),
-              const SizedBox(height: 20),
-              _buildCategoryRail(),
-              const SizedBox(height: 21),
-              Text(
-                '${events.length} sự kiện dành cho bạn',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 13),
-              if (events.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 30),
-                  child: Text(
-                    'Không tìm thấy sự kiện phù hợp.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: Color(0xFFAAA6B8)),
-                  ),
-                )
-              else
-                ...events.map(
-                  (event) => Padding(
-                    padding: const EdgeInsets.only(bottom: 13),
-                    child: _buildEventListTile(event),
-                  ),
-                ),
-            ]),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildEventListTile(_FeaturedEvent event) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: _surfaceColor,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 66,
-            height: 72,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(13),
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: event.colors,
-              ),
-            ),
-            child: Icon(
-              event.icon,
-              color: Colors.white.withValues(alpha: 0.86),
-              size: 31,
-            ),
-          ),
-          const SizedBox(width: 13),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  event.category,
-                  style: const TextStyle(
-                    color: Color(0xFFB8A5FF),
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 5),
-                Text(
-                  event.title,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 5),
-                Text(
-                  '${event.date} · ${event.organizer}',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Color(0xFFAAA6B8),
-                    fontSize: 10,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 6),
-          const Icon(
-            Icons.arrow_forward_ios_rounded,
-            color: Color(0xFFAAA6B8),
-            size: 14,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSimpleTab({
-    required IconData icon,
-    required String title,
-    required String description,
-    required String actionLabel,
-    required VoidCallback onAction,
-  }) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 92,
-              height: 92,
-              decoration: BoxDecoration(
-                color: _accentColor.withValues(alpha: 0.16),
-                borderRadius: BorderRadius.circular(30),
-              ),
-              child: Icon(icon, color: _accentColor, size: 43),
-            ),
-            const SizedBox(height: 22),
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 22,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              description,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Color(0xFFAAA6B8),
-                fontSize: 14,
-                height: 1.5,
-              ),
-            ),
-            const SizedBox(height: 22),
-            FilledButton(
-              onPressed: onAction,
-              style: FilledButton.styleFrom(
-                backgroundColor: _accentColor,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 22,
-                  vertical: 13,
-                ),
-              ),
-              child: Text(actionLabel),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }
 
-class _EventCategory {
-  const _EventCategory(this.label, this.icon);
+class _GalaxyWaveClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    final path = Path()
+      ..lineTo(0, size.height - 28)
+      ..cubicTo(
+        size.width * 0.22,
+        size.height + 5,
+        size.width * 0.72,
+        size.height - 58,
+        size.width,
+        size.height - 18,
+      )
+      ..lineTo(size.width, 0)
+      ..close();
+    return path;
+  }
 
+  @override
+  bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
+}
+
+class _DashboardFeature {
+  const _DashboardFeature(
+    this.planet,
+    this.label,
+    this.color,
+    this.gradientColors,
+    this.imagePath,
+  );
+
+  final String planet;
   final String label;
-  final IconData icon;
+  final Color color;
+  final List<Color> gradientColors;
+  final String imagePath;
 }
 
-class _FeaturedEvent {
-  const _FeaturedEvent({
+class _FeedItem {
+  const _FeedItem({
+    required this.eyebrow,
     required this.title,
-    required this.organizer,
-    required this.category,
-    required this.date,
+    required this.subtitle,
     required this.icon,
-    required this.colors,
+    required this.color,
+    required this.action,
   });
 
+  final String eyebrow;
   final String title;
-  final String organizer;
-  final String category;
-  final String date;
+  final String subtitle;
   final IconData icon;
-  final List<Color> colors;
+  final Color color;
+  final String action;
 }
