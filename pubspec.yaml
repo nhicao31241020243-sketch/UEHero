@@ -37,6 +37,8 @@ dependencies:
   carousel_slider: ^5.1.2
   flutter_3d_controller: ^2.3.0
   model_viewer_plus: ^1.10.0
+  image_picker: ^1.2.4
+  camera: ^0.12.1
 dev_dependencies:
   flutter_test:
     sdk: flutter

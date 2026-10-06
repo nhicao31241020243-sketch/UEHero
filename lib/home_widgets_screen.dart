@@ -7,6 +7,10 @@ import 'package:model_viewer_plus/model_viewer_plus.dart';
 import 'home_event_screen.dart';
 import 'models/character_data.dart';
 import 'screens/chatbot_screen.dart';
+import 'screens/campus_map_3d_screen.dart';
+import 'screens/calendar_screen.dart';
+import 'screens/mentor_screen.dart';
+import 'screens/uehero_camera_screen.dart';
 
 class HomeWidgetsScreen extends StatefulWidget {
   const HomeWidgetsScreen({super.key});
@@ -41,7 +45,7 @@ class _HomeWidgetsScreenState extends State<HomeWidgetsScreen>
       Color(0xFFFF704E),
       Color(0xFF9B263D),
     ], 'assets/images/planets/mars.png'),
-    _DashboardFeature('Sao Mộc', 'Đồ ăn Căn tin', Color(0xFFFFD36E), [
+    _DashboardFeature('Sao Mộc', 'UEH Mentor', Color(0xFFFFD36E), [
       Color(0xFFFFE8A1),
       Color(0xFFE6A83F),
       Color(0xFF8F4C2C),
@@ -127,6 +131,36 @@ class _HomeWidgetsScreenState extends State<HomeWidgetsScreen>
         .push(MaterialPageRoute<void>(builder: (_) => const ChatbotScreen()));
   }
 
+  void _openQuestionCamera() {
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute<void>(builder: (_) => const UEHeroCameraScreen()));
+  }
+
+  void _openCampusMap() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => const CampusMap3DScreen(),
+      ),
+    );
+  }
+
+  void _openMentors() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => const MentorScreen(),
+      ),
+    );
+  }
+
+  void _openCalendar() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => const CalendarScreen(),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final tabs = [
@@ -205,13 +239,24 @@ class _HomeWidgetsScreenState extends State<HomeWidgetsScreen>
                   'Events',
                 ),
               ),
-              Expanded(child: _buildNavButton(2, Icons.map_rounded, '3D Map')),
+              Expanded(
+                child: _buildNavButton(
+                  2,
+                  Icons.map_rounded,
+                  '3D Map',
+                  onTap: _openCampusMap,
+                ),
+              ),
               const SizedBox(width: 58),
               Expanded(
                 child: _buildNavButton(3, Icons.calculate_rounded, 'GPA Calc'),
               ),
               Expanded(
-                child: _buildNavButton(4, Icons.person_rounded, 'Profile'),
+                child: _buildNavButton(
+                  4,
+                  Icons.person_rounded,
+                  'Profile',
+                ),
               ),
             ],
           ),
@@ -220,7 +265,12 @@ class _HomeWidgetsScreenState extends State<HomeWidgetsScreen>
     );
   }
 
-  Widget _buildNavButton(int index, IconData icon, String label) {
+  Widget _buildNavButton(
+    int index,
+    IconData icon,
+    String label, {
+    VoidCallback? onTap,
+  }) {
     final selected = _selectedTab == index;
     final color = selected ? _accentColor : const Color(0xFF928DA0);
     return Semantics(
@@ -229,7 +279,7 @@ class _HomeWidgetsScreenState extends State<HomeWidgetsScreen>
       label: label,
       child: InkWell(
         borderRadius: BorderRadius.circular(18),
-        onTap: () => setState(() => _selectedTab = index),
+        onTap: onTap ?? () => setState(() => _selectedTab = index),
         child: SizedBox(
           height: 54,
           child: Center(
@@ -322,7 +372,23 @@ class _HomeWidgetsScreenState extends State<HomeWidgetsScreen>
                         selected: featureIndex == _selectedFeatureIndex,
                         rotation: _planetController,
                         phase: featureIndex * 0.8,
-                        onTap: () => _selectFeature(featureIndex),
+                        onTap: () {
+                          if (feature.planet == 'Trái Đất' &&
+                              feature.label == 'Hỏi bài') {
+                            _openQuestionCamera();
+                          } else if (feature.planet == 'Sao Hỏa' &&
+                              feature.label == 'To-Do List') {
+                            _openCalendar();
+                          } else if (feature.planet == 'Sao Mộc' &&
+                              feature.label == 'UEH Mentor') {
+                            _openMentors();
+                          } else if (feature.planet == 'Sao Hải Vương' &&
+                              feature.label == 'Career Map') {
+                            _openCampusMap();
+                          } else {
+                            _selectFeature(featureIndex);
+                          }
+                        },
                       );
                     },
                   ),

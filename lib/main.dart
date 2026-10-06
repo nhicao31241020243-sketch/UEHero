@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'home_event_screen.dart';
+import 'screens/campus_map_3d_screen.dart';
 import 'screens/welcome_screen.dart' as onboarding;
 
 void main() {
@@ -224,9 +225,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     const Center(
       child: Text("My List Page", style: TextStyle(color: Colors.white)),
     ),
-    const Center(
-      child: Text("Profile Page", style: TextStyle(color: Colors.white)),
-    ),
   ];
 
   @override
@@ -236,6 +234,14 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: (index) {
+          if (index == 3) {
+            Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const CampusMap3DScreen(),
+              ),
+            );
+            return;
+          }
           setState(() {
             _currentIndex = index;
           });
@@ -252,8 +258,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             label: 'My List',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            label: 'Profile',
+            icon: Icon(Icons.map_outlined),
+            label: '3D Map',
           ),
         ],
       ),

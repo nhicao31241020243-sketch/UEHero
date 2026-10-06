@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
+import 'screens/campus_map_3d_screen.dart';
 
 class HomeEventScreen extends StatefulWidget {
   const HomeEventScreen({super.key});
@@ -130,6 +131,8 @@ class _HomeEventScreenState extends State<HomeEventScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 12),
+            _buildCampusMapCard(),
+            const SizedBox(height: 18),
             _buildBannerCarousel(),
             const SizedBox(height: 20),
             _buildCategoryChips(),
@@ -141,6 +144,73 @@ class _HomeEventScreenState extends State<HomeEventScreen> {
             _buildEventSection('🎪 Sự Kiện Sắp Ra Mắt'),
             const SizedBox(height: 30),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCampusMapCard() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Material(
+        color: const Color(0xFF1D1928),
+        borderRadius: BorderRadius.circular(18),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(18),
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => const CampusMap3DScreen(),
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(15),
+            child: Row(
+              children: [
+                Container(
+                  width: 46,
+                  height: 46,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFBFA8FF).withValues(alpha: 0.16),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: const Icon(
+                    Icons.map_rounded,
+                    color: Color(0xFFBFA8FF),
+                    size: 25,
+                  ),
+                ),
+                const SizedBox(width: 13),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Sự kiện tại UEH',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        'Khám phá booth và tiện ích trên bản đồ 3D',
+                        style: TextStyle(
+                          color: Color(0xFFBDB7C9),
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  color: Colors.white70,
+                  size: 16,
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
