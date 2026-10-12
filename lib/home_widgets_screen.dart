@@ -34,7 +34,7 @@ class _HomeWidgetsScreenState extends State<HomeWidgetsScreen>
       Color(0xFFA98DFF),
       Color(0xFF5033A8),
     ], 'assets/images/planets/mercury.png'),
-    _DashboardFeature('Sao Kim', 'Chợ đồ cũ', Color(0xFFFFC18E), [
+    _DashboardFeature('Sao Kim', 'Thư viện học liệu', Color(0xFFFFC18E), [
       Color(0xFFFFE7C9),
       Color(0xFFFFB56F),
       Color(0xFFB35445),
@@ -391,7 +391,7 @@ class _HomeWidgetsScreenState extends State<HomeWidgetsScreen>
                               feature.label == 'UEH Mentor') {
                             _openMentors();
                           } else if (feature.planet == 'Sao Kim' &&
-                              feature.label == 'Chợ đồ cũ') {
+                              feature.label == 'Thư viện học liệu') {
                             _openSecondHandMarket();
                           } else if (feature.planet == 'Hồ sơ ứng tuyển' &&
                               feature.label == 'CV Check') {

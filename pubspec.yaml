@@ -68,6 +68,7 @@ flutter:
     - assets/images/planets/
     - assets/3d/
     - assets/interview_questions.json
+    - assets/learning_resources.json
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
