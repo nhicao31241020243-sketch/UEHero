@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'home_event_screen.dart';
-import 'screens/campus_map_3d_screen.dart';
+import 'screens/interview/interview_home_screen.dart';
 import 'screens/welcome_screen.dart' as onboarding;
 
 void main() {
@@ -237,7 +237,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           if (index == 3) {
             Navigator.of(context).push(
               MaterialPageRoute<void>(
-                builder: (_) => const CampusMap3DScreen(),
+                builder: (_) => const InterviewHomeScreen(),
               ),
             );
             return;
@@ -258,8 +258,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             label: 'My List',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.map_outlined),
-            label: '3D Map',
+            icon: Icon(Icons.record_voice_over_rounded),
+            label: 'Phỏng vấn',
           ),
         ],
       ),

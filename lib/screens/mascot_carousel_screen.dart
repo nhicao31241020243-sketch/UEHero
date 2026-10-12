@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:model_viewer_plus/model_viewer_plus.dart';
 
 import '../home_widgets_screen.dart';
 import '../models/character_data.dart';
 
 class MascotCarouselScreen extends StatefulWidget {
-  const MascotCarouselScreen({super.key});
+  const MascotCarouselScreen({required this.careerGoal, super.key});
+
+  final String careerGoal;
 
   @override
   State<MascotCarouselScreen> createState() => _MascotCarouselScreenState();
@@ -14,6 +17,7 @@ class MascotCarouselScreen extends StatefulWidget {
 class _MascotCarouselScreenState extends State<MascotCarouselScreen> {
   late final PageController _pageController;
   int _currentIndex = 0;
+  bool _savingSelection = false;
 
   @override
   void initState() {
@@ -27,12 +31,26 @@ class _MascotCarouselScreenState extends State<MascotCarouselScreen> {
     super.dispose();
   }
 
-  void _selectCharacter(CharacterData character) {
+  Future<void> _selectCharacter(CharacterData character) async {
+    if (_savingSelection) return;
+    setState(() => _savingSelection = true);
     CharacterSelection.selected = character;
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute<void>(builder: (_) => const HomeWidgetsScreen()),
-    );
+    try {
+      final preferences = await SharedPreferences.getInstance();
+      await preferences.setString('career_goal', widget.careerGoal);
+      await preferences.setString('selected_mascot', character.id);
+      if (!mounted) return;
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute<void>(builder: (_) => const HomeWidgetsScreen()),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _savingSelection = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Không thể lưu lựa chọn: $error')),
+      );
+    }
   }
 
   @override
@@ -54,6 +72,7 @@ class _MascotCarouselScreenState extends State<MascotCarouselScreen> {
             index: index,
             total: characters.length,
             showViewer: index == _currentIndex,
+            isSavingSelection: _savingSelection,
             onSelect: () => _selectCharacter(characters[index]),
           ),
         ),
@@ -68,6 +87,7 @@ class _CharacterCarouselPage extends StatelessWidget {
     required this.index,
     required this.total,
     required this.showViewer,
+    required this.isSavingSelection,
     required this.onSelect,
   });
 
@@ -75,6 +95,7 @@ class _CharacterCarouselPage extends StatelessWidget {
   final int index;
   final int total;
   final bool showViewer;
+  final bool isSavingSelection;
   final VoidCallback onSelect;
 
   @override
@@ -279,7 +300,7 @@ class _CharacterCarouselPage extends StatelessWidget {
                             width: double.infinity,
                             height: 58,
                             child: ElevatedButton(
-                              onPressed: onSelect,
+                              onPressed: isSavingSelection ? null : onSelect,
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFF30215F),
                                 foregroundColor: Colors.white,

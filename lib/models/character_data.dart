@@ -428,3 +428,11 @@ const List<CharacterData> characterData = [
     emoji: '🐯',
   ),
 ];
+
+CharacterData? characterById(String? id) {
+  if (id == null) return null;
+  for (final character in characterData) {
+    if (character.id == id) return character;
+  }
+  return null;
+}

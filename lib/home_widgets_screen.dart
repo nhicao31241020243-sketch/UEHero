@@ -7,9 +7,13 @@ import 'package:model_viewer_plus/model_viewer_plus.dart';
 import 'home_event_screen.dart';
 import 'models/character_data.dart';
 import 'screens/chatbot_screen.dart';
-import 'screens/campus_map_3d_screen.dart';
 import 'screens/calendar_screen.dart';
+import 'screens/cv_check_screen.dart';
+import 'screens/interview/interview_home_screen.dart';
+import 'screens/job_screen.dart';
 import 'screens/mentor_screen.dart';
+import 'screens/profile_screen.dart';
+import 'screens/second_hand_market_screen.dart';
 import 'screens/uehero_camera_screen.dart';
 
 class HomeWidgetsScreen extends StatefulWidget {
@@ -35,7 +39,7 @@ class _HomeWidgetsScreenState extends State<HomeWidgetsScreen>
       Color(0xFFFFB56F),
       Color(0xFFB35445),
     ], 'assets/images/planets/venus.png'),
-    _DashboardFeature('Trái Đất', 'Hỏi bài', Color(0xFF8DD8D1), [
+    _DashboardFeature('Học cùng trợ lý', 'Hỏi bài, luyện kỹ năng', Color(0xFF8DD8D1), [
       Color(0xFFB3F4DF),
       Color(0xFF55BFA6),
       Color(0xFF246E82),
@@ -55,13 +59,11 @@ class _HomeWidgetsScreenState extends State<HomeWidgetsScreen>
       Color(0xFFCC9F55),
       Color(0xFF704A56),
     ], 'assets/images/planets/saturn.png'),
-    _DashboardFeature(
-      'Sao Thiên Vương',
-      'Quét & tích điểm CV',
-      Color(0xFFB7E59B),
-      [Color(0xFFD8FFF4), Color(0xFF73D7CF), Color(0xFF287AA3)],
-      'assets/images/planets/uranus.png',
-    ),
+    _DashboardFeature('Hồ sơ ứng tuyển', 'CV Check', Color(0xFFB7E59B), [
+      Color(0xFFD8FFF4),
+      Color(0xFF73D7CF),
+      Color(0xFF287AA3),
+    ], 'assets/images/planets/uranus.png'),
     _DashboardFeature('Sao Hải Vương', 'Career Map', Color(0xFFFFA878), [
       Color(0xFF90E8FF),
       Color(0xFF278BFF),
@@ -137,28 +139,35 @@ class _HomeWidgetsScreenState extends State<HomeWidgetsScreen>
     ).push(MaterialPageRoute<void>(builder: (_) => const UEHeroCameraScreen()));
   }
 
-  void _openCampusMap() {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => const CampusMap3DScreen(),
-      ),
-    );
+  void _openMentors() {
+    Navigator.of(context)
+        .push(MaterialPageRoute<void>(builder: (_) => const MentorScreen()));
   }
 
-  void _openMentors() {
+  void _openSecondHandMarket() {
     Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => const MentorScreen(),
-      ),
+      MaterialPageRoute<void>(builder: (_) => const SecondHandMarketScreen()),
     );
   }
 
   void _openCalendar() {
+    Navigator.of(context)
+        .push(MaterialPageRoute<void>(builder: (_) => const CalendarScreen()));
+  }
+
+  void _openJobs({String query = ''}) {
     Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => const CalendarScreen(),
-      ),
+      MaterialPageRoute<void>(builder: (_) => JobScreen(initialQuery: query)),
     );
+  }
+
+  Future<void> _openProfile() async {
+    setState(() => _selectedTab = 4);
+    await Navigator.of(context)
+        .push(MaterialPageRoute<void>(builder: (_) => const ProfileScreen()));
+    if (mounted) {
+      setState(() => _selectedTab = 0);
+    }
   }
 
   @override
@@ -166,11 +175,7 @@ class _HomeWidgetsScreenState extends State<HomeWidgetsScreen>
     final tabs = [
       _buildHomeTab(),
       const HomeEventScreen(),
-      _buildInfoTab(
-        icon: Icons.map_rounded,
-        title: 'Bản đồ 3D UEH',
-        description: 'Khám phá các cơ sở và không gian học tập UEH.',
-      ),
+      const InterviewHomeScreen(),
       _buildInfoTab(
         icon: Icons.calculate_rounded,
         title: 'Tính toán GPA',
@@ -242,9 +247,8 @@ class _HomeWidgetsScreenState extends State<HomeWidgetsScreen>
               Expanded(
                 child: _buildNavButton(
                   2,
-                  Icons.map_rounded,
-                  '3D Map',
-                  onTap: _openCampusMap,
+                  Icons.record_voice_over_rounded,
+                  'Phỏng vấn',
                 ),
               ),
               const SizedBox(width: 58),
@@ -256,6 +260,7 @@ class _HomeWidgetsScreenState extends State<HomeWidgetsScreen>
                   4,
                   Icons.person_rounded,
                   'Profile',
+                  onTap: _openProfile,
                 ),
               ),
             ],
@@ -373,18 +378,31 @@ class _HomeWidgetsScreenState extends State<HomeWidgetsScreen>
                         rotation: _planetController,
                         phase: featureIndex * 0.8,
                         onTap: () {
-                          if (feature.planet == 'Trái Đất' &&
-                              feature.label == 'Hỏi bài') {
+                          if (feature.planet == 'Học cùng trợ lý' &&
+                              feature.label == 'Hỏi bài, luyện kỹ năng') {
                             _openQuestionCamera();
+                          } else if (feature.planet == 'Sao Thủy' &&
+                              feature.label == 'Xem Job sinh viên') {
+                            _openJobs();
                           } else if (feature.planet == 'Sao Hỏa' &&
                               feature.label == 'To-Do List') {
                             _openCalendar();
                           } else if (feature.planet == 'Sao Mộc' &&
                               feature.label == 'UEH Mentor') {
                             _openMentors();
+                          } else if (feature.planet == 'Sao Kim' &&
+                              feature.label == 'Chợ đồ cũ') {
+                            _openSecondHandMarket();
+                          } else if (feature.planet == 'Hồ sơ ứng tuyển' &&
+                              feature.label == 'CV Check') {
+                            Navigator.of(context).push(
+                              MaterialPageRoute<void>(
+                                builder: (_) => const CvCheckScreen(),
+                              ),
+                            );
                           } else if (feature.planet == 'Sao Hải Vương' &&
                               feature.label == 'Career Map') {
-                            _openCampusMap();
+                            _selectFeature(featureIndex);
                           } else {
                             _selectFeature(featureIndex);
                           }
@@ -545,8 +563,9 @@ class _HomeWidgetsScreenState extends State<HomeWidgetsScreen>
             }),
             style: const TextStyle(color: Colors.white, fontSize: 13),
             textInputAction: TextInputAction.search,
+            onSubmitted: (value) => _openJobs(query: value),
             decoration: InputDecoration(
-              hintText: 'Tìm sự kiện, món ăn, cơ hội...',
+              hintText: 'Tìm vị trí, kỹ năng, công ty...',
               hintStyle: const TextStyle(
                 color: Color(0xFFE1DFE8),
                 fontSize: 13,
@@ -556,19 +575,33 @@ class _HomeWidgetsScreenState extends State<HomeWidgetsScreen>
                 color: Colors.white,
                 size: 21,
               ),
-              suffixIcon: _searchQuery.isEmpty
-                  ? const Icon(
-                      Icons.tune_rounded,
+              suffixIcon: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    tooltip: 'Tìm job sinh viên',
+                    onPressed: () => _openJobs(query: _searchQuery),
+                    icon: const Icon(
+                      Icons.work_outline_rounded,
                       color: Colors.white,
                       size: 19,
+                    ),
+                  ),
+                  if (_searchQuery.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.only(right: 12),
+                      child: Icon(
+                        Icons.tune_rounded,
+                        color: Colors.white,
+                        size: 19,
+                      ),
                     )
-                  : IconButton(
+                  else
+                    IconButton(
                       tooltip: 'Xóa tìm kiếm',
                       onPressed: () {
                         _searchController.clear();
-                        setState(() {
-                          _searchQuery = '';
-                        });
+                        setState(() => _searchQuery = '');
                       },
                       icon: const Icon(
                         Icons.close_rounded,
@@ -576,6 +609,8 @@ class _HomeWidgetsScreenState extends State<HomeWidgetsScreen>
                         size: 19,
                       ),
                     ),
+                ],
+              ),
               border: InputBorder.none,
               contentPadding: const EdgeInsets.symmetric(vertical: 15),
             ),

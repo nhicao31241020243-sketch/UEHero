@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'mascot_carousel_screen.dart';
+import 'career_goal_screen.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -218,7 +218,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                   onSubmitted: (_) => Navigator.pushReplacement(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (_) => const MascotCarouselScreen(),
+                                      builder: (_) => const CareerGoalScreen(),
                                     ),
                                   ),
                                 ),
@@ -229,7 +229,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                     onPressed: () => Navigator.pushReplacement(
                                       context,
                                       MaterialPageRoute(
-                                        builder: (_) => const MascotCarouselScreen(),
+                                        builder: (_) => const CareerGoalScreen(),
                                       ),
                                     ),
                                     style: ElevatedButton.styleFrom(
@@ -308,7 +308,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                               context,
                                               MaterialPageRoute(
                                                 builder: (_) =>
-                                                    const MascotCarouselScreen(),
+                                                    const CareerGoalScreen(),
                                               ),
                                             ),
                                       ),
@@ -327,7 +327,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                               context,
                                               MaterialPageRoute(
                                                 builder: (_) =>
-                                                    const MascotCarouselScreen(),
+                                                    const CareerGoalScreen(),
                                               ),
                                             ),
                                       ),
@@ -350,7 +350,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                         context,
                                         MaterialPageRoute(
                                           builder: (_) =>
-                                              const MascotCarouselScreen(),
+                                              const CareerGoalScreen(),
                                         ),
                                       ),
                                       child: const Text(

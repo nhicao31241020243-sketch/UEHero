@@ -1,0 +1,205 @@
+{
+  "Business Analyst": {
+    "intern": [
+      {"q":"Hãy giới thiệu bản thân và lý do bạn muốn thực tập Business Analyst.","hint":"Kết nối trải nghiệm học tập với việc phân tích vấn đề.","skill":"Giao tiếp"},
+      {"q":"Bạn sẽ làm gì khi yêu cầu từ khách hàng chưa rõ ràng?","hint":"Hỏi làm rõ, xác nhận phạm vi và ghi nhận tiêu chí chấp nhận.","skill":"Viết tài liệu yêu cầu"},
+      {"q":"Mô tả cách bạn dùng SQL để tìm đơn hàng theo khách hàng.","hint":"Nêu SELECT, JOIN, điều kiện lọc và cách kiểm tra kết quả.","skill":"SQL"},
+      {"q":"Bạn sẽ kiểm tra một báo cáo Excel có số liệu bất thường như thế nào?","hint":"Đối chiếu nguồn, công thức, bộ lọc và một mẫu dữ liệu.","skill":"Excel"},
+      {"q":"Khi có hai yêu cầu cùng gấp, bạn ưu tiên ra sao?","hint":"So sánh tác động, hạn chót, phụ thuộc và xác nhận với bên liên quan.","skill":"Tư duy phân tích"},
+      {"q":"Hãy mô tả một lần bạn học nhanh một công cụ hoặc khái niệm mới.","hint":"Dùng STAR và nêu kết quả cụ thể.","skill":"Giao tiếp"},
+      {"q":"Bạn sẽ mô hình hóa quy trình đăng ký môn học thành các bước nào?","hint":"Nêu tác nhân, luồng chính, ngoại lệ và điểm xác nhận.","skill":"Tư duy phân tích"}
+    ],
+    "fresher": [
+      {"q":"Bạn sẽ phân tích yêu cầu làm dashboard theo dõi doanh thu từ đâu?","hint":"Xác định người dùng, quyết định cần hỗ trợ, KPI, nguồn và tần suất.","skill":"Power BI"},
+      {"q":"Viết cách lấy tên khách hàng và tổng tiền đơn hàng bằng SQL.","hint":"Dùng JOIN và GROUP BY; kiểm tra khóa nối và đơn trùng.","skill":"SQL"},
+      {"q":"Khi stakeholder đổi yêu cầu sát ngày phát hành, bạn xử lý thế nào?","hint":"Đánh giá ảnh hưởng, thống nhất phạm vi và cập nhật tài liệu.","skill":"Viết tài liệu yêu cầu"},
+      {"q":"Khi số liệu trong Power BI khác Excel, bạn kiểm tra gì trước?","hint":"Kiểm tra filter context, quan hệ bảng, nguồn và phép tổng hợp.","skill":"Power BI"},
+      {"q":"Bạn xác định acceptance criteria cho tính năng tìm kiếm thế nào?","hint":"Viết điều kiện kiểm thử được cho kết quả, empty state và lỗi.","skill":"Viết tài liệu yêu cầu"},
+      {"q":"Hãy trình bày cách bạn ưu tiên backlog có nhiều yêu cầu.","hint":"So sánh giá trị, chi phí, rủi ro và phụ thuộc.","skill":"Tư duy phân tích"},
+      {"q":"Hãy nêu một quyết định bạn từng đề xuất dựa trên dữ liệu.","hint":"Nêu dữ liệu, phân tích, lựa chọn và tác động.","skill":"Tư duy phân tích"}
+    ],
+    "behavioral": [
+      {"q":"Kể về lần bạn bất đồng với thành viên nhóm và cách giải quyết.","hint":"Dùng STAR; tập trung lắng nghe và kết quả chung.","skill":"Giao tiếp"},
+      {"q":"Kể về lần bạn phát hiện một lỗi dữ liệu quan trọng.","hint":"Nêu cách xác minh, thông báo và phòng ngừa tái diễn.","skill":"Tư duy phân tích"},
+      {"q":"Mô tả lần bạn phải giải thích vấn đề phức tạp cho người mới.","hint":"Giảm thuật ngữ, kiểm tra người nghe hiểu và nêu kết quả.","skill":"Giao tiếp"},
+      {"q":"Kể về lần kế hoạch của bạn thay đổi đột ngột.","hint":"Nêu cách đánh giá ưu tiên và báo lại các bên liên quan.","skill":"Tư duy phân tích"},
+      {"q":"Nói về một phản hồi khó nghe bạn đã nhận và áp dụng ra sao.","hint":"Thể hiện thái độ tiếp nhận và hành động cụ thể.","skill":"Giao tiếp"},
+      {"q":"Kể về lần bạn bỏ sót chi tiết và cách khắc phục.","hint":"Chịu trách nhiệm, sửa ảnh hưởng và thêm bước kiểm tra.","skill":"Excel"},
+      {"q":"Mô tả một lần bạn thuyết phục nhóm bằng bằng chứng.","hint":"Nêu dữ liệu và cách bạn trình bày lợi ích/rủi ro.","skill":"Tư duy phân tích"}
+    ]
+  },
+  "Data Analyst": {
+    "intern": [
+      {"q":"Bạn sẽ bắt đầu phân tích khi được giao dữ liệu bán hàng như thế nào?","hint":"Làm rõ câu hỏi, kiểm tra chất lượng dữ liệu rồi khám phá xu hướng.","skill":"Thống kê"},
+      {"q":"SQL: bạn sẽ đếm số đơn theo từng tháng ra sao?","hint":"Nhóm theo tháng, chú ý năm và đơn bị trùng.","skill":"SQL"},
+      {"q":"Bạn xử lý ô trống trong bảng Excel như thế nào?","hint":"Tìm nguyên nhân thiếu trước khi xóa hoặc điền giá trị.","skill":"Excel"},
+      {"q":"Khi biểu đồ cho thấy doanh thu giảm, bạn kiểm tra gì tiếp?","hint":"So sánh phân khúc, thời gian, số lượng, giá và nguồn dữ liệu.","skill":"Trực quan dữ liệu"},
+      {"q":"Giải thích trung bình và trung vị khác nhau thế nào.","hint":"Nêu tác động của ngoại lệ và một ví dụ dễ hiểu.","skill":"Thống kê"},
+      {"q":"Hãy giới thiệu một dự án dữ liệu bạn từng làm.","hint":"Nêu câu hỏi, dữ liệu, công cụ, kết quả và giới hạn.","skill":"Python"},
+      {"q":"Bạn đảm bảo báo cáo có thể được người khác kiểm tra thế nào?","hint":"Lưu truy vấn, giả định, định nghĩa KPI và nguồn dữ liệu.","skill":"Tư duy phân tích"}
+    ],
+    "fresher": [
+      {"q":"Thiết kế truy vấn SQL tìm 3 sản phẩm doanh thu cao nhất.","hint":"Tổng hợp quantity × price, nhóm sản phẩm, sắp xếp giảm dần.","skill":"SQL"},
+      {"q":"Bạn chọn biểu đồ nào để so doanh thu theo tháng và vì sao?","hint":"So chuỗi thời gian, quy mô và mục đích người xem.","skill":"Trực quan dữ liệu"},
+      {"q":"Một metric tăng nhưng số đơn giảm, bạn điều tra ra sao?","hint":"Kiểm tra định nghĩa metric, mix sản phẩm, giá và cohort.","skill":"Thống kê"},
+      {"q":"Làm sao tránh leakage khi xây mô hình dự đoán?","hint":"Tách theo thời gian, chỉ dùng dữ liệu có ở thời điểm dự đoán.","skill":"Python"},
+      {"q":"Bạn sẽ thiết kế dashboard cho trưởng bộ phận kinh doanh thế nào?","hint":"Bắt đầu từ quyết định, KPI, phân cấp và bộ lọc cần thiết.","skill":"Power BI"},
+      {"q":"Giải thích p-value cho người không chuyên.","hint":"Tránh gọi là xác suất giả thuyết đúng; giải thích giả định kiểm định.","skill":"Thống kê"},
+      {"q":"Bạn xử lý hai nguồn có định nghĩa khách hàng khác nhau thế nào?","hint":"Đối chiếu quy tắc nghiệp vụ và xác nhận với owner.","skill":"Tư duy phân tích"}
+    ],
+    "behavioral": [
+      {"q":"Kể về lần dữ liệu của bạn không ủng hộ giả định ban đầu.","hint":"Nêu cách kiểm tra bias và thay đổi kết luận.","skill":"Thống kê"},
+      {"q":"Mô tả lần bạn phải hoàn thành phân tích với thời gian hạn chế.","hint":"Nêu cách chia nhỏ phạm vi và thông báo giới hạn.","skill":"Tư duy phân tích"},
+      {"q":"Kể về một lần bạn trình bày phát hiện dữ liệu cho nhóm.","hint":"Nói rõ người nghe, thông điệp và quyết định sau đó.","skill":"Giao tiếp"},
+      {"q":"Bạn làm gì khi phát hiện dashboard sai sau khi đã chia sẻ?","hint":"Thông báo, sửa nguồn, đánh giá ảnh hưởng và phòng ngừa.","skill":"Power BI"},
+      {"q":"Kể một lần bạn học công cụ phân tích mới.","hint":"Nêu cách học và kết quả ứng dụng.","skill":"Python"},
+      {"q":"Mô tả lúc bạn cần thuyết phục người khác kiểm tra lại số liệu.","hint":"Dùng bằng chứng có thể tái lập, giữ thái độ hợp tác.","skill":"SQL"},
+      {"q":"Kể về lần bạn nhận góp ý về cách kể chuyện bằng dữ liệu.","hint":"Nêu điều chỉnh cụ thể và hiệu quả sau đó.","skill":"Trực quan dữ liệu"}
+    ]
+  },
+  "Frontend Developer": {
+    "intern": [
+      {"q":"Hãy giới thiệu một giao diện bạn đã tự xây dựng.","hint":"Nêu vai trò, công nghệ và điều bạn học được.","skill":"HTML & CSS"},
+      {"q":"Bạn xử lý một trang bị vỡ trên màn hình nhỏ như thế nào?","hint":"Kiểm tra viewport, layout, breakpoint và nội dung tràn.","skill":"Responsive UI"},
+      {"q":"Khi gặp bug khó tái hiện, bạn bắt đầu debug ra sao?","hint":"Thu hẹp bước tái hiện, kiểm tra console và thay đổi gần nhất.","skill":"Debugging"},
+      {"q":"Bạn dùng Git branch và commit như thế nào khi làm nhóm?","hint":"Nêu branch nhỏ, commit rõ nghĩa và đồng bộ trước merge.","skill":"Git"},
+      {"q":"Giải thích sự khác nhau giữa let và const trong JavaScript.","hint":"Nêu khả năng gán lại và phạm vi block.","skill":"JavaScript"},
+      {"q":"Bạn đảm bảo form có thể dùng bằng bàn phím ra sao?","hint":"Kiểm tra focus, label, thứ tự tab và trạng thái lỗi.","skill":"Responsive UI"},
+      {"q":"Hãy kể một lỗi bạn từng sửa trong giao diện.","hint":"Nêu triệu chứng, nguyên nhân, cách sửa và kiểm thử.","skill":"Debugging"}
+    ],
+    "fresher": [
+      {"q":"Bạn tối ưu danh sách lớn trên web thế nào?","hint":"Đo trước, phân trang/virtualize và tránh render thừa.","skill":"JavaScript"},
+      {"q":"Giải thích event bubbling và khi nào dùng delegation.","hint":"Nêu luồng sự kiện và ví dụ danh sách động.","skill":"JavaScript"},
+      {"q":"Bạn tổ chức component để dễ kiểm thử và tái sử dụng ra sao?","hint":"Tách trách nhiệm, API props rõ và tránh abstraction sớm.","skill":"HTML & CSS"},
+      {"q":"Một API trả lỗi chập chờn; UI nên thể hiện thế nào?","hint":"Loading, lỗi có thể thử lại, dữ liệu cũ và thông báo rõ.","skill":"Debugging"},
+      {"q":"Bạn sẽ tối ưu ảnh và font để trang tải nhanh thế nào?","hint":"Đo bằng công cụ, chọn định dạng/kích thước phù hợp.","skill":"Responsive UI"},
+      {"q":"Bạn giải quyết xung đột merge trong Git ra sao?","hint":"Hiểu cả hai thay đổi, giải quyết thủ công và chạy test.","skill":"Git"},
+      {"q":"Nêu cách bạn kiểm tra accessibility cho một trang mới.","hint":"Dùng semantic HTML, bàn phím, label và tương phản.","skill":"HTML & CSS"}
+    ],
+    "behavioral": [
+      {"q":"Kể về lần bạn phải sửa lại giải pháp sau khi nhận review.","hint":"Tập trung vào phản hồi, thay đổi và kết quả.","skill":"Git"},
+      {"q":"Mô tả lúc bạn phối hợp với designer khi có khác biệt.","hint":"Làm rõ mục tiêu, thử mẫu và thống nhất tiêu chí.","skill":"Giao tiếp"},
+      {"q":"Kể về một bug bạn gây ra và cách bạn xử lý.","hint":"Nhận trách nhiệm, khắc phục và thêm kiểm soát.","skill":"Debugging"},
+      {"q":"Mô tả lần bạn học framework hoặc API mới.","hint":"Nêu tài liệu, thử nghiệm và sản phẩm áp dụng.","skill":"JavaScript"},
+      {"q":"Kể về lúc bạn không đồng ý với thiết kế ban đầu.","hint":"Dùng dữ liệu người dùng hoặc ràng buộc kỹ thuật để trao đổi.","skill":"Responsive UI"},
+      {"q":"Bạn làm thế nào khi nhiệm vụ kỹ thuật bị đánh giá thấp thời gian?","hint":"Thông báo sớm, nêu rủi ro và thương lượng phạm vi.","skill":"Giao tiếp"},
+      {"q":"Nói về một quyết định kỹ thuật bạn từng thay đổi sau kiểm thử.","hint":"Nêu giả thuyết, bằng chứng và tác động.","skill":"Debugging"}
+    ]
+  },
+  "Digital Marketing": {
+    "intern": [
+      {"q":"Bạn sẽ lập kế hoạch nội dung cho một sản phẩm mới ra mắt ra sao?","hint":"Xác định audience, mục tiêu, thông điệp, kênh và lịch.","skill":"Content Marketing"},
+      {"q":"Bạn chọn chỉ số nào để đánh giá một bài đăng mạng xã hội?","hint":"Gắn KPI với mục tiêu, không chỉ nhìn lượt thích.","skill":"Social Media"},
+      {"q":"Giải thích SEO on-page bằng các bước cơ bản.","hint":"Nêu intent, tiêu đề, heading, nội dung và liên kết nội bộ.","skill":"SEO"},
+      {"q":"Một quảng cáo có nhiều click nhưng ít chuyển đổi, bạn kiểm tra gì?","hint":"So khớp landing page, audience, tracking và offer.","skill":"Quảng cáo số"},
+      {"q":"Bạn dùng Google Analytics để trả lời câu hỏi gì?","hint":"Nêu hành vi, nguồn traffic và conversion event.","skill":"Google Analytics"},
+      {"q":"Làm sao bạn tìm ý tưởng nội dung cho nhóm khách hàng mới?","hint":"Kết hợp phỏng vấn, truy vấn tìm kiếm và đối thủ.","skill":"Sáng tạo nội dung"},
+      {"q":"Bạn sẽ làm gì nếu nội dung đăng nhầm thông tin?","hint":"Sửa hoặc gỡ, thông báo và kiểm tra quy trình duyệt.","skill":"Giao tiếp"}
+    ],
+    "fresher": [
+      {"q":"Bạn đo hiệu quả chiến dịch đa kênh như thế nào?","hint":"Định nghĩa conversion, attribution và khoảng thời gian so sánh.","skill":"Google Analytics"},
+      {"q":"Thiết kế A/B test cho tiêu đề quảng cáo ra sao?","hint":"Một giả thuyết, một biến, cỡ mẫu và tiêu chí dừng.","skill":"Quảng cáo số"},
+      {"q":"Bạn ưu tiên từ khóa SEO theo tiêu chí nào?","hint":"Intent, độ cạnh tranh, liên quan và khả năng chuyển đổi.","skill":"SEO"},
+      {"q":"Nếu ngân sách giảm 30%, bạn phân bổ lại ra sao?","hint":"Xem hiệu quả biên, funnel, mục tiêu và rủi ro.","skill":"Tư duy phân tích"},
+      {"q":"Lượt truy cập tăng nhưng thời gian ở trang giảm, bạn phân tích gì?","hint":"Phân khúc nguồn, thiết bị, landing page và chất lượng traffic.","skill":"Google Analytics"},
+      {"q":"Bạn bảo vệ tính nhất quán thương hiệu trên các kênh thế nào?","hint":"Dùng hướng dẫn giọng điệu, thông điệp và quy trình duyệt.","skill":"Content Marketing"},
+      {"q":"Bạn đánh giá một influencer phù hợp với thương hiệu ra sao?","hint":"Audience fit, mức tương tác, chất lượng và brand safety.","skill":"Social Media"}
+    ],
+    "behavioral": [
+      {"q":"Kể về lần nội dung bạn làm không đạt mục tiêu.","hint":"Nêu dữ liệu, điều chỉnh và bài học.","skill":"Content Marketing"},
+      {"q":"Mô tả lúc bạn phải xử lý bình luận tiêu cực.","hint":"Giữ bình tĩnh, xác minh và phản hồi theo nguyên tắc.","skill":"Social Media"},
+      {"q":"Kể về lần bạn thuyết phục nhóm thử ý tưởng mới.","hint":"Nêu giả thuyết, thử nghiệm nhỏ và kết quả.","skill":"Sáng tạo nội dung"},
+      {"q":"Mô tả lần bạn làm việc với deadline gấp.","hint":"Nêu ưu tiên, phối hợp và cách đảm bảo chất lượng.","skill":"Giao tiếp"},
+      {"q":"Kể về một phát hiện dữ liệu khiến bạn đổi kế hoạch.","hint":"Nêu nguồn dữ liệu và quyết định sau đó.","skill":"Google Analytics"},
+      {"q":"Bạn xử lý thế nào khi stakeholder yêu cầu số liệu không thực tế?","hint":"Làm rõ mục tiêu và trao đổi bằng benchmark.","skill":"Tư duy phân tích"},
+      {"q":"Mô tả lần bạn mắc lỗi trong chiến dịch.","hint":"Nhận trách nhiệm, giảm ảnh hưởng và phòng ngừa.","skill":"Quảng cáo số"}
+    ]
+  },
+  "E-commerce Specialist": {
+    "intern": [
+      {"q":"Bạn kiểm tra một gian hàng TMĐT trước ngày campaign thế nào?","hint":"Kiểm tra sản phẩm, giá, tồn kho, nội dung và luồng đặt hàng.","skill":"Quản lý sàn TMĐT"},
+      {"q":"Một sản phẩm có nhiều lượt xem nhưng ít đơn; bạn tìm nguyên nhân gì?","hint":"Xem giá, hình ảnh, đánh giá, phí giao hàng và tồn kho.","skill":"Phân tích bán hàng"},
+      {"q":"Bạn dùng Excel để theo dõi đơn hàng ra sao?","hint":"Chuẩn hóa cột, lọc trạng thái và kiểm tra dữ liệu trùng.","skill":"Excel"},
+      {"q":"Đơn hàng bị giao trễ, bạn cập nhật khách hàng thế nào?","hint":"Xác minh, đưa thời gian thực tế và phương án hỗ trợ.","skill":"Chăm sóc khách hàng"},
+      {"q":"Bạn mô tả quy trình xử lý đơn từ đặt đến giao.","hint":"Nêu trạng thái, chủ sở hữu và điểm kiểm soát.","skill":"Vận hành đơn hàng"},
+      {"q":"Bạn chọn chương trình khuyến mãi cho sản phẩm mới ra sao?","hint":"Cân nhắc biên lợi nhuận, mục tiêu và đối tượng.","skill":"Digital Marketing"},
+      {"q":"Bạn xử lý thế nào nếu tồn kho trên sàn không khớp?","hint":"Đối soát nguồn và đồng bộ trạng thái trước khi nhận đơn.","skill":"Vận hành đơn hàng"}
+    ],
+    "fresher": [
+      {"q":"Phân tích GMV giảm nhưng traffic không đổi như thế nào?","hint":"Tách conversion, AOV, mix sản phẩm và hủy đơn.","skill":"Phân tích bán hàng"},
+      {"q":"Bạn thiết kế bảng theo dõi hiệu quả khuyến mãi bằng Excel ra sao?","hint":"Định nghĩa baseline, chi phí, doanh thu tăng thêm và margin.","skill":"Excel"},
+      {"q":"Làm sao giảm tỷ lệ hủy đơn trong peak season?","hint":"Tồn kho, SLA, dự báo nhu cầu và phối hợp vận hành.","skill":"Vận hành đơn hàng"},
+      {"q":"Bạn ưu tiên sản phẩm nào để tối ưu trang listing?","hint":"Dùng doanh thu, conversion, tồn kho và cơ hội cải thiện.","skill":"Quản lý sàn TMĐT"},
+      {"q":"Đánh giá hiệu quả quảng cáo trên sàn bằng chỉ số nào?","hint":"Liên kết spend, attributed sales, margin và mục tiêu.","skill":"Digital Marketing"},
+      {"q":"Bạn phát hiện nguyên nhân tăng khiếu nại khách hàng ra sao?","hint":"Phân loại lý do, thời gian, SKU và điểm trong hành trình.","skill":"Chăm sóc khách hàng"},
+      {"q":"Bạn làm gì khi đối tác sàn thay đổi chính sách bán hàng?","hint":"Đánh giá tác động, cập nhật quy trình và truyền thông nội bộ.","skill":"Quản lý sàn TMĐT"}
+    ],
+    "behavioral": [
+      {"q":"Kể về lần bạn xử lý một khách hàng không hài lòng.","hint":"Lắng nghe, xác minh, giải quyết và theo dõi kết quả.","skill":"Chăm sóc khách hàng"},
+      {"q":"Mô tả lần bạn phối hợp nhiều nhóm để xử lý đơn gấp.","hint":"Nêu vai trò, cập nhật và kết quả.","skill":"Vận hành đơn hàng"},
+      {"q":"Kể về lần bạn phát hiện lỗi trong báo cáo bán hàng.","hint":"Nêu cách đối soát và phòng lỗi lặp lại.","skill":"Excel"},
+      {"q":"Mô tả một campaign bạn hỗ trợ và điều học được.","hint":"Nêu mục tiêu, việc bạn phụ trách và kết quả.","skill":"Digital Marketing"},
+      {"q":"Kể về lúc bạn phải ưu tiên nhiều việc cùng lúc.","hint":"Nêu tiêu chí ưu tiên và cách báo tiến độ.","skill":"Tư duy phân tích"},
+      {"q":"Mô tả lần bạn đề xuất cải thiện quy trình xử lý đơn.","hint":"Dùng ví dụ và tác động cụ thể.","skill":"Vận hành đơn hàng"},
+      {"q":"Kể về lần bạn nhận phản hồi từ khách hàng và thay đổi cách làm.","hint":"Nêu phản hồi, hành động và kết quả.","skill":"Chăm sóc khách hàng"}
+    ]
+  },
+  "Product Manager": {
+    "intern": [
+      {"q":"Bạn tìm hiểu nhu cầu người dùng cho một tính năng mới thế nào?","hint":"Nêu phỏng vấn, dữ liệu hành vi và cách kiểm chứng giả thuyết.","skill":"Nghiên cứu người dùng"},
+      {"q":"Bạn sẽ mô tả vấn đề trước khi đề xuất giải pháp ra sao?","hint":"Người dùng, bối cảnh, khó khăn và tác động.","skill":"Product Thinking"},
+      {"q":"Nếu nhóm chỉ làm được một trong ba yêu cầu, bạn ưu tiên thế nào?","hint":"Giá trị, nỗ lực, rủi ro và phụ thuộc.","skill":"Roadmap sản phẩm"},
+      {"q":"Giải thích sprint trong Agile theo cách đơn giản.","hint":"Mục tiêu ngắn hạn, backlog, phối hợp và review.","skill":"Agile & Scrum"},
+      {"q":"Bạn đo thành công của tính năng onboarding bằng gì?","hint":"Activation funnel, thời gian hoàn thành và chất lượng trải nghiệm.","skill":"Phân tích dữ liệu"},
+      {"q":"Bạn chuẩn bị một buổi trao đổi với kỹ sư thế nào?","hint":"Mục tiêu, bối cảnh, câu hỏi và quyết định cần có.","skill":"Giao tiếp"},
+      {"q":"Bạn xử lý feedback người dùng trái chiều ra sao?","hint":"Tìm nhóm người dùng, ngữ cảnh và bằng chứng bổ sung.","skill":"Nghiên cứu người dùng"}
+    ],
+    "fresher": [
+      {"q":"Bạn xây roadmap khi mục tiêu kinh doanh thay đổi giữa quý thế nào?","hint":"Đánh giá outcome, phụ thuộc, chi phí đổi hướng và truyền thông.","skill":"Roadmap sản phẩm"},
+      {"q":"Bạn chọn north-star metric cho sản phẩm học tập ra sao?","hint":"Gắn giá trị người dùng lặp lại với mục tiêu tổ chức.","skill":"Phân tích dữ liệu"},
+      {"q":"Stakeholder yêu cầu tính năng nhưng chưa có bằng chứng; bạn làm gì?","hint":"Tìm vấn đề gốc, dữ liệu, thử nghiệm nhỏ và tiêu chí quyết định.","skill":"Product Thinking"},
+      {"q":"Bạn viết user story và acceptance criteria như thế nào?","hint":"Nêu user, nhu cầu, giá trị và điều kiện kiểm thử.","skill":"Agile & Scrum"},
+      {"q":"Sau khi ra mắt, adoption thấp; bạn điều tra thế nào?","hint":"Funnel, phân khúc, usability, truyền thông và phản hồi.","skill":"Phân tích dữ liệu"},
+      {"q":"Bạn giải quyết xung đột ưu tiên giữa design và engineering ra sao?","hint":"Quay lại mục tiêu, ràng buộc và thỏa hiệp có kiểm chứng.","skill":"Giao tiếp"},
+      {"q":"Làm sao phân biệt giải pháp tốt với vấn đề được xác định đúng?","hint":"Kiểm chứng giả định và so sánh outcome trước/sau.","skill":"Product Thinking"}
+    ],
+    "behavioral": [
+      {"q":"Kể về lần bạn điều phối nhóm có mục tiêu khác nhau.","hint":"Nêu điểm chung, quyết định và cách theo dõi.","skill":"Giao tiếp"},
+      {"q":"Mô tả một quyết định bạn đưa ra khi dữ liệu chưa đầy đủ.","hint":"Nêu giả định, rủi ro và cách giảm rủi ro.","skill":"Tư duy phân tích"},
+      {"q":"Kể về lần bạn nhận ra mình đang giải sai vấn đề.","hint":"Nêu tín hiệu, thay đổi và điều học được.","skill":"Product Thinking"},
+      {"q":"Mô tả lúc roadmap bị trễ.","hint":"Thông báo sớm, sắp xếp lại phạm vi và giữ minh bạch.","skill":"Roadmap sản phẩm"},
+      {"q":"Kể về một lần bạn thay đổi ý kiến sau khi nghe người dùng.","hint":"Nêu bằng chứng và tác động đến quyết định.","skill":"Nghiên cứu người dùng"},
+      {"q":"Bạn xử lý thế nào khi nhóm không đồng thuận về ưu tiên?","hint":"Dùng mục tiêu và tiêu chí đã thống nhất.","skill":"Agile & Scrum"},
+      {"q":"Nêu một thử nghiệm bạn muốn chạy để cải thiện sản phẩm.","hint":"Giả thuyết, nhóm, metric và ngưỡng quyết định.","skill":"Phân tích dữ liệu"}
+    ]
+  },
+  "default": {
+    "intern": [
+      {"q":"Hãy giới thiệu bản thân và điều bạn muốn học trong kỳ thực tập.","hint":"Kết nối trải nghiệm, kỹ năng và mục tiêu học tập.","skill":"Giao tiếp"},
+      {"q":"Bạn sẽ làm gì khi nhận nhiệm vụ chưa rõ yêu cầu?","hint":"Đặt câu hỏi, xác nhận đầu ra và thời hạn.","skill":"Tư duy phân tích"},
+      {"q":"Kể về một dự án học tập có liên quan tới nghề mục tiêu.","hint":"Nêu mục tiêu, vai trò và kết quả.","skill":"Giao tiếp"},
+      {"q":"Bạn sắp xếp công việc khi có nhiều deadline thế nào?","hint":"Ưu tiên theo tác động, thời hạn và phụ thuộc.","skill":"Tư duy phân tích"},
+      {"q":"Một đồng đội không hoàn thành phần việc; bạn xử lý ra sao?","hint":"Trao đổi trực tiếp, hiểu trở ngại và thống nhất bước tiếp theo.","skill":"Giao tiếp"},
+      {"q":"Bạn kiểm tra chất lượng kết quả công việc thế nào?","hint":"Đối chiếu yêu cầu, kiểm tra mẫu và nhờ review.","skill":"Tư duy phân tích"},
+      {"q":"Hãy kể về kỹ năng bạn đang chủ động cải thiện.","hint":"Nêu kế hoạch luyện tập và cách đo tiến bộ.","skill":"Giao tiếp"}
+    ],
+    "fresher": [
+      {"q":"Bạn sẽ xác định mục tiêu cho một dự án mới như thế nào?","hint":"Làm rõ người dùng, outcome, phạm vi và chỉ số thành công.","skill":"Tư duy phân tích"},
+      {"q":"Bạn xử lý ra sao khi kết quả công việc không đạt mục tiêu?","hint":"Tìm nguyên nhân bằng dữ liệu và đề xuất điều chỉnh.","skill":"Giao tiếp"},
+      {"q":"Hãy trình bày cách bạn làm việc với stakeholder.","hint":"Lắng nghe, ghi nhận quyết định và cập nhật tiến độ.","skill":"Giao tiếp"},
+      {"q":"Bạn ưu tiên chất lượng hay tốc độ khi deadline sát?","hint":"Nêu trade-off, rủi ro và cách bảo vệ phần quan trọng.","skill":"Tư duy phân tích"},
+      {"q":"Kể một lần bạn chủ động phát hiện và xử lý rủi ro.","hint":"Mô tả tín hiệu, hành động sớm và kết quả.","skill":"Tư duy phân tích"},
+      {"q":"Bạn tiếp nhận góp ý chuyên môn như thế nào?","hint":"Làm rõ, thử áp dụng và kiểm tra hiệu quả.","skill":"Giao tiếp"},
+      {"q":"Điều gì khiến bạn phù hợp với nghề mục tiêu?","hint":"Đưa bằng chứng từ kỹ năng và trải nghiệm thực tế.","skill":"Giao tiếp"}
+    ],
+    "behavioral": [
+      {"q":"Kể về lần bạn vượt qua một trở ngại trong học tập hoặc công việc.","hint":"Dùng STAR và nêu kết quả cụ thể.","skill":"Tư duy phân tích"},
+      {"q":"Mô tả lần bạn làm việc với một người có phong cách khác mình.","hint":"Nêu cách điều chỉnh giao tiếp và kết quả.","skill":"Giao tiếp"},
+      {"q":"Kể về lần bạn mắc sai sót và chịu trách nhiệm.","hint":"Nêu sửa chữa và thay đổi để tránh lặp lại.","skill":"Tư duy phân tích"},
+      {"q":"Kể về lần bạn phải học điều mới trong thời gian ngắn.","hint":"Nêu cách học, áp dụng và kết quả.","skill":"Giao tiếp"},
+      {"q":"Mô tả lần bạn nhận được phản hồi khó.","hint":"Nêu phản hồi và hành động thực tế.","skill":"Giao tiếp"},
+      {"q":"Kể về lần bạn thuyết phục nhóm thay đổi cách làm.","hint":"Dùng bằng chứng và tôn trọng ý kiến khác.","skill":"Tư duy phân tích"},
+      {"q":"Mô tả một thành tựu bạn tự hào và đóng góp của bạn.","hint":"Tập trung vào hành động cá nhân và kết quả đo được.","skill":"Giao tiếp"}
+    ]
+  }
+}
