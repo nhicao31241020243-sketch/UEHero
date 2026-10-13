@@ -12,6 +12,7 @@ enum ProgressEventType {
   eventCheckedIn,
   gpaUpdated,
   profileCompleted,
+  debugGrant,
 }
 
 class ProgressLedgerEntry {

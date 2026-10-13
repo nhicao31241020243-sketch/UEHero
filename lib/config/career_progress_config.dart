@@ -39,6 +39,7 @@ const Map<ProgressEventType, int> progressPoints = {
   ProgressEventType.eventCheckedIn: 15,
   ProgressEventType.gpaUpdated: 5,
   ProgressEventType.profileCompleted: 5,
+  ProgressEventType.debugGrant: 100,
 };
 
 const List<CareerRankConfig> careerRanks = [

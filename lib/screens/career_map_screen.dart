@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:model_viewer_plus/model_viewer_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../config/career_progress_config.dart';
 import '../models/character_data.dart';
+import '../models/career_progress.dart';
 import '../services/progress_service.dart';
 
 class CareerMapScreen extends StatefulWidget {
@@ -84,32 +86,32 @@ class _CareerMapScreenState extends State<CareerMapScreen>
   }
 
   Widget _errorState() => Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.cloud_off_rounded, color: Colors.white54, size: 42),
-              const SizedBox(height: 12),
-              const Text(
-                'Không thể tải tiến độ Career Map',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.white),
-              ),
-              TextButton(
-                onPressed: () {
-                  setState(() {
-                    _loading = true;
-                    _loadError = null;
-                  });
-                  _initialize();
-                },
-                child: const Text('Thử lại'),
-              ),
-            ],
+    child: Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.cloud_off_rounded, color: Colors.white54, size: 42),
+          const SizedBox(height: 12),
+          const Text(
+            'Không thể tải tiến độ Career Map',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.white),
           ),
-        ),
-      );
+          TextButton(
+            onPressed: () {
+              setState(() {
+                _loading = true;
+                _loadError = null;
+              });
+              _initialize();
+            },
+            child: const Text('Thử lại'),
+          ),
+        ],
+      ),
+    ),
+  );
 
   Widget _buildMap(BuildContext context) {
     final points = _progress.totalPoints;
@@ -122,11 +124,40 @@ class _CareerMapScreenState extends State<CareerMapScreen>
           padding: const EdgeInsets.fromLTRB(18, 8, 18, 36),
           children: [
             _buildHeader(points, nextNode, nextGap),
+            if (kDebugMode) ...[
+              const SizedBox(height: 12),
+              Align(
+                alignment: Alignment.centerRight,
+                child: OutlinedButton.icon(
+                  onPressed: _grantDebugStardust,
+                  icon: const Icon(Icons.bolt_rounded, size: 17),
+                  label: const Text('+100 Stardust'),
+                ),
+              ),
+            ],
             const SizedBox(height: 18),
             _buildRoute(points),
           ],
         ),
       ],
+    );
+  }
+
+  Future<void> _grantDebugStardust() async {
+    final awarded = await _progress.awardPoints(
+      ProgressEventType.debugGrant,
+      refId: 'debug-${DateTime.now().microsecondsSinceEpoch}',
+      metadata: const {'source': 'debug_button'},
+    );
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          awarded == 0
+              ? 'Đã chạm giới hạn Stardust hôm nay.'
+              : 'Đã nhận +$awarded Stardust demo.',
+        ),
+      ),
     );
   }
 
@@ -445,10 +476,7 @@ class _NodeTile extends StatelessWidget {
                 AnimatedBuilder(
                   animation: mascotAnimation,
                   builder: (context, child) => Transform.translate(
-                    offset: Offset(
-                      0,
-                      -4 * (0.5 + mascotAnimation.value / 2),
-                    ),
+                    offset: Offset(0, -4 * (0.5 + mascotAnimation.value / 2)),
                     child: child,
                   ),
                   child: SizedBox(
