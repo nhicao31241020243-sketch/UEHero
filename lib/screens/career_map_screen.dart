@@ -83,6 +83,12 @@ class _CareerMapScreenState extends State<CareerMapScreen>
     if (next == _targetStone) return;
     final start = _displayStone;
     _targetStone = next;
+    if (MediaQuery.maybeOf(context)?.disableAnimations ?? false) {
+      _displayStone = next.toDouble();
+      _scrollToMascot();
+      setState(() {});
+      return;
+    }
     _travelController
       ..reset()
       ..addStatusListener(_finishTravel)
@@ -356,6 +362,7 @@ class _CareerMapScreenState extends State<CareerMapScreen>
     final points = _progress.totalPoints;
     final reached = step.progress <= points;
     final isMilestone = step.isMilestone;
+    final reduceMotion = MediaQuery.of(context).disableAnimations;
     final size = isMilestone ? 106.0 : 62.0;
     final left = step.x * MediaQuery.sizeOf(context).width - size / 2;
     final top = (1 - step.y) * _mapHeight - size / 2;
@@ -372,7 +379,9 @@ class _CareerMapScreenState extends State<CareerMapScreen>
         child: AnimatedBuilder(
           animation: _pulseController,
           builder: (context, child) => Transform.rotate(
-            angle: isMilestone ? math.sin(_pulseController.value * math.pi) * 0.025 : 0,
+            angle: reduceMotion || !isMilestone
+                ? 0
+                : math.sin(_pulseController.value * math.pi) * 0.025,
             child: child,
           ),
           child: CustomPaint(
@@ -402,8 +411,11 @@ class _CareerMapScreenState extends State<CareerMapScreen>
     final baseX = step.x * MediaQuery.sizeOf(context).width;
     final baseY = (1 - step.y) * _mapHeight - 76;
     final travel = _travelController.value;
-    final hop = _travelController.isAnimating
+    final reduceMotion = MediaQuery.of(context).disableAnimations;
+    final hop = !reduceMotion && _travelController.isAnimating
         ? math.sin(travel * math.pi) * 52
+        : reduceMotion
+        ? 0
         : math.sin(_pulseController.value * math.pi * 2) * 4;
     return Positioned(
       left: baseX - 39,

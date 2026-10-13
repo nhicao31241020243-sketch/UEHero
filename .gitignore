@@ -34,6 +34,10 @@ analysis_benchmark.json
 # Flutter/Dart/Pub related
 **/doc/api/
 .dart_tool/
+*.iml
+.env
+.env.*
+**/google-services.json
 .flutter-plugins
 .flutter-plugins-dependencies
 **/generated_plugin_registrant.dart
@@ -119,3 +123,4 @@ app.*.symbols
 !/dev/ci/**/Gemfile.lock
 
 /raw_models/
+_backup_career_map/
