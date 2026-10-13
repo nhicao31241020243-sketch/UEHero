@@ -1,5 +1,12 @@
+import 'dart:convert';
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
-import 'package:carousel_slider/carousel_slider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import 'event_detail_screen.dart';
+import 'models/event_item.dart';
+import 'services/event_repository.dart';
 
 class HomeEventScreen extends StatefulWidget {
   const HomeEventScreen({super.key});
@@ -9,502 +16,384 @@ class HomeEventScreen extends StatefulWidget {
 }
 
 class _HomeEventScreenState extends State<HomeEventScreen> {
-  int _currentBannerIndex = 0;
-  int _selectedCategoryIndex = 0;
-
-  final List<String> categories = [
+  static const _background = Color(0xFF100E19);
+  static const _surface = Color(0xFF211D2B);
+  static const _muted = Color(0xFFAAA5B8);
+  static const _accent = Color(0xFFBFA8FF);
+  final EventRepository _repository = LocalEventRepository();
+  final _filters = const [
     'Tất cả',
-    'Âm nhạc',
-    'Hội thảo',
-    'Sân khấu',
-    'Thể thao',
+    'Phù hợp với tôi',
+    'Cuộc thi',
+    'Hackathon',
+    'Hội chợ việc làm',
+    'Đang mở đăng ký',
   ];
+  List<EventItem> _events = const [];
+  String _filter = 'Tất cả';
+  String? _careerGoal;
+  Map<String, dynamic> _mastery = {};
+  Object? _error;
+  bool _loading = true;
 
-  // Dữ liệu sự kiện mẫu
-  final List<Map<String, String>> featuredEvents = [
-    {
-      'title': 'CHUYỆN SÀI GÒN: GÁNH SHOW',
-      'organizer': '4ll-In Performance Art',
-      'image': 'https://picsum.photos/800/400?random=1',
-      'tag': 'Trực tiếp',
-    },
-    {
-      'title': 'PERSPECTIVES 2027',
-      'organizer': 'Robb Report Vietnam',
-      'image': 'https://picsum.photos/800/400?random=2',
-      'tag': 'Hot Event',
-    },
-    {
-      'title': '1T SUMMIT - The New Race',
-      'organizer': 'Vietnam Vanguard',
-      'image': 'https://picsum.photos/800/400?random=3',
-      'tag': 'Hội thảo',
-    },
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
 
-  final List<Map<String, String>> eventPosters = [
-    {
-      'title': 'CHUYỆN SÀI GÒN: GÁNH SHOW',
-      'organizer': '4ll-In Performance Art',
-      'image': 'https://picsum.photos/300/450?random=10',
-      'tag': 'Sân khấu',
-    },
-    {
-      'title': 'PERSPECTIVES 2027',
-      'organizer': 'Robb Report Vietnam',
-      'image': 'https://picsum.photos/300/450?random=11',
-      'tag': 'Hội thảo',
-    },
-    {
-      'title': '1T SUMMIT - THE NEW RACE',
-      'organizer': 'Vietnam Vanguard',
-      'image': 'https://picsum.photos/300/450?random=12',
-      'tag': 'Công nghệ',
-    },
-    {
-      'title': 'SAIGON MUSIC WEEK',
-      'organizer': 'UEH Music Club',
-      'image': 'https://picsum.photos/300/450?random=13',
-      'tag': 'Âm nhạc',
-    },
-    {
-      'title': 'GREEN CAMPUS DAY',
-      'organizer': 'UEH Green Campus',
-      'image': 'https://picsum.photos/300/450?random=14',
-      'tag': 'Cộng đồng',
-    },
-    {
-      'title': 'STARTUP LAUNCHPAD',
-      'organizer': 'UEH Innovation',
-      'image': 'https://picsum.photos/300/450?random=15',
-      'tag': 'Khởi nghiệp',
-    },
-  ];
+  Future<void> _load() async {
+    try {
+      final preferences = await SharedPreferences.getInstance();
+      final events = await _repository.fetchEvents();
+      final raw = preferences.getString('career_map_skills');
+      final decoded = raw == null ? <String, dynamic>{} : jsonDecodeSafe(raw);
+      if (!mounted) return;
+      setState(() {
+        _events = events;
+        _careerGoal = preferences.getString('career_goal');
+        _mastery = decoded;
+        _loading = false;
+      });
+    } catch (error) {
+      if (mounted) {
+        setState(() {
+          _error = error;
+          _loading = false;
+        });
+      }
+    }
+  }
 
-  final List<List<Color>> _posterPalettes = const [
-    [Color(0xFFB3264A), Color(0xFF38162F)],
-    [Color(0xFF176B87), Color(0xFF172541)],
-    [Color(0xFF8752A1), Color(0xFF302044)],
-    [Color(0xFFD36B34), Color(0xFF492333)],
-    [Color(0xFF34836E), Color(0xFF173A42)],
-    [Color(0xFFB48B35), Color(0xFF443020)],
-  ];
+  Map<String, dynamic> jsonDecodeSafe(String value) {
+    try {
+      final decoded = jsonDecode(value);
+      return decoded is Map<String, dynamic> ? decoded : {};
+    } catch (_) {
+      return {};
+    }
+  }
+
+  double _match(EventItem event) {
+    final goal = _careerGoal?.toLowerCase();
+    final career =
+        goal != null &&
+        event.careerTags.any((tag) => tag.toLowerCase() == goal);
+    final skillScore = event.skills.isEmpty
+        ? 0.0
+        : event.skills
+                  .map((skill) => (_mastery[skill] as num?)?.toDouble() ?? 0)
+                  .fold<double>(0, math.max) /
+              10;
+    return ((career ? 0.65 : 0.0) + skillScore.clamp(0, 0.35)).clamp(0, 1);
+  }
+
+  List<EventItem> _filtered(DateTime now) {
+    final result = _events.where((event) {
+      final status = event.statusAt(now);
+      if (_filter == 'Phù hợp với tôi') return _match(event) > 0;
+      if (_filter == 'Đang mở đăng ký') {
+        return status == EventStatus.registrationOpen;
+      }
+      if (_filter == 'Cuộc thi' ||
+          _filter == 'Hackathon' ||
+          _filter == 'Hội chợ việc làm') {
+        return event.type == _filter;
+      }
+      return true;
+    }).toList();
+    result.sort((a, b) => _match(b).compareTo(_match(a)));
+    return result;
+  }
 
   @override
   Widget build(BuildContext context) {
+    final now = DateTime.now();
+    final events = _filtered(now);
+    final open = events
+        .where((event) => event.statusAt(now) == EventStatus.registrationOpen)
+        .toList();
     return Scaffold(
-      backgroundColor: const Color(0xFF0D0C13), // Nền tối chuẩn Streaming
+      backgroundColor: _background,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: _background,
         elevation: 0,
-        title: Row(
-          children: const [
-            Icon(Icons.play_circle_fill, color: Color(0xFF8B5CF6), size: 28),
-            SizedBox(width: 8),
-            Text(
-              'UEHEvent',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 20,
-                color: Colors.white,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.search, color: Colors.white),
-            onPressed: () {},
-          ),
-          const Padding(
-            padding: EdgeInsets.only(right: 16.0),
-            child: CircleAvatar(
-              radius: 16,
-              backgroundImage: NetworkImage('https://i.pravatar.cc/100'),
-            ),
-          ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        child: Column(
+        title: const Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 12),
-            _buildBannerCarousel(),
-            const SizedBox(height: 20),
-            _buildCategoryChips(),
-            const SizedBox(height: 24),
-            _buildEventSection('🔥 Trending Now'),
-            const SizedBox(height: 24),
-            _buildEventSection('⭐ Popular Events'),
-            const SizedBox(height: 24),
-            _buildEventSection('🎪 Sự Kiện Sắp Ra Mắt'),
-            const SizedBox(height: 30),
+            Text('Launchpad', style: TextStyle(fontWeight: FontWeight.w800)),
+            Text(
+              'Contests, workshops & career fairs',
+              style: TextStyle(color: _muted, fontSize: 12),
+            ),
           ],
         ),
       ),
-    );
-  }
-
-  // Banner Carousel Slider lớn phía trên
-  Widget _buildBannerCarousel() {
-    return Column(
-      children: [
-        CarouselSlider(
-          options: CarouselOptions(
-            height: 210,
-            autoPlay: true,
-            enlargeCenterPage: true,
-            viewportFraction: 0.88,
-            onPageChanged: (index, reason) {
-              setState(() {
-                _currentBannerIndex = index;
-              });
-            },
-          ),
-          items: featuredEvents.map((event) {
-            return Builder(
-              builder: (BuildContext context) {
-                return Stack(
-                  children: [
-                    Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(20),
-                        image: DecorationImage(
-                          image: NetworkImage(event['image']!),
-                          fit: BoxFit.cover,
-                        ),
-                      ),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator(color: _accent))
+          : _error != null
+          ? _errorState()
+          : RefreshIndicator(
+              onRefresh: _load,
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
+                children: [
+                  _banner(open.isEmpty ? events : open),
+                  const SizedBox(height: 18),
+                  SizedBox(
+                    height: 38,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: _filters.length,
+                      separatorBuilder: (_, _) => const SizedBox(width: 8),
+                      itemBuilder: (context, index) {
+                        final filter = _filters[index];
+                        return ChoiceChip(
+                          label: Text(filter),
+                          selected: filter == _filter,
+                          onSelected: (_) => setState(() => _filter = filter),
+                          selectedColor: const Color(0xFF394A4D),
+                          backgroundColor: _surface,
+                          labelStyle: TextStyle(
+                            color: filter == _filter ? Colors.white : _muted,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 12,
+                          ),
+                        );
+                      },
                     ),
-                    Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(20),
-                        gradient: LinearGradient(
-                          begin: Alignment.bottomCenter,
-                          end: Alignment.topCenter,
-                          colors: [
-                            Colors.black.withValues(alpha: 0.85),
-                            Colors.transparent,
-                          ],
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      bottom: 16,
-                      left: 16,
-                      right: 16,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            event['title']!,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            event['organizer']!,
-                            style: TextStyle(
-                              color: Colors.grey[400],
-                              fontSize: 12,
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          Row(
-                            children: [
-                              ElevatedButton(
-                                onPressed: () {},
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF8B5CF6),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 18,
-                                    vertical: 8,
-                                  ),
-                                ),
-                                child: const Text(
-                                  "Mua Vé Ngay",
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              OutlinedButton(
-                                onPressed: () {},
-                                style: OutlinedButton.styleFrom(
-                                  side: const BorderSide(color: Colors.white54),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 8,
-                                  ),
-                                ),
-                                child: const Text(
-                                  "Chi Tiết",
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                );
-              },
-            );
-          }).toList(),
-        ),
-        const SizedBox(height: 10),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: featuredEvents.asMap().entries.map((entry) {
-            return Container(
-              width: _currentBannerIndex == entry.key ? 18.0 : 6.0,
-              height: 6.0,
-              margin: const EdgeInsets.symmetric(horizontal: 3.0),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(4),
-                color: _currentBannerIndex == entry.key
-                    ? const Color(0xFF8B5CF6)
-                    : Colors.grey[700],
-              ),
-            );
-          }).toList(),
-        ),
-      ],
-    );
-  }
-
-  // Danh mục Lướt Ngang
-  Widget _buildCategoryChips() {
-    return SizedBox(
-      height: 36,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: categories.length,
-        itemBuilder: (context, index) {
-          final isSelected = _selectedCategoryIndex == index;
-          return GestureDetector(
-            onTap: () {
-              setState(() {
-                _selectedCategoryIndex = index;
-              });
-            },
-            child: Container(
-              margin: const EdgeInsets.only(right: 10),
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? const Color(0xFF8B5CF6)
-                    : const Color(0xFF1F1D2B),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                categories[index],
-                style: TextStyle(
-                  color: isSelected ? Colors.white : Colors.grey[400],
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                  fontSize: 13,
-                ),
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  // Section Poster Sự Kiện Đứng
-  Widget _buildEventSection(String title) {
-    final isTrending = title.contains('Trending');
-    final events = isTrending
-        ? eventPosters.take(3).toList()
-        : eventPosters.skip(3).toList();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          child: Text(
-            title,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-        const SizedBox(height: 12),
-        SizedBox(
-          height: 185,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: events.length,
-            itemBuilder: (context, index) {
-              final event = events[index];
-              final palette = _posterPalettes[index + (isTrending ? 0 : 3)];
-
-              return Container(
-                width: 132,
-                margin: const EdgeInsets.only(right: 12),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(14),
-                  boxShadow: [
-                    BoxShadow(
-                      color: palette.first.withValues(alpha: 0.2),
-                      blurRadius: 12,
-                      offset: const Offset(0, 5),
-                    ),
-                  ],
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(14),
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      Image.network(
-                        event['image']!,
-                        fit: BoxFit.cover,
-                        loadingBuilder: (context, child, progress) =>
-                            progress == null
-                            ? child
-                            : _posterArtwork(event, palette),
-                        errorBuilder: (context, error, stackTrace) =>
-                            _posterArtwork(event, palette),
-                      ),
-                      const DecoratedBox(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [Colors.transparent, Colors.black87],
-                            stops: [0.35, 1],
-                          ),
-                        ),
-                      ),
-                      Positioned(
-                        top: 9,
-                        left: 9,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 7,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.42),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Text(
-                            event['tag']!,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 9,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ),
-                      Positioned(
-                        left: 10,
-                        right: 8,
-                        bottom: 10,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              event['title']!,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 3),
-                            Text(
-                              event['organizer']!,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Colors.white70,
-                                fontSize: 9,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
                   ),
-                ),
-              );
-            },
-          ),
-        ),
-      ],
+                  const SizedBox(height: 24),
+                  _section(
+                    'Đang mở đăng ký',
+                    events
+                        .where(
+                          (e) =>
+                              e.statusAt(now) == EventStatus.registrationOpen,
+                        )
+                        .toList(),
+                    now,
+                  ),
+                  _section(
+                    'Sắp mở và sắp diễn ra',
+                    events.where((e) {
+                      final status = e.statusAt(now);
+                      return status == EventStatus.openingSoon ||
+                          status == EventStatus.closedUpcoming;
+                    }).toList(),
+                    now,
+                  ),
+                  _section(
+                    'Mùa trước, chuẩn bị cho lần sau',
+                    events.where((e) {
+                      final status = e.statusAt(now);
+                      return status == EventStatus.ended ||
+                          status == EventStatus.newSeasonUnknown;
+                    }).toList(),
+                    now,
+                  ),
+                ],
+              ),
+            ),
     );
   }
 
-  Widget _posterArtwork(Map<String, String> event, List<Color> palette) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: palette,
-        ),
-      ),
-      child: Stack(
+  Widget _errorState() => Center(
+    child: Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Positioned(
-            top: 34,
-            right: -12,
-            child: Icon(
-              Icons.circle,
-              size: 100,
-              color: Colors.white.withValues(alpha: 0.08),
-            ),
+          const Icon(Icons.cloud_off_rounded, color: _muted, size: 42),
+          const SizedBox(height: 12),
+          const Text(
+            'Không thể tải dữ liệu Launchpad',
+            textAlign: TextAlign.center,
           ),
-          Positioned(
-            top: 48,
-            left: 12,
-            child: Icon(
-              Icons.auto_awesome,
-              size: 34,
-              color: Colors.white.withValues(alpha: 0.78),
-            ),
-          ),
-          Positioned(
-            top: 92,
-            right: 18,
-            child: Icon(
-              Icons.star,
-              size: 22,
-              color: Colors.white.withValues(alpha: 0.55),
-            ),
-          ),
+          TextButton(onPressed: _load, child: const Text('Thử lại')),
         ],
       ),
+    ),
+  );
+
+  Widget _banner(List<EventItem> events) {
+    final event = events.isEmpty ? null : events.first;
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        gradient: const LinearGradient(
+          colors: [Color(0xFF3C3065), Color(0xFF1B3D47)],
+        ),
+        border: Border.all(color: Colors.white12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(
+            Icons.rocket_launch_rounded,
+            color: Color(0xFF8CE6CF),
+            size: 30,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            event == null
+                ? 'Chưa có đợt đăng ký nào đang mở, đây là các cuộc thi nên chuẩn bị cho mùa tới'
+                : event.title,
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+          ),
+          if (event != null) ...[
+            const SizedBox(height: 6),
+            Text(event.organizer, style: const TextStyle(color: _muted)),
+            const SizedBox(height: 12),
+            _matchChip(event),
+            TextButton(
+              onPressed: () => _open(event),
+              child: const Text('Xem chi tiết'),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _section(String title, List<EventItem> events, DateTime now) {
+    if (events.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: 22),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 12),
+          ...events.map((event) => _eventCard(event, now)),
+        ],
+      ),
+    );
+  }
+
+  Widget _eventCard(EventItem event, DateTime now) {
+    final status = event.statusAt(now);
+    return Card(
+      color: _surface,
+      margin: const EdgeInsets.only(bottom: 12),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: () => _open(event),
+        child: Padding(
+          padding: const EdgeInsets.all(15),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Text(
+                      event.title,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                  _matchChip(event),
+                ],
+              ),
+              const SizedBox(height: 5),
+              Text(
+                event.organizer,
+                style: const TextStyle(color: _muted, fontSize: 12),
+              ),
+              const SizedBox(height: 9),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: [
+                  _tag(event.type),
+                  _tag(_statusText(event, status, now)),
+                  if (event.notes != null)
+                    _tag('Cần kiểm tra thông tin', warning: true),
+                ],
+              ),
+              const SizedBox(height: 9),
+              Text(
+                'Bạn sẽ luyện: ${event.skills.join(', ')}',
+                style: const TextStyle(color: Color(0xFFB9F2DF), fontSize: 12),
+              ),
+              if (event.sourceUrl != null)
+                Text(
+                  'Đã xác minh ${_date(event.verifiedAt)} · Nguồn: ${Uri.tryParse(event.sourceUrl!)?.host ?? event.sourceUrl}',
+                  style: const TextStyle(color: _muted, fontSize: 10),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _matchChip(EventItem event) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+    decoration: BoxDecoration(
+      color: const Color(0xFF344B4D),
+      borderRadius: BorderRadius.circular(12),
+    ),
+    child: Text(
+      'Khớp ${(_match(event) * 100).round()}%',
+      style: const TextStyle(
+        color: Color(0xFFB9F2DF),
+        fontSize: 10,
+        fontWeight: FontWeight.w800,
+      ),
+    ),
+  );
+
+  Widget _tag(String label, {bool warning = false}) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+    decoration: BoxDecoration(
+      color: warning ? const Color(0xFF594A2D) : const Color(0xFF302A3B),
+      borderRadius: BorderRadius.circular(10),
+    ),
+    child: Text(
+      label,
+      style: TextStyle(
+        color: warning ? const Color(0xFFFFD98A) : _muted,
+        fontSize: 10,
+      ),
+    ),
+  );
+
+  String _statusText(EventItem event, EventStatus status, DateTime now) {
+    switch (status) {
+      case EventStatus.registrationOpen:
+        final days = event.registrationDeadline
+            ?.difference(DateTime(now.year, now.month, now.day))
+            .inDays;
+        return days == null ? 'Đang mở đăng ký' : 'Còn $days ngày';
+      case EventStatus.openingSoon:
+        return 'Mở từ ${_date(event.registrationOpen, short: true)}';
+      case EventStatus.closedUpcoming:
+        return 'Đã đóng đăng ký, sắp diễn ra';
+      case EventStatus.newSeasonUnknown:
+        return 'Chưa có thông tin mùa mới';
+      case EventStatus.ended:
+        return 'Đã kết thúc';
+    }
+  }
+
+  String _date(DateTime? date, {bool short = false}) => date == null
+      ? ''
+      : '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}${short ? '' : '/${date.year}'}';
+
+  void _open(EventItem event) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => EventDetailScreen(event: event)),
     );
   }
 }
