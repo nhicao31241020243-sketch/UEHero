@@ -8,6 +8,7 @@ import 'home_event_screen.dart';
 import 'models/character_data.dart';
 import 'screens/chatbot_screen.dart';
 import 'screens/calendar_screen.dart';
+import 'screens/career_map_screen.dart';
 import 'screens/cv_check_screen.dart';
 import 'screens/flashcard_home_screen.dart';
 import 'screens/interview/interview_home_screen.dart';
@@ -30,48 +31,70 @@ class _HomeWidgetsScreenState extends State<HomeWidgetsScreen>
   static const _accentColor = Color(0xFFBFA8FF);
 
   static const _features = [
-    _DashboardFeature('Sao Thủy', 'Xem Job sinh viên', Color(0xFFB9A2FF), [
-      Color(0xFFEEE6FF),
-      Color(0xFFA98DFF),
-      Color(0xFF5033A8),
-    ], 'assets/images/planets/mercury.png'),
-    _DashboardFeature('Sao Kim', 'Thư viện học liệu', Color(0xFFFFC18E), [
-      Color(0xFFFFE7C9),
-      Color(0xFFFFB56F),
-      Color(0xFFB35445),
-    ], 'assets/images/planets/venus.png'),
     _DashboardFeature(
-      'Học cùng trợ lý',
-      'Hỏi bài, luyện kỹ năng',
+      'Job Match',
+      'Jobs that fit you',
+      Color(0xFFB9A2FF),
+      [Color(0xFFEEE6FF), Color(0xFFA98DFF), Color(0xFF5033A8)],
+      'assets/images/planets/mercury.png',
+      'mercury',
+    ),
+    _DashboardFeature(
+      'Book Swap',
+      'Books & study gear',
+      Color(0xFFFFC18E),
+      [Color(0xFFFFE7C9), Color(0xFFFFB56F), Color(0xFFB35445)],
+      'assets/images/planets/venus.png',
+      'venus',
+    ),
+    _DashboardFeature(
+      'Study Buddy',
+      'Ask, learn, practice',
       Color(0xFF8DD8D1),
       [Color(0xFFB3F4DF), Color(0xFF55BFA6), Color(0xFF246E82)],
       'assets/images/planets/earth.png',
+      'earth',
     ),
-    _DashboardFeature('Sao Hỏa', 'To-Do List', Color(0xFFFF9EBD), [
-      Color(0xFFFFC19E),
-      Color(0xFFFF704E),
-      Color(0xFF9B263D),
-    ], 'assets/images/planets/mars.png'),
-    _DashboardFeature('Sao Mộc', 'UEH Mentor', Color(0xFFFFD36E), [
-      Color(0xFFFFE8A1),
-      Color(0xFFE6A83F),
-      Color(0xFF8F4C2C),
-    ], 'assets/images/planets/jupiter.png'),
-    _DashboardFeature('Sao Thổ', 'Flashcard', Color(0xFF9DBBFF), [
-      Color(0xFFFFE6A2),
-      Color(0xFFCC9F55),
-      Color(0xFF704A56),
-    ], 'assets/images/planets/saturn.png'),
-    _DashboardFeature('Hồ sơ ứng tuyển', 'CV Check', Color(0xFFB7E59B), [
-      Color(0xFFD8FFF4),
-      Color(0xFF73D7CF),
-      Color(0xFF287AA3),
-    ], 'assets/images/planets/uranus.png'),
-    _DashboardFeature('Sao Hải Vương', 'Career Map', Color(0xFFFFA878), [
-      Color(0xFF90E8FF),
-      Color(0xFF278BFF),
-      Color(0xFF2430A8),
-    ], 'assets/images/planets/neptune.png'),
+    _DashboardFeature(
+      'Weekly Plan',
+      'Your next steps',
+      Color(0xFFFF9EBD),
+      [Color(0xFFFFC19E), Color(0xFFFF704E), Color(0xFF9B263D)],
+      'assets/images/planets/mars.png',
+      'mars',
+    ),
+    _DashboardFeature(
+      'UEH Mentor',
+      'Mentors for your goal',
+      Color(0xFFFFD36E),
+      [Color(0xFFFFE8A1), Color(0xFFE6A83F), Color(0xFF8F4C2C)],
+      'assets/images/planets/jupiter.png',
+      'jupiter',
+    ),
+    _DashboardFeature(
+      'Skill Drills',
+      'Practice what you need',
+      Color(0xFF9DBBFF),
+      [Color(0xFFFFE6A2), Color(0xFFCC9F55), Color(0xFF704A56)],
+      'assets/images/planets/saturn.png',
+      'saturn',
+    ),
+    _DashboardFeature(
+      'CV Check',
+      'Score & fix your CV',
+      Color(0xFFB7E59B),
+      [Color(0xFFD8FFF4), Color(0xFF73D7CF), Color(0xFF287AA3)],
+      'assets/images/planets/uranus.png',
+      'uranus',
+    ),
+    _DashboardFeature(
+      'Events',
+      'Sự kiện & workshop',
+      Color(0xFFFFC76E),
+      [Color(0xFFFFF0B5), Color(0xFFFF9F43), Color(0xFF8E3D73)],
+      '',
+      'events',
+    ),
   ];
 
   late final AnimationController _floatController;
@@ -158,6 +181,12 @@ class _HomeWidgetsScreenState extends State<HomeWidgetsScreen>
         .push(MaterialPageRoute<void>(builder: (_) => const CalendarScreen()));
   }
 
+  void _openEvents() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => const HomeEventScreen()),
+    );
+  }
+
   void _openFlashcards() {
     Navigator.of(context).push(
       MaterialPageRoute<void>(builder: (_) => const FlashcardHomeScreen()),
@@ -183,7 +212,7 @@ class _HomeWidgetsScreenState extends State<HomeWidgetsScreen>
   Widget build(BuildContext context) {
     final tabs = [
       _buildHomeTab(),
-      const HomeEventScreen(),
+      const CareerMapScreen(embedded: true),
       const InterviewHomeScreen(),
       _buildInfoTab(
         icon: Icons.calculate_rounded,
@@ -249,8 +278,8 @@ class _HomeWidgetsScreenState extends State<HomeWidgetsScreen>
               Expanded(
                 child: _buildNavButton(
                   1,
-                  Icons.calendar_month_rounded,
-                  'Events',
+                  Icons.route_rounded,
+                  'Career Map',
                 ),
               ),
               Expanded(
@@ -387,34 +416,26 @@ class _HomeWidgetsScreenState extends State<HomeWidgetsScreen>
                         rotation: _planetController,
                         phase: featureIndex * 0.8,
                         onTap: () {
-                          if (feature.planet == 'Học cùng trợ lý' &&
-                              feature.label == 'Hỏi bài, luyện kỹ năng') {
+                          if (feature.actionKey == 'earth') {
                             _openQuestionCamera();
-                          } else if (feature.planet == 'Sao Thủy' &&
-                              feature.label == 'Xem Job sinh viên') {
+                          } else if (feature.actionKey == 'mercury') {
                             _openJobs();
-                          } else if (feature.planet == 'Sao Hỏa' &&
-                              feature.label == 'To-Do List') {
+                          } else if (feature.actionKey == 'mars') {
                             _openCalendar();
-                          } else if (feature.planet == 'Sao Mộc' &&
-                              feature.label == 'UEH Mentor') {
+                          } else if (feature.actionKey == 'jupiter') {
                             _openMentors();
-                          } else if (feature.planet == 'Sao Kim' &&
-                              feature.label == 'Thư viện học liệu') {
+                          } else if (feature.actionKey == 'venus') {
                             _openSecondHandMarket();
-                          } else if (feature.planet == 'Sao Thổ' &&
-                              feature.label == 'Flashcard') {
+                          } else if (feature.actionKey == 'saturn') {
                             _openFlashcards();
-                          } else if (feature.planet == 'Hồ sơ ứng tuyển' &&
-                              feature.label == 'CV Check') {
+                          } else if (feature.actionKey == 'uranus') {
                             Navigator.of(context).push(
                               MaterialPageRoute<void>(
                                 builder: (_) => const CvCheckScreen(),
                               ),
                             );
-                          } else if (feature.planet == 'Sao Hải Vương' &&
-                              feature.label == 'Career Map') {
-                            _selectFeature(featureIndex);
+                          } else if (feature.actionKey == 'events') {
+                            _openEvents();
                           } else {
                             _selectFeature(featureIndex);
                           }
@@ -772,7 +793,9 @@ class _PlanetButton extends StatelessWidget {
                       child: RepaintBoundary(
                         child: AnimatedBuilder(
                           animation: rotation,
-                          child: feature.label == 'Flashcard'
+                          child: feature.actionKey == 'events'
+                              ? const _PlanetPlaceholder()
+                              : feature.actionKey == 'saturn'
                               ? Hero(
                                   tag: FlashcardHomeScreen.heroTag,
                                   child: Image.asset(
@@ -864,6 +887,7 @@ class _DashboardFeature {
     this.color,
     this.gradientColors,
     this.imagePath,
+    this.actionKey,
   );
 
   final String planet;
@@ -871,4 +895,43 @@ class _DashboardFeature {
   final Color color;
   final List<Color> gradientColors;
   final String imagePath;
+  final String actionKey;
+}
+
+class _PlanetPlaceholder extends StatelessWidget {
+  const _PlanetPlaceholder();
+
+  @override
+  Widget build(BuildContext context) {
+    return const DecoratedBox(
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: RadialGradient(
+          center: Alignment(-0.25, -0.3),
+          radius: 0.9,
+          colors: [
+            Color(0xFFFFF4C4),
+            Color(0xFFFFA54D),
+            Color(0xFFB83F82),
+            Color(0xFF3D235F),
+          ],
+          stops: [0, 0.35, 0.72, 1],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Color(0x66FF9F43),
+            blurRadius: 22,
+            spreadRadius: 4,
+          ),
+        ],
+      ),
+      child: Center(
+        child: Icon(
+          Icons.event_rounded,
+          color: Color(0xFFFFF4C4),
+          size: 48,
+        ),
+      ),
+    );
+  }
 }
