@@ -9,6 +9,7 @@ import 'models/character_data.dart';
 import 'screens/chatbot_screen.dart';
 import 'screens/calendar_screen.dart';
 import 'screens/cv_check_screen.dart';
+import 'screens/flashcard_home_screen.dart';
 import 'screens/interview/interview_home_screen.dart';
 import 'screens/job_screen.dart';
 import 'screens/mentor_screen.dart';
@@ -39,11 +40,13 @@ class _HomeWidgetsScreenState extends State<HomeWidgetsScreen>
       Color(0xFFFFB56F),
       Color(0xFFB35445),
     ], 'assets/images/planets/venus.png'),
-    _DashboardFeature('Học cùng trợ lý', 'Hỏi bài, luyện kỹ năng', Color(0xFF8DD8D1), [
-      Color(0xFFB3F4DF),
-      Color(0xFF55BFA6),
-      Color(0xFF246E82),
-    ], 'assets/images/planets/earth.png'),
+    _DashboardFeature(
+      'Học cùng trợ lý',
+      'Hỏi bài, luyện kỹ năng',
+      Color(0xFF8DD8D1),
+      [Color(0xFFB3F4DF), Color(0xFF55BFA6), Color(0xFF246E82)],
+      'assets/images/planets/earth.png',
+    ),
     _DashboardFeature('Sao Hỏa', 'To-Do List', Color(0xFFFF9EBD), [
       Color(0xFFFFC19E),
       Color(0xFFFF704E),
@@ -153,6 +156,12 @@ class _HomeWidgetsScreenState extends State<HomeWidgetsScreen>
   void _openCalendar() {
     Navigator.of(context)
         .push(MaterialPageRoute<void>(builder: (_) => const CalendarScreen()));
+  }
+
+  void _openFlashcards() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => const FlashcardHomeScreen()),
+    );
   }
 
   void _openJobs({String query = ''}) {
@@ -393,6 +402,9 @@ class _HomeWidgetsScreenState extends State<HomeWidgetsScreen>
                           } else if (feature.planet == 'Sao Kim' &&
                               feature.label == 'Thư viện học liệu') {
                             _openSecondHandMarket();
+                          } else if (feature.planet == 'Sao Thổ' &&
+                              feature.label == 'Flashcard') {
+                            _openFlashcards();
                           } else if (feature.planet == 'Hồ sơ ứng tuyển' &&
                               feature.label == 'CV Check') {
                             Navigator.of(context).push(
@@ -760,11 +772,20 @@ class _PlanetButton extends StatelessWidget {
                       child: RepaintBoundary(
                         child: AnimatedBuilder(
                           animation: rotation,
-                          child: Image.asset(
-                            feature.imagePath,
-                            fit: BoxFit.contain,
-                            filterQuality: FilterQuality.high,
-                          ),
+                          child: feature.label == 'Flashcard'
+                              ? Hero(
+                                  tag: FlashcardHomeScreen.heroTag,
+                                  child: Image.asset(
+                                    feature.imagePath,
+                                    fit: BoxFit.contain,
+                                    filterQuality: FilterQuality.high,
+                                  ),
+                                )
+                              : Image.asset(
+                                  feature.imagePath,
+                                  fit: BoxFit.contain,
+                                  filterQuality: FilterQuality.high,
+                                ),
                           builder: (context, child) {
                             final angle = rotation.value * 2 * math.pi + phase;
                             return Transform.translate(
