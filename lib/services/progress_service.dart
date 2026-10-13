@@ -12,13 +12,15 @@ class ProgressService extends ChangeNotifier {
   static final instance = ProgressService._();
 
   static const _ledgerKey = 'career_progress_ledger_v1';
+  static const _pendingAnimationKey = 'career_progress_pending_animation';
   static const _dailyCap = 100;
 
   List<ProgressLedgerEntry> _ledger = const [];
   bool _initialized = false;
 
   bool get isInitialized => _initialized;
-  int get totalPoints => _ledger.fold(0, (total, entry) => total + entry.points);
+  int get totalPoints =>
+      _ledger.fold(0, (total, entry) => total + entry.points);
   List<ProgressLedgerEntry> get ledger => List.unmodifiable(_ledger);
   int get dailyCap => _dailyCap;
 
@@ -34,9 +36,8 @@ class ProgressService extends ChangeNotifier {
       _ledger = decoded
           .whereType<Map>()
           .map(
-            (entry) => ProgressLedgerEntry.fromJson(
-              Map<String, dynamic>.from(entry),
-            ),
+            (entry) =>
+                ProgressLedgerEntry.fromJson(Map<String, dynamic>.from(entry)),
           )
           .toList();
     }
@@ -61,6 +62,7 @@ class ProgressService extends ChangeNotifier {
       return 0;
     }
     final timestamp = at ?? DateTime.now();
+    final oldNode = currentNodeFor(totalPoints);
     final dailyTotal = _ledger
         .where((entry) => _sameDay(entry.timestamp, timestamp))
         .fold(0, (total, entry) => total + entry.points);
@@ -81,8 +83,19 @@ class ProgressService extends ChangeNotifier {
       _ledgerKey,
       jsonEncode(_ledger.map((entry) => entry.toJson()).toList()),
     );
+    if (currentNodeFor(totalPoints).id != oldNode.id) {
+      await prefs.setBool(_pendingAnimationKey, true);
+    }
     notifyListeners();
     return awarded;
+  }
+
+  Future<bool> consumePendingAnimation() async {
+    _requireInitialized();
+    final prefs = await SharedPreferences.getInstance();
+    final pending = prefs.getBool(_pendingAnimationKey) ?? false;
+    if (pending) await prefs.setBool(_pendingAnimationKey, false);
+    return pending;
   }
 
   String rankFor(int points) {

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:model_viewer_plus/model_viewer_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../config/career_progress_config.dart';
+import '../models/character_data.dart';
 import '../services/progress_service.dart';
 
 class CareerMapScreen extends StatefulWidget {
@@ -12,24 +15,45 @@ class CareerMapScreen extends StatefulWidget {
   State<CareerMapScreen> createState() => _CareerMapScreenState();
 }
 
-class _CareerMapScreenState extends State<CareerMapScreen> {
+class _CareerMapScreenState extends State<CareerMapScreen>
+    with SingleTickerProviderStateMixin {
   static const _background = Color(0xFF100E19);
   static const _accent = Color(0xFF90E8FF);
   final _progress = ProgressService.instance;
+  late final AnimationController _mascotController;
+  CharacterData _companion = characterData.first;
   bool _loading = true;
+  bool _animateProgress = false;
 
   @override
   void initState() {
     super.initState();
+    _mascotController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    );
     _initialize();
   }
 
   Future<void> _initialize() async {
     try {
       await _progress.initialize();
+      final preferences = await SharedPreferences.getInstance();
+      final saved = characterById(preferences.getString('selected_mascot'));
+      _companion = saved ?? CharacterSelection.selected ?? characterData.first;
+      _animateProgress = await _progress.consumePendingAnimation();
+      if (_animateProgress) {
+        await _mascotController.forward();
+      }
     } finally {
       if (mounted) setState(() => _loading = false);
     }
+  }
+
+  @override
+  void dispose() {
+    _mascotController.dispose();
+    super.dispose();
   }
 
   @override
@@ -178,6 +202,10 @@ class _CareerMapScreenState extends State<CareerMapScreen> {
             node: careerNodes[index],
             state: _nodeState(careerNodes[index], points),
             offset: index.isEven ? 0 : 36,
+            mascot: _nodeState(careerNodes[index], points) == _NodeState.current
+                ? _companion
+                : null,
+            mascotAnimation: _mascotController,
             onTap: () => _showNode(careerNodes[index], points),
           ),
           if (index < careerNodes.length - 1)
@@ -296,12 +324,16 @@ class _NodeTile extends StatelessWidget {
     required this.node,
     required this.state,
     required this.offset,
+    this.mascot,
+    required this.mascotAnimation,
     required this.onTap,
   });
 
   final CareerNodeConfig node;
   final _NodeState state;
   final double offset;
+  final CharacterData? mascot;
+  final Animation<double> mascotAnimation;
   final VoidCallback onTap;
 
   @override
@@ -376,14 +408,41 @@ class _NodeTile extends StatelessWidget {
                   ],
                 ),
               ),
-              Icon(
-                state == _NodeState.locked
-                    ? Icons.lock_outline
-                    : state == _NodeState.current
-                    ? Icons.radio_button_checked
-                    : Icons.check_circle,
-                color: color,
-              ),
+              if (mascot != null)
+                AnimatedBuilder(
+                  animation: mascotAnimation,
+                  builder: (context, child) => Transform.translate(
+                    offset: Offset(
+                      0,
+                      -4 * (0.5 + mascotAnimation.value / 2),
+                    ),
+                    child: child,
+                  ),
+                  child: SizedBox(
+                    width: 46,
+                    height: 46,
+                    child: ModelViewer(
+                      key: ValueKey(mascot!.modelPath),
+                      src: mascot!.modelPath,
+                      alt: mascot!.name,
+                      autoPlay: true,
+                      animationName: mascot!.animationName,
+                      cameraControls: false,
+                      disableZoom: true,
+                      backgroundColor: Colors.transparent,
+                      debugLogging: false,
+                    ),
+                  ),
+                )
+              else
+                Icon(
+                  state == _NodeState.locked
+                      ? Icons.lock_outline
+                      : state == _NodeState.current
+                      ? Icons.radio_button_checked
+                      : Icons.check_circle,
+                  color: color,
+                ),
             ],
           ),
         ),
