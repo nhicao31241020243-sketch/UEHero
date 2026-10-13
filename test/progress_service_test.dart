@@ -57,4 +57,23 @@ void main() {
     expect(service.nextNodeFor(121)?.id, 'portfolio-station');
     expect(service.pointsToNextNode(121), 99);
   });
+
+  test('reloads the ledger from persistent storage', () async {
+    SharedPreferences.setMockInitialValues({});
+    final preferences = await SharedPreferences.getInstance();
+    final service = ProgressService.instance;
+    service.resetForTesting();
+    await service.initialize(preferences: preferences);
+    await service.awardPoints(
+      ProgressEventType.gpaUpdated,
+      refId: 'gpa-1',
+      preferences: preferences,
+    );
+
+    service.resetForTesting();
+    await service.initialize(preferences: preferences);
+
+    expect(service.totalPoints, 5);
+    expect(service.ledger.single.refId, 'gpa-1');
+  });
 }

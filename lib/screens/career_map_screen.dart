@@ -24,6 +24,7 @@ class _CareerMapScreenState extends State<CareerMapScreen>
   CharacterData _companion = characterData.first;
   bool _loading = true;
   bool _animateProgress = false;
+  Object? _loadError;
 
   @override
   void initState() {
@@ -45,6 +46,8 @@ class _CareerMapScreenState extends State<CareerMapScreen>
       if (_animateProgress) {
         await _mascotController.forward();
       }
+    } catch (error) {
+      _loadError = error;
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -71,12 +74,42 @@ class _CareerMapScreenState extends State<CareerMapScreen>
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator(color: _accent))
+          : _loadError != null
+          ? _errorState()
           : AnimatedBuilder(
               animation: _progress,
               builder: (context, _) => _buildMap(context),
             ),
     );
   }
+
+  Widget _errorState() => Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.cloud_off_rounded, color: Colors.white54, size: 42),
+              const SizedBox(height: 12),
+              const Text(
+                'Không thể tải tiến độ Career Map',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.white),
+              ),
+              TextButton(
+                onPressed: () {
+                  setState(() {
+                    _loading = true;
+                    _loadError = null;
+                  });
+                  _initialize();
+                },
+                child: const Text('Thử lại'),
+              ),
+            ],
+          ),
+        ),
+      );
 
   Widget _buildMap(BuildContext context) {
     final points = _progress.totalPoints;

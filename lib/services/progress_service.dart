@@ -66,7 +66,9 @@ class ProgressService extends ChangeNotifier {
     final dailyTotal = _ledger
         .where((entry) => _sameDay(entry.timestamp, timestamp))
         .fold(0, (total, entry) => total + entry.points);
-    final awarded = (points).clamp(0, _dailyCap - dailyTotal);
+    final remaining = _dailyCap - dailyTotal;
+    if (remaining <= 0) return 0;
+    final awarded = points.clamp(0, remaining);
     if (awarded <= 0) return 0;
     _ledger = [
       ..._ledger,
