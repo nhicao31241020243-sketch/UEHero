@@ -5,7 +5,9 @@ import 'package:flutter/services.dart';
 
 import '../models/flashcard.dart';
 import '../models/flashcard_deck.dart';
+import '../models/career_progress.dart';
 import '../services/flashcard_service.dart';
+import '../services/progress_service.dart';
 import '../widgets/code_block.dart';
 import '../widgets/flip_card.dart';
 import 'flashcard_home_screen.dart';
@@ -39,6 +41,7 @@ class _FlashcardStudyScreenState extends State<FlashcardStudyScreen> {
   int _sessionCorrect = 0;
   int? _selectedChoice;
   double _swipeDx = 0;
+  bool _completionAwarded = false;
 
   static const _teal = FlashcardHomeScreen.teal;
   static const _lime = FlashcardHomeScreen.lime;
@@ -119,8 +122,7 @@ class _FlashcardStudyScreenState extends State<FlashcardStudyScreen> {
     HapticFeedback.lightImpact();
     final isQuiz = item.card.quizOptions.isNotEmpty;
     final wasCorrect = isQuiz
-        ? _selectedChoice != null &&
-              _selectedChoice == item.card.correctChoice
+        ? _selectedChoice != null && _selectedChoice == item.card.correctChoice
         : known;
     await _service.recordReview(
       item.deck.id,
@@ -136,6 +138,22 @@ class _FlashcardStudyScreenState extends State<FlashcardStudyScreen> {
       _isFlipped = false;
       _swipeDx = 0;
     });
+    if (_index >= _queue.length && !_completionAwarded) {
+      _completionAwarded = true;
+      final refId = widget.reviewAllDue
+          ? 'flashcard-review-${DateTime.now().toIso8601String().substring(0, 10)}'
+          : 'flashcard-deck-${item.deck.id}';
+      await ProgressService.instance.initialize();
+      await ProgressService.instance.awardPoints(
+        ProgressEventType.flashcardCompleted,
+        refId: refId,
+        metadata: {
+          'deckId': item.deck.id,
+          'reviewed': _sessionReviewed,
+          'correct': _sessionCorrect,
+        },
+      );
+    }
   }
 
   void _handleSwipe(DragEndDetails details) {
