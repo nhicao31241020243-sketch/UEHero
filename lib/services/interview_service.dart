@@ -5,7 +5,9 @@ import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/interview_models.dart';
+import '../models/career_progress.dart';
 import 'points_manager.dart';
+import 'progress_service.dart';
 
 class InterviewService {
   InterviewService._();
@@ -218,6 +220,12 @@ class InterviewService {
     await preferences.setBool(interviewDoneKey, true);
     PointsManager.instance.addCvPoints(30);
     if (completed.overall >= 70) PointsManager.instance.addCvPoints(10);
+    await ProgressService.instance.initialize();
+    await ProgressService.instance.awardPoints(
+      ProgressEventType.mockInterviewCompleted,
+      refId: 'mock-interview-${completed.id}',
+      metadata: {'overall': completed.overall},
+    );
   }
 
   String _todayKey(DateTime date) =>

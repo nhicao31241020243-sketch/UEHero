@@ -8,8 +8,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/career_goal.dart';
 import '../models/character_data.dart';
 import '../models/cv_check.dart';
+import '../models/career_progress.dart';
 import '../services/cv_analyzer.dart';
 import '../services/points_manager.dart';
+import '../services/progress_service.dart';
 import '../widgets/match_bar.dart';
 import 'job_screen.dart';
 
@@ -182,6 +184,16 @@ class _CvCheckScreenState extends State<CvCheckScreen> {
     });
     if (points > 0) {
       PointsManager.instance.addCvPoints(points);
+      await ProgressService.instance.initialize();
+      await ProgressService.instance.awardPoints(
+        previousBest == 0
+            ? ProgressEventType.cvFirstCheck
+            : ProgressEventType.cvScoreImproved,
+        refId: previousBest == 0
+            ? 'cv-first-check'
+            : 'cv-score-${result.score}',
+        metadata: {'score': result.score, 'previousBest': previousBest},
+      );
       _showCelebration(points, result.score > previousBest);
     }
   }

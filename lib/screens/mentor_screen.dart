@@ -3,6 +3,8 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../models/mentor_model.dart';
+import '../models/career_progress.dart';
+import '../services/progress_service.dart';
 
 class MentorScreen extends StatefulWidget {
   const MentorScreen({super.key});
@@ -143,7 +145,15 @@ class _MentorScreenState extends State<MentorScreen> {
               width: double.infinity,
               height: 50,
               child: FilledButton(
-                onPressed: () => Navigator.of(sheetContext).pop(),
+                onPressed: () async {
+                  await ProgressService.instance.initialize();
+                  await ProgressService.instance.awardPoints(
+                    ProgressEventType.mentorBooked,
+                    refId: 'mentor-booking-${mentor.name}',
+                    metadata: {'mentor': mentor.name},
+                  );
+                  if (sheetContext.mounted) Navigator.of(sheetContext).pop();
+                },
                 style: FilledButton.styleFrom(
                   backgroundColor: _accentColor,
                   foregroundColor: const Color(0xFF211A30),

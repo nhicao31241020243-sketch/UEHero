@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../models/task_model.dart';
+import '../models/career_progress.dart';
+import '../services/progress_service.dart';
 
 class CalendarScreen extends StatefulWidget {
   const CalendarScreen({super.key});
@@ -131,6 +133,14 @@ class _CalendarScreenState extends State<CalendarScreen> {
     setState(() {
       _tasks[index] = task.copyWith(isCompleted: !task.isCompleted);
     });
+    if (!task.isCompleted) {
+      ProgressService.instance.initialize().then(
+        (_) => ProgressService.instance.awardPoints(
+          ProgressEventType.weeklyTaskCompleted,
+          refId: 'weekly-task-${task.title}-${task.date.toIso8601String()}',
+        ),
+      );
+    }
   }
 
   void _deleteTask(TaskModel task) {
