@@ -13,6 +13,7 @@ import '../models/career_goal.dart';
 import '../models/character_data.dart';
 import '../models/xp_entry.dart';
 import '../services/points_manager.dart';
+import '../services/mascot_selection_store.dart';
 
 class UEHeroCameraScreen extends StatefulWidget {
   const UEHeroCameraScreen({
@@ -77,7 +78,9 @@ class _UEHeroCameraScreenState extends State<UEHeroCameraScreen>
 
   Future<void> _loadLearningContext() async {
     final preferences = await SharedPreferences.getInstance();
-    final savedMascot = characterById(preferences.getString('selected_mascot'));
+    final savedMascot = (await MascotSelectionStore.instance.read(
+      preferences: preferences,
+    )).primary;
     final goal = careerGoalByTitle(preferences.getString('career_goal'));
     if (!mounted) return;
     setState(() {

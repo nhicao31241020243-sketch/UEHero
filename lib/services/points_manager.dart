@@ -17,6 +17,7 @@ const Map<String, int> xpDailyCaps = {
   'debug': 100,
   'cv_check': 100,
   'skill_practice': 15,
+  'mentor_meeting': 100,
 };
 
 class PointsManager extends ChangeNotifier {

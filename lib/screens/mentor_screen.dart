@@ -1,10 +1,16 @@
-import 'dart:math' as math;
+import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import '../config/it_fields.dart';
+import '../data/mentor_demo_data.dart';
 import '../models/mentor_model.dart';
-import '../models/xp_entry.dart';
-import '../services/points_manager.dart';
+import '../services/mentor_booking_service.dart';
+import '../services/mentor_filter.dart';
+import '../widgets/mentor_avatar.dart';
+import 'mentor_bookings_screen.dart';
+import 'mentor_profile_screen.dart';
 
 class MentorScreen extends StatefulWidget {
   const MentorScreen({super.key});
@@ -17,158 +23,78 @@ class _MentorScreenState extends State<MentorScreen> {
   static const _backgroundColor = Color(0xFF100E19);
   static const _surfaceColor = Color(0xFF211D2B);
   static const _accentColor = Color(0xFFBFA8FF);
-
-  static const _mentors = <MentorModel>[
-    MentorModel(
-      name: 'Minh Anh Nguyễn',
-      jobTitle: 'Senior UX Designer',
-      rating: 4.9,
-      menteeCount: 12,
-      avatarAsset: '',
-      bio: 'Cùng bạn biến ý tưởng thành trải nghiệm người dùng đáng nhớ.',
-      avatarColor: Color(0xFFBDA0FF),
-    ),
-    MentorModel(
-      name: 'Quang Huy Trần',
-      jobTitle: 'Data Science Expert',
-      rating: 4.8,
-      menteeCount: 18,
-      avatarAsset: '',
-      bio: 'Khám phá dữ liệu, machine learning và lộ trình Data thực tế.',
-      avatarColor: Color(0xFF62D3CF),
-    ),
-    MentorModel(
-      name: 'Thảo My Lê',
-      jobTitle: 'Product Manager',
-      rating: 5.0,
-      menteeCount: 9,
-      avatarAsset: '',
-      bio: 'Chia sẻ cách xây sản phẩm và phối hợp cùng đội ngũ đa ngành.',
-      avatarColor: Color(0xFFFF9CB9),
-    ),
-    MentorModel(
-      name: 'Gia Bảo Phạm',
-      jobTitle: 'Software Engineer',
-      rating: 4.9,
-      menteeCount: 24,
-      avatarAsset: '',
-      bio: 'Đồng hành ôn phỏng vấn và xây nền tảng lập trình vững chắc.',
-      avatarColor: Color(0xFFFFC36E),
-    ),
-    MentorModel(
-      name: 'Khánh Linh Võ',
-      jobTitle: 'Digital Marketing Lead',
-      rating: 4.7,
-      menteeCount: 15,
-      avatarAsset: '',
-      bio: 'Tìm hướng đi trong marketing số, nội dung và tăng trưởng.',
-      avatarColor: Color(0xFF8DB9FF),
-    ),
-  ];
+  static const _goalFilter = '__goal__';
 
   final _searchController = TextEditingController();
+  final _bookingService = MentorBookingService.instance;
+  late final List<Mentor> _mentors;
   String _searchQuery = '';
+  String? _goalId;
+  String? _goalFieldId;
+  String? _selectedFieldId;
+  bool _onlyAvailable = false;
+  bool _loadingGoal = true;
+  bool _goalUnavailable = false;
+  String? _bookingLoadError;
 
-  List<MentorModel> get _visibleMentors {
-    final query = _searchQuery.trim().toLowerCase();
-    if (query.isEmpty) return _mentors;
-    return _mentors
-        .where(
-          (mentor) =>
-              mentor.name.toLowerCase().contains(query) ||
-              mentor.jobTitle.toLowerCase().contains(query) ||
-              mentor.bio.toLowerCase().contains(query),
-        )
-        .toList(growable: false);
+  @override
+  void initState() {
+    super.initState();
+    _mentors = MentorRepository.getMentors();
+    _bookingService.addListener(_bookingsChanged);
+    _loadGoal();
+    unawaited(_initializeBookings());
   }
+
+  Future<void> _initializeBookings() async {
+    try {
+      await _bookingService.initialize();
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _bookingLoadError = error.toString());
+    }
+  }
+
+  void _bookingsChanged() {
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _loadGoal() async {
+    final preferences = await SharedPreferences.getInstance();
+    final goalId = preferences.getString('career_goal');
+    final fieldId = fieldIdForGoal(goalId);
+    final hasMatchingMentor =
+        fieldId != null &&
+        _mentors.any((mentor) => mentor.fieldIds.contains(fieldId));
+    if (!mounted) return;
+    setState(() {
+      _goalId = goalId;
+      _goalFieldId = fieldId;
+      _selectedFieldId = hasMatchingMentor ? _goalFilter : null;
+      _goalUnavailable = !hasMatchingMentor;
+      _loadingGoal = false;
+    });
+  }
+
+  List<Mentor> get _visibleMentors => filterAndSortMentors(
+    mentors: _mentors,
+    query: _searchQuery,
+    fieldId: _selectedFieldId,
+    targetFieldId: _goalFieldId,
+    onlyAvailable: _onlyAvailable,
+  );
 
   @override
   void dispose() {
+    _bookingService.removeListener(_bookingsChanged);
     _searchController.dispose();
     super.dispose();
   }
 
-  void _showBookingInfo(MentorModel mentor) {
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      useSafeArea: true,
-      builder: (sheetContext) => Container(
-        padding: const EdgeInsets.fromLTRB(22, 12, 22, 24),
-        decoration: const BoxDecoration(
-          color: Color(0xFF211D2B),
-          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 42,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.white24,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            const SizedBox(height: 22),
-            Text(
-              'Kết nối với ${mentor.name}',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 19,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              '${mentor.jobTitle} · ${mentor.rating.toStringAsFixed(1)} ★',
-              style: const TextStyle(
-                color: Color(0xFFD1C5F5),
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 14),
-            const Text(
-              'Lịch mentoring sẽ được cập nhật khi mentor mở khung giờ kết nối.',
-              style: TextStyle(
-                color: Color(0xFFBDB7C9),
-                fontSize: 13,
-                height: 1.5,
-              ),
-            ),
-            const SizedBox(height: 22),
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: FilledButton(
-                onPressed: () async {
-                  await PointsManager.instance.addXP(
-                    thanh: XpBar.thucChien,
-                    luong: 10,
-                    nguon: 'mentor_booked',
-                    sourceRef: 'mentor-booking-${mentor.name}',
-                  );
-                  if (sheetContext.mounted) Navigator.of(sheetContext).pop();
-                },
-                style: FilledButton.styleFrom(
-                  backgroundColor: _accentColor,
-                  foregroundColor: const Color(0xFF211A30),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                ),
-                child: const Text(
-                  'ĐÃ HIỂU',
-                  style: TextStyle(fontWeight: FontWeight.w800),
-                ),
-              ),
-            ),
-          ],
-        ),
+  void _openProfile(Mentor mentor) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => MentorProfileScreen(mentor: mentor),
       ),
     );
   }
@@ -176,7 +102,6 @@ class _MentorScreenState extends State<MentorScreen> {
   @override
   Widget build(BuildContext context) {
     final mentors = _visibleMentors;
-
     return Scaffold(
       backgroundColor: _backgroundColor,
       body: SafeArea(
@@ -184,15 +109,20 @@ class _MentorScreenState extends State<MentorScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildHeader(),
+            if (_mentors.any((mentor) => mentor.isDemo)) _buildDemoBanner(),
+            if (_bookingLoadError case final error?)
+              _buildBookingError(error)
+            else
+              _buildUpcomingReminder(),
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 6, 20, 18),
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
               child: TextField(
                 controller: _searchController,
                 onChanged: (value) => setState(() => _searchQuery = value),
                 style: const TextStyle(color: Colors.white, fontSize: 14),
                 textInputAction: TextInputAction.search,
                 decoration: InputDecoration(
-                  hintText: 'Tìm mentor hoặc chuyên môn...',
+                  hintText: 'Tìm mentor, ngành hoặc chủ đề...',
                   hintStyle: const TextStyle(
                     color: Color(0xFFAAA5B8),
                     fontSize: 13,
@@ -224,8 +154,9 @@ class _MentorScreenState extends State<MentorScreen> {
                 ),
               ),
             ),
+            _buildFilters(),
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
               child: Row(
                 children: [
                   const Expanded(
@@ -248,8 +179,25 @@ class _MentorScreenState extends State<MentorScreen> {
                 ],
               ),
             ),
+            if (_goalUnavailable)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
+                child: Text(
+                  _goalId == null
+                      ? 'Chưa có mục tiêu IT ánh xạ được; đang hiển thị tất cả mentor.'
+                      : 'Mục tiêu hiện tại chưa có ngành mentor tương ứng; đang hiển thị tất cả.',
+                  style: const TextStyle(
+                    color: Color(0xFFBDB7C9),
+                    fontSize: 12,
+                  ),
+                ),
+              ),
             Expanded(
-              child: mentors.isEmpty
+              child: _loadingGoal
+                  ? const Center(
+                      child: CircularProgressIndicator(color: _accentColor),
+                    )
+                  : mentors.isEmpty
                   ? _buildEmptyState()
                   : ListView.builder(
                       padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
@@ -258,7 +206,10 @@ class _MentorScreenState extends State<MentorScreen> {
                         padding: const EdgeInsets.only(bottom: 14),
                         child: _MentorCard(
                           mentor: mentors[index],
-                          onBook: () => _showBookingInfo(mentors[index]),
+                          isGoalMatch:
+                              _goalFieldId != null &&
+                              mentors[index].fieldIds.contains(_goalFieldId),
+                          onTap: () => _openProfile(mentors[index]),
                         ),
                       ),
                     ),
@@ -271,7 +222,7 @@ class _MentorScreenState extends State<MentorScreen> {
 
   Widget _buildHeader() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(8, 4, 20, 12),
+      padding: const EdgeInsets.fromLTRB(8, 4, 20, 8),
       child: Row(
         children: [
           IconButton(
@@ -300,41 +251,93 @@ class _MentorScreenState extends State<MentorScreen> {
               ],
             ),
           ),
+          IconButton(
+            tooltip: 'Lịch hẹn của tôi',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const MentorBookingsScreen(),
+              ),
+            ),
+            icon: const Icon(Icons.event_note_rounded, color: _accentColor),
+          ),
           const Icon(Icons.auto_awesome_rounded, color: _accentColor),
         ],
       ),
     );
   }
 
-  Widget _buildEmptyState() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(28),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+  Widget _buildDemoBanner() => Padding(
+    padding: const EdgeInsets.fromLTRB(20, 2, 20, 6),
+    child: Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+      decoration: BoxDecoration(
+        color: const Color(0xFF332A48),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: _accentColor.withValues(alpha: 0.2)),
+      ),
+      child: const Text(
+        'Dữ liệu mẫu để thử nghiệm',
+        style: TextStyle(
+          color: Color(0xFFD8CDF8),
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    ),
+  );
+
+  Widget _buildBookingError(String error) => Padding(
+    padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+    child: Text(
+      'Không tải được lịch mentor: $error',
+      style: const TextStyle(color: Color(0xFFFFA6A6), fontSize: 11),
+    ),
+  );
+
+  Widget _buildUpcomingReminder() {
+    if (!_bookingService.isInitialized) return const SizedBox.shrink();
+    final booking = _bookingService.upcomingConfirmedWithin24Hours();
+    if (booking?.slot == null) return const SizedBox.shrink();
+    Mentor? mentor;
+    for (final item in _mentors) {
+      if (item.id == booking!.mentorId) {
+        mentor = item;
+        break;
+      }
+    }
+    final hours =
+        (booking!.slot!.difference(DateTime.now()).inMinutes + 59) ~/ 60;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 2, 20, 6),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: const Color(0xFF253B3B),
+          borderRadius: BorderRadius.circular(13),
+          border: Border.all(
+            color: const Color(0xFF7AD8C2).withValues(alpha: 0.3),
+          ),
+        ),
+        child: Row(
           children: [
             const Icon(
-              Icons.travel_explore_rounded,
-              color: _accentColor,
-              size: 44,
+              Icons.event_available_rounded,
+              color: Color(0xFF9EDCCB),
+              size: 18,
             ),
-            const SizedBox(height: 12),
-            const Text(
-              'Chưa tìm thấy mentor phù hợp',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              'Thử tìm bằng tên hoặc lĩnh vực chuyên môn khác nhé.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.65),
-                fontSize: 13,
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Lịch với ${mentor?.name ?? 'mentor'} sau ${hours.clamp(1, 24)} giờ',
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Color(0xFFD5F2E9),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
           ],
@@ -342,383 +345,365 @@ class _MentorScreenState extends State<MentorScreen> {
       ),
     );
   }
+
+  Widget _buildFilters() => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      SizedBox(
+        height: 42,
+        child: ListView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          children: [
+            _FilterChip(
+              label: 'Tất cả',
+              selected: _selectedFieldId == null,
+              onTap: () => setState(() => _selectedFieldId = null),
+            ),
+            _FilterChip(
+              label: 'Hợp mục tiêu',
+              selected: _selectedFieldId == _goalFilter,
+              onTap: () => setState(
+                () => _selectedFieldId =
+                    _goalFieldId != null &&
+                        _mentors.any(
+                          (mentor) => mentor.fieldIds.contains(_goalFieldId),
+                        )
+                    ? _goalFilter
+                    : null,
+              ),
+            ),
+            for (final field in itFields)
+              _FilterChip(
+                label: field.name,
+                selected: _selectedFieldId == field.id,
+                onTap: () => setState(() => _selectedFieldId = field.id),
+              ),
+          ],
+        ),
+      ),
+      Padding(
+        padding: const EdgeInsets.fromLTRB(18, 2, 18, 4),
+        child: Row(
+          children: [
+            if (_goalFieldId != null)
+              Expanded(
+                child: Text(
+                  'Mục tiêu: ${itFieldName(_goalFieldId!) ?? _goalFieldId}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Color(0xFFAAA5B8),
+                    fontSize: 11,
+                  ),
+                ),
+              )
+            else
+              const Spacer(),
+            FilterChip(
+              label: const Text('Còn lịch trống'),
+              selected: _onlyAvailable,
+              onSelected: (value) => setState(() => _onlyAvailable = value),
+              avatar: const Icon(Icons.event_available_rounded, size: 16),
+              labelStyle: const TextStyle(
+                color: Color(0xFFD8CDF8),
+                fontSize: 11,
+              ),
+              backgroundColor: _surfaceColor,
+              selectedColor: const Color(0xFF4D3B70),
+              checkmarkColor: Colors.white,
+              side: BorderSide.none,
+              visualDensity: VisualDensity.compact,
+              showCheckmark: false,
+            ),
+          ],
+        ),
+      ),
+    ],
+  );
+
+  Widget _buildEmptyState() => Center(
+    child: Padding(
+      padding: const EdgeInsets.all(28),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(
+            Icons.travel_explore_rounded,
+            color: _accentColor,
+            size: 44,
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            'Chưa có mentor phù hợp, thử bỏ bớt bộ lọc',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Thử xóa từ khóa tìm kiếm hoặc chọn ngành khác nhé.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.65),
+              fontSize: 13,
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+class _FilterChip extends StatelessWidget {
+  const _FilterChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(right: 8),
+    child: ChoiceChip(
+      label: Text(label),
+      selected: selected,
+      onSelected: (_) => onTap(),
+      labelStyle: TextStyle(
+        color: selected ? const Color(0xFF211A30) : const Color(0xFFD8CDF8),
+        fontSize: 11,
+        fontWeight: FontWeight.w700,
+      ),
+      backgroundColor: _MentorScreenState._surfaceColor,
+      selectedColor: _MentorScreenState._accentColor,
+      side: BorderSide.none,
+      visualDensity: VisualDensity.compact,
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+    ),
+  );
 }
 
 class _MentorCard extends StatelessWidget {
-  const _MentorCard({required this.mentor, required this.onBook});
+  const _MentorCard({
+    required this.mentor,
+    required this.isGoalMatch,
+    required this.onTap,
+  });
 
-  final MentorModel mentor;
-  final VoidCallback onBook;
+  final Mentor mentor;
+  final bool isGoalMatch;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(15),
-      decoration: BoxDecoration(
+    final nextSlot = mentor.availableSlots.isEmpty
+        ? null
+        : (List<DateTime>.of(mentor.availableSlots)..sort()).first;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(24),
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF292439), Color(0xFF191722)],
-        ),
-        border: Border.all(color: mentor.avatarColor.withValues(alpha: 0.36)),
-        boxShadow: [
-          BoxShadow(
-            color: mentor.avatarColor.withValues(alpha: 0.08),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
+        child: Container(
+          padding: const EdgeInsets.all(15),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(24),
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF292439), Color(0xFF191722)],
+            ),
+            border: Border.all(
+              color: const Color(0xFFBFA8FF).withValues(alpha: 0.22),
+            ),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x44000000),
+                blurRadius: 12,
+                offset: Offset(0, 5),
+              ),
+            ],
           ),
-          const BoxShadow(
-            color: Color(0x44000000),
-            blurRadius: 12,
-            offset: Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _MentorAvatar(mentor: mentor),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 3),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  MentorAvatar(mentor: mentor, size: 58),
+                  const SizedBox(width: 13),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          mentor.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          mentor.title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Color(0xFFD1C5F5),
+                            fontSize: 12,
+                            height: 1.25,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 5),
+                        Text(
+                          '${mentor.yearsExperience} năm kinh nghiệm',
+                          style: const TextStyle(
+                            color: Color(0xFFBDB7C9),
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(
+                    Icons.chevron_right_rounded,
+                    color: Colors.white54,
+                  ),
+                ],
+              ),
+              if (isGoalMatch) ...[
+                const SizedBox(height: 10),
+                const _InfoTag(
+                  icon: Icons.stars_rounded,
+                  label: 'Hợp với mục tiêu của bạn',
+                ),
+              ],
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 7,
+                runSpacing: 7,
+                children: [
+                  for (final id in mentor.fieldIds)
+                    _InfoTag(label: itFieldName(id) ?? id),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 7,
+                runSpacing: 7,
+                children: [
+                  for (final topic in mentor.topics)
+                    _InfoTag(label: topic.label, muted: true),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
                     children: [
-                      Text(
-                        mentor.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800,
-                        ),
+                      Icon(
+                        nextSlot == null
+                            ? Icons.event_busy_rounded
+                            : Icons.event_available_rounded,
+                        color: const Color(0xFF9EDCCB),
+                        size: 17,
                       ),
-                      const SizedBox(height: 5),
-                      Text(
-                        mentor.jobTitle,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: mentor.avatarColor,
-                          fontSize: 12,
-                          height: 1.25,
-                          fontWeight: FontWeight.w700,
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          nextSlot == null
+                              ? 'Chưa có lịch'
+                              : 'Trống: ${_formatSlot(nextSlot)}',
+                          style: const TextStyle(
+                            color: Color(0xFFCEC9D7),
+                            fontSize: 11,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 10),
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.star_rounded,
-                            color: Color(0xFFFFD36E),
-                            size: 17,
-                          ),
-                          const SizedBox(width: 3),
-                          Text(
-                            mentor.rating.toStringAsFixed(1),
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Flexible(
-                            child: Text(
-                              '· ${mentor.menteeCount} mentees',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Color(0xFFBDB7C9),
-                                fontSize: 11,
-                              ),
-                            ),
-                          ),
-                        ],
                       ),
                     ],
                   ),
-                ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Phản hồi trong ${mentor.responseTime}',
+                    style: const TextStyle(
+                      color: Color(0xFFBDB7C9),
+                      fontSize: 10,
+                    ),
+                  ),
+                ],
               ),
             ],
-          ),
-          const SizedBox(height: 13),
-          Text(
-            mentor.bio,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: Color(0xFFCEC9D7),
-              fontSize: 12,
-              height: 1.4,
-            ),
-          ),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              Expanded(
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.groups_rounded,
-                      color: mentor.avatarColor,
-                      size: 17,
-                    ),
-                    const SizedBox(width: 5),
-                    Flexible(
-                      child: Text(
-                        'Đã nhận: ${mentor.menteeCount} mentees',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Color(0xFFBDB7C9),
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 10),
-              _BookingButton(color: mentor.avatarColor, onPressed: onBook),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _BookingButton extends StatelessWidget {
-  const _BookingButton({required this.color, required this.onPressed});
-
-  final Color color;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        gradient: LinearGradient(
-          colors: [color, Color.lerp(color, const Color(0xFF684AB5), 0.55)!],
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: color.withValues(alpha: 0.22),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onPressed,
-          borderRadius: BorderRadius.circular(24),
-          child: const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-            child: Text(
-              'ĐẶT LỊCH',
-              style: TextStyle(
-                color: Color(0xFF1C1726),
-                fontSize: 10,
-                letterSpacing: 0.6,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
           ),
         ),
       ),
     );
   }
-}
 
-class _MentorAvatar extends StatelessWidget {
-  const _MentorAvatar({required this.mentor});
-
-  final MentorModel mentor;
-
-  @override
-  Widget build(BuildContext context) {
-    final avatar = mentor.avatarAsset.isEmpty
-        ? _AstronautIllustration(color: mentor.avatarColor)
-        : Image.asset(
-            mentor.avatarAsset,
-            fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) =>
-                _AstronautIllustration(color: mentor.avatarColor),
-          );
-
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(19),
-      child: SizedBox(width: 88, height: 96, child: avatar),
-    );
+  String _formatSlot(DateTime slot) {
+    final now = DateTime.now();
+    final tomorrow = DateTime(now.year, now.month, now.day + 1);
+    final slotDay = DateTime(slot.year, slot.month, slot.day);
+    final dayLabel = slotDay == DateTime(now.year, now.month, now.day)
+        ? 'Hôm nay'
+        : slotDay == tomorrow
+        ? 'Ngày mai'
+        : '${slot.day}/${slot.month}';
+    final hour = slot.hour.toString().padLeft(2, '0');
+    final minute = slot.minute.toString().padLeft(2, '0');
+    return '$dayLabel · $hour:$minute';
   }
 }
 
-class _AstronautIllustration extends StatelessWidget {
-  const _AstronautIllustration({required this.color});
+class _InfoTag extends StatelessWidget {
+  const _InfoTag({required this.label, this.icon, this.muted = false});
 
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return CustomPaint(
-      painter: _AstronautPainter(color: color),
-      child: const SizedBox.expand(),
-    );
-  }
-}
-
-class _AstronautPainter extends CustomPainter {
-  const _AstronautPainter({required this.color});
-
-  final Color color;
+  final String label;
+  final IconData? icon;
+  final bool muted;
 
   @override
-  void paint(Canvas canvas, Size size) {
-    final rect = Offset.zero & size;
-    final backgroundPaint = Paint()
-      ..shader = LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [
-          color.withValues(alpha: 0.42),
-          const Color(0xFF171421),
-          const Color(0xFF100E19),
-        ],
-      ).createShader(rect);
-    canvas.drawRect(rect, backgroundPaint);
-
-    final starPaint = Paint()..color = Colors.white.withValues(alpha: 0.72);
-    final points = <Offset>[
-      Offset(size.width * 0.16, size.height * 0.18),
-      Offset(size.width * 0.82, size.height * 0.16),
-      Offset(size.width * 0.85, size.height * 0.48),
-      Offset(size.width * 0.13, size.height * 0.58),
-    ];
-    for (var index = 0; index < points.length; index++) {
-      canvas.drawCircle(points[index], index.isEven ? 1.2 : 0.8, starPaint);
-    }
-
-    final center = Offset(size.width * 0.5, size.height * 0.56);
-    final scale = size.shortestSide;
-    final shadow = Paint()..color = const Color(0x44000000);
-    final suit = Paint()..color = Color.lerp(color, Colors.white, 0.14)!;
-    final suitShade = Paint()..color = Color.lerp(color, Colors.black, 0.2)!;
-    final helmet = Paint()..color = color;
-
-    final bodyRect = Rect.fromCenter(
-      center: Offset(center.dx, size.height * 0.92),
-      width: size.width * 0.78,
-      height: size.height * 0.66,
-    );
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        bodyRect.shift(Offset(0, scale * 0.035)),
-        Radius.circular(scale * 0.22),
-      ),
-      shadow,
-    );
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(bodyRect, Radius.circular(scale * 0.22)),
-      suitShade,
-    );
-    final chest = Rect.fromLTWH(
-      size.width * 0.3,
-      size.height * 0.73,
-      size.width * 0.4,
-      size.height * 0.2,
-    );
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(chest, Radius.circular(scale * 0.07)),
-      suit,
-    );
-    canvas.drawCircle(
-      Offset(center.dx, size.height * 0.82),
-      scale * 0.045,
-      Paint()..color = const Color(0xFF172033),
-    );
-
-    final helmetCenter = Offset(size.width * 0.5, size.height * 0.4);
-    canvas.drawCircle(helmetCenter, scale * 0.34, shadow);
-    canvas.drawCircle(helmetCenter, scale * 0.32, helmet);
-    canvas.drawCircle(
-      helmetCenter,
-      scale * 0.255,
-      Paint()..color = const Color(0xFF20243C),
-    );
-
-    final visorRect = Rect.fromCenter(
-      center: Offset(helmetCenter.dx, helmetCenter.dy + scale * 0.015),
-      width: scale * 0.4,
-      height: scale * 0.31,
-    );
-    canvas.drawOval(
-      visorRect,
-      Paint()
-        ..shader = LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color.lerp(color, Colors.white, 0.32)!,
-            const Color(0xFF34466D),
-            const Color(0xFF161C31),
+  Widget build(BuildContext context) => DecoratedBox(
+    decoration: BoxDecoration(
+      color: muted ? const Color(0xFF302B3A) : const Color(0xFF40335A),
+      borderRadius: BorderRadius.circular(16),
+    ),
+    child: Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (icon != null) ...[
+            Icon(icon, color: const Color(0xFFD8CDF8), size: 14),
+            const SizedBox(width: 4),
           ],
-        ).createShader(visorRect),
-    );
-    final reflection = Paint()
-      ..color = Colors.white.withValues(alpha: 0.58)
-      ..strokeWidth = scale * 0.018
-      ..strokeCap = StrokeCap.round;
-    canvas.drawLine(
-      Offset(size.width * 0.39, size.height * 0.34),
-      Offset(size.width * 0.45, size.height * 0.3),
-      reflection,
-    );
-    canvas.drawCircle(
-      Offset(size.width * 0.63, size.height * 0.42),
-      scale * 0.018,
-      Paint()..color = Colors.white.withValues(alpha: 0.78),
-    );
-
-    canvas.drawCircle(
-      Offset(size.width * 0.79, size.height * 0.72),
-      scale * 0.055,
-      Paint()..color = const Color(0xFF29344C),
-    );
-    canvas.drawCircle(
-      Offset(size.width * 0.79, size.height * 0.72),
-      scale * 0.027,
-      Paint()..color = const Color(0xFF7BF0D7),
-    );
-
-    final orbitPaint = Paint()
-      ..color = color.withValues(alpha: 0.75)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = scale * 0.018;
-    canvas.drawArc(
-      Rect.fromCenter(
-        center: helmetCenter,
-        width: scale * 0.78,
-        height: scale * 0.48,
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: muted
+                    ? const Color(0xFFBDB7C9)
+                    : const Color(0xFFD8CDF8),
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
       ),
-      math.pi * 0.12,
-      math.pi * 0.76,
-      false,
-      orbitPaint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant _AstronautPainter oldDelegate) =>
-      oldDelegate.color != color;
+    ),
+  );
 }

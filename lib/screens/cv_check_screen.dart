@@ -16,6 +16,7 @@ import '../services/cv_document_reader.dart';
 import '../services/cv_score_store.dart';
 import '../services/goal_progress_service.dart';
 import '../services/points_manager.dart';
+import '../services/mascot_selection_store.dart';
 import '../widgets/match_bar.dart';
 import 'career_map_screen.dart';
 import 'job_screen.dart';
@@ -93,7 +94,8 @@ class _CvCheckScreenState extends State<CvCheckScreen> {
         careerGoalByTitle(preferences.getString('career_goal')) ??
         careerGoals.first;
     final mascot =
-        characterById(preferences.getString('selected_mascot')) ??
+        (await MascotSelectionStore.instance.read(preferences: preferences))
+            .primary ??
         CharacterSelection.selected ??
         characterData.first;
     final entries = await _scoreStore.entries(preferences: preferences);

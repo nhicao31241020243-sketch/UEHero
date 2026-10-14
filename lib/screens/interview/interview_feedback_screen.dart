@@ -65,6 +65,7 @@ class _InterviewFeedbackScreenState extends State<InterviewFeedbackScreen> {
       if (!mounted) return;
       await Navigator.of(context).pushReplacement(
         MaterialPageRoute<void>(
+          settings: const RouteSettings(name: '/interview-room'),
           builder: (_) => InterviewRoomScreen(
             initialSession: InterviewSession(
               id: DateTime.now().microsecondsSinceEpoch.toString(),
@@ -169,7 +170,8 @@ class _InterviewFeedbackScreenState extends State<InterviewFeedbackScreen> {
                   itemBuilder: (context, index) => ChoiceChip(
                     label: Text('${index + 1}'),
                     selected: index == _selectedQuestion,
-                    onSelected: (_) => setState(() => _selectedQuestion = index),
+                    onSelected: (_) =>
+                        setState(() => _selectedQuestion = index),
                     selectedColor: const Color(0xFFBFA8FF),
                     backgroundColor: _surface,
                     labelStyle: TextStyle(
@@ -314,7 +316,9 @@ class _InterviewFeedbackScreenState extends State<InterviewFeedbackScreen> {
       decoration: BoxDecoration(
         color: _surface,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: const Color(0xFFBFA8FF).withValues(alpha: 0.3)),
+        border: Border.all(
+          color: const Color(0xFFBFA8FF).withValues(alpha: 0.3),
+        ),
       ),
       child: Column(
         children: [

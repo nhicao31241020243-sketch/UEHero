@@ -3,7 +3,6 @@ import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:model_viewer_plus/model_viewer_plus.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../config/career_map_layout.dart';
 import '../config/career_progress_config.dart';
@@ -13,6 +12,7 @@ import '../models/xp_entry.dart';
 import '../services/points_manager.dart';
 import '../services/progress_service.dart';
 import '../services/goal_progress_service.dart';
+import '../services/mascot_selection_store.dart';
 import 'flashcard_home_screen.dart';
 
 class CareerMapScreen extends StatefulWidget {
@@ -64,11 +64,11 @@ class _CareerMapScreenState extends State<CareerMapScreen>
     try {
       await _progress.initialize();
       await _goalProgress.initialize();
-      final preferences = await SharedPreferences.getInstance();
+      final mascots = await MascotSelectionStore.instance.read();
       _companion =
-          characterById(preferences.getString('selected_mascot')) ??
+          mascots.primary ??
           CharacterSelection.selected ??
-          characterData.first;
+          MascotSelectionStore.charactersFor(MascotRole.primary).first;
       _targetStone = _goalStone;
       _displayStone = _targetStone.toDouble();
       await _progress.consumePendingAnimation();

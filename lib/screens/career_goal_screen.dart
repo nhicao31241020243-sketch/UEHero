@@ -6,8 +6,9 @@ import '../config/debug_flags.dart';
 import '../home_widgets_screen.dart';
 import '../models/career_goal.dart';
 import '../models/character_data.dart';
+import '../services/mascot_selection_store.dart';
 import '../widgets/career_goal_option_card.dart';
-import 'mascot_carousel_screen.dart';
+import 'mascot_hub_screen.dart';
 
 class CareerGoalScreen extends StatefulWidget {
   const CareerGoalScreen({this.skipIfSavedUser = true, super.key});
@@ -24,6 +25,7 @@ class _CareerGoalScreenState extends State<CareerGoalScreen> {
   static const _cyan = Color(0xFF70D8F2);
 
   CareerGoal? _selectedGoal;
+  MascotSelection? _savedMascots;
   bool _checkingSavedUser = true;
 
   @override
@@ -35,24 +37,29 @@ class _CareerGoalScreenState extends State<CareerGoalScreen> {
   Future<void> _loadSavedUser() async {
     final preferences = await SharedPreferences.getInstance();
     final careerGoal = preferences.getString('career_goal');
-    final mascotId = preferences.getString('selected_mascot');
+    final mascots = await MascotSelectionStore.instance.read(
+      preferences: preferences,
+    );
     if (!mounted) return;
 
-    final mascot = characterById(mascotId);
     final savedGoal = careerGoalByTitle(careerGoal);
     if (widget.skipIfSavedUser &&
         !(kForceFullOnboarding && kDebugMode) &&
-        mascot != null &&
+        mascots.isComplete &&
         savedGoal != null) {
-      CharacterSelection.selected = mascot;
+      CharacterSelection.selected = mascots.primary;
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute<void>(builder: (_) => const HomeWidgetsScreen()),
+        MaterialPageRoute<void>(
+          settings: const RouteSettings(name: '/home'),
+          builder: (_) => const HomeWidgetsScreen(),
+        ),
       );
       return;
     }
 
     setState(() {
       _selectedGoal = savedGoal;
+      _savedMascots = mascots;
       _checkingSavedUser = false;
     });
   }
@@ -62,7 +69,12 @@ class _CareerGoalScreenState extends State<CareerGoalScreen> {
     if (goal == null) return;
     Navigator.of(context).pushReplacement(
       MaterialPageRoute<void>(
-        builder: (_) => MascotCarouselScreen(careerGoal: goal.title),
+        settings: const RouteSettings(name: '/mascot-hub'),
+        builder: (_) => MascotHubScreen(
+          careerGoal: goal.title,
+          onboarding: true,
+          initialSelection: _savedMascots,
+        ),
       ),
     );
   }

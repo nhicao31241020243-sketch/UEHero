@@ -9,6 +9,7 @@ import '../models/app_task.dart';
 import '../models/character_data.dart';
 import '../models/xp_entry.dart';
 import '../services/points_manager.dart';
+import '../services/mascot_selection_store.dart';
 import '../services/task_repository.dart';
 
 class CalendarScreen extends StatefulWidget {
@@ -89,7 +90,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
     final shownDay = preferences.getString(_greetingShownKey);
     final todayKey = _dayKey(_today);
-    final mascot = characterById(preferences.getString('selected_mascot'));
+    final mascot = (await MascotSelectionStore.instance.read(
+      preferences: preferences,
+    )).aiCompanion;
     _tasks = await _repository.list(preferences: preferences);
     _mascot = mascot ?? CharacterSelection.selected ?? characterData.first;
     _showGreeting = shownDay != todayKey;

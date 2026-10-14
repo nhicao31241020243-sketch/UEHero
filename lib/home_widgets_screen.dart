@@ -181,14 +181,21 @@ class _HomeWidgetsScreenState extends State<HomeWidgetsScreen>
   }
 
   void _openChatbot() {
-    Navigator.of(context)
-        .push(MaterialPageRoute<void>(builder: (_) => const ChatbotScreen()));
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        settings: const RouteSettings(name: '/chatbot'),
+        builder: (_) => const ChatbotScreen(),
+      ),
+    );
   }
 
   void _openQuestionCamera() {
-    Navigator.of(
-      context,
-    ).push(MaterialPageRoute<void>(builder: (_) => const UEHeroCameraScreen()));
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        settings: const RouteSettings(name: '/camera'),
+        builder: (_) => const UEHeroCameraScreen(),
+      ),
+    );
   }
 
   void _openMentors() {
@@ -203,18 +210,29 @@ class _HomeWidgetsScreenState extends State<HomeWidgetsScreen>
   }
 
   void _openCalendar() {
-    Navigator.of(context)
-        .push(MaterialPageRoute<void>(builder: (_) => const CalendarScreen()));
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        settings: const RouteSettings(name: '/weekly-plan'),
+        builder: (_) => const CalendarScreen(),
+      ),
+    );
   }
 
   void _openEvents() {
-    Navigator.of(context)
-        .push(MaterialPageRoute<void>(builder: (_) => const HomeEventScreen()));
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        settings: const RouteSettings(name: '/events'),
+        builder: (_) => const HomeEventScreen(),
+      ),
+    );
   }
 
   void _openFlashcards() {
     Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => const FlashcardHomeScreen()),
+      MaterialPageRoute<void>(
+        settings: const RouteSettings(name: '/flashcards'),
+        builder: (_) => const FlashcardHomeScreen(),
+      ),
     );
   }
 
@@ -226,8 +244,12 @@ class _HomeWidgetsScreenState extends State<HomeWidgetsScreen>
 
   Future<void> _openProfile() async {
     setState(() => _selectedTab = 4);
-    await Navigator.of(context)
-        .push(MaterialPageRoute<void>(builder: (_) => const ProfileScreen()));
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        settings: const RouteSettings(name: '/profile'),
+        builder: (_) => const ProfileScreen(),
+      ),
+    );
     if (mounted) {
       setState(() => _selectedTab = 0);
     }
@@ -237,7 +259,7 @@ class _HomeWidgetsScreenState extends State<HomeWidgetsScreen>
   Widget build(BuildContext context) {
     final tabs = [
       _buildHomeTab(),
-      const CareerMapScreen(embedded: true),
+      CareerMapScreen(key: ValueKey(_companion.id), embedded: true),
       const InterviewHomeScreen(),
       _buildInfoTab(
         icon: Icons.calculate_rounded,

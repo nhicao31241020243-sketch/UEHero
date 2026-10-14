@@ -79,6 +79,7 @@ flutter:
     - assets/images/
     - assets/images/planets/
     - assets/3d/
+    - assets/mascot_previews/
     - assets/interview_questions.json
     - assets/learning_resources.json
     - assets/data/events.json

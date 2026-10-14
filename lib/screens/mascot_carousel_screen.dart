@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:model_viewer_plus/model_viewer_plus.dart';
 
-import '../home_widgets_screen.dart';
 import '../models/character_data.dart';
+import '../services/mascot_selection_store.dart';
 
 class MascotCarouselScreen extends StatefulWidget {
-  const MascotCarouselScreen({required this.careerGoal, super.key});
+  const MascotCarouselScreen({
+    required this.role,
+    this.initialCharacterId,
+    super.key,
+  });
 
-  final String careerGoal;
+  final MascotRole role;
+  final String? initialCharacterId;
 
   @override
   State<MascotCarouselScreen> createState() => _MascotCarouselScreenState();
@@ -17,12 +21,17 @@ class MascotCarouselScreen extends StatefulWidget {
 class _MascotCarouselScreenState extends State<MascotCarouselScreen> {
   late final PageController _pageController;
   int _currentIndex = 0;
-  bool _savingSelection = false;
+  final bool _savingSelection = false;
 
   @override
   void initState() {
     super.initState();
-    _pageController = PageController();
+    final characters = MascotSelectionStore.charactersFor(widget.role);
+    final initialIndex = characters.indexWhere(
+      (character) => character.id == widget.initialCharacterId,
+    );
+    _currentIndex = initialIndex < 0 ? 0 : initialIndex;
+    _pageController = PageController(initialPage: _currentIndex);
   }
 
   @override
@@ -31,33 +40,17 @@ class _MascotCarouselScreenState extends State<MascotCarouselScreen> {
     super.dispose();
   }
 
-  Future<void> _selectCharacter(CharacterData character) async {
+  void _selectCharacter(CharacterData character) {
     if (_savingSelection) return;
-    setState(() => _savingSelection = true);
-    CharacterSelection.selected = character;
-    try {
-      final preferences = await SharedPreferences.getInstance();
-      await preferences.setString('career_goal', widget.careerGoal);
-      await preferences.setString('selected_mascot', character.id);
-      if (!mounted) return;
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute<void>(builder: (_) => const HomeWidgetsScreen()),
-      );
-    } catch (error) {
-      if (!mounted) return;
-      setState(() => _savingSelection = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Không thể lưu lựa chọn: $error')),
-      );
-    }
+    Navigator.of(context).pop(character);
   }
 
   @override
   Widget build(BuildContext context) {
-    final characters = characterData
-        .where((character) => character.group == 'blob')
-        .toList(growable: false);
+    final characters = MascotSelectionStore.charactersFor(widget.role);
+    final title = widget.role == MascotRole.primary
+        ? 'Chọn phi hành gia'
+        : 'Chọn bạn đồng hành';
 
     return Scaffold(
       body: AnimatedContainer(
@@ -71,6 +64,7 @@ class _MascotCarouselScreenState extends State<MascotCarouselScreen> {
             character: characters[index],
             index: index,
             total: characters.length,
+            title: title,
             showViewer: index == _currentIndex,
             isSavingSelection: _savingSelection,
             onSelect: () => _selectCharacter(characters[index]),
@@ -86,6 +80,7 @@ class _CharacterCarouselPage extends StatelessWidget {
     required this.character,
     required this.index,
     required this.total,
+    required this.title,
     required this.showViewer,
     required this.isSavingSelection,
     required this.onSelect,
@@ -94,6 +89,7 @@ class _CharacterCarouselPage extends StatelessWidget {
   final CharacterData character;
   final int index;
   final int total;
+  final String title;
   final bool showViewer;
   final bool isSavingSelection;
   final VoidCallback onSelect;
@@ -157,7 +153,7 @@ class _CharacterCarouselPage extends StatelessWidget {
                           left: 20,
                           top: 12,
                           child: Text(
-                            'CHỌN LINH VẬT',
+                            title.toUpperCase(),
                             style: TextStyle(
                               color: Colors.white.withValues(alpha: 0.9),
                               fontWeight: FontWeight.w800,

@@ -5,23 +5,27 @@ import '../config/career_goal_config.dart';
 import '../models/flashcard.dart';
 import '../services/flashcard_service.dart';
 import 'cv_score_store.dart';
+import 'mentor_booking_service.dart';
 import 'points_manager.dart';
 
 class GoalProgressService extends ChangeNotifier {
   GoalProgressService._() {
     FlashcardService.instance.addListener(_changed);
     PointsManager.instance.addListener(_changed);
+    MentorBookingService.instance.addListener(_changed);
   }
 
   static final instance = GoalProgressService._();
   final _flashcards = FlashcardService.instance;
   final _xp = PointsManager.instance;
+  final _mentorBookings = MentorBookingService.instance;
   int _cvBestScore = 0;
   CareerGoal selectedGoal = careerGoals.first;
 
   Future<void> initialize() async {
     await _flashcards.initialize();
     await _xp.initialize();
+    await _mentorBookings.initialize();
     final prefs = await SharedPreferences.getInstance();
     selectedGoal = goalForStoredName(prefs.getString('career_goal'));
     _cvBestScore = await CvScoreStore().bestScore(preferences: prefs);
@@ -39,6 +43,9 @@ class GoalProgressService extends ChangeNotifier {
       ),
     );
     if (!criterion.enabled) return 0;
+    if (criterionId == 'mentor') {
+      return _mentorBookings.completedCount.clamp(0, 1).toDouble();
+    }
     if (criterionId == 'cv') return _cvBestScore / 100;
     if (criterionId != 'flashcard') return 0;
     final cards = <Flashcard>[
@@ -79,6 +86,7 @@ class GoalProgressService extends ChangeNotifier {
   void dispose() {
     _flashcards.removeListener(_changed);
     PointsManager.instance.removeListener(_changed);
+    MentorBookingService.instance.removeListener(_changed);
     super.dispose();
   }
 }

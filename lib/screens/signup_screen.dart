@@ -218,6 +218,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                   onSubmitted: (_) => Navigator.pushReplacement(
                                     context,
                                     MaterialPageRoute(
+                                      settings: const RouteSettings(
+                                        name: '/onboarding-goal',
+                                      ),
                                       builder: (_) => const CareerGoalScreen(),
                                     ),
                                   ),
@@ -229,7 +232,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                     onPressed: () => Navigator.pushReplacement(
                                       context,
                                       MaterialPageRoute(
-                                        builder: (_) => const CareerGoalScreen(),
+                                        settings: const RouteSettings(
+                                          name: '/onboarding-goal',
+                                        ),
+                                        builder: (_) =>
+                                            const CareerGoalScreen(),
                                       ),
                                     ),
                                     style: ElevatedButton.styleFrom(
@@ -307,6 +314,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                             Navigator.pushReplacement(
                                               context,
                                               MaterialPageRoute(
+                                                settings: const RouteSettings(
+                                                  name: '/onboarding-goal',
+                                                ),
                                                 builder: (_) =>
                                                     const CareerGoalScreen(),
                                               ),
@@ -326,6 +336,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                             Navigator.pushReplacement(
                                               context,
                                               MaterialPageRoute(
+                                                settings: const RouteSettings(
+                                                  name: '/onboarding-goal',
+                                                ),
                                                 builder: (_) =>
                                                     const CareerGoalScreen(),
                                               ),
@@ -349,6 +362,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                       onTap: () => Navigator.pushReplacement(
                                         context,
                                         MaterialPageRoute(
+                                          settings: const RouteSettings(
+                                            name: '/onboarding-goal',
+                                          ),
                                           builder: (_) =>
                                               const CareerGoalScreen(),
                                         ),

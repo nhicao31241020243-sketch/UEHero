@@ -22,6 +22,8 @@ class CharacterData {
   final String group;
   final Color primaryColor;
   final String emoji;
+
+  String get previewAsset => 'assets/mascot_previews/$id.png';
 }
 
 class CharacterSelection {

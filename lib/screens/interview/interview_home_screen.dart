@@ -8,12 +8,15 @@ import '../../models/career_goal.dart';
 import '../../models/character_data.dart';
 import '../../models/interview_models.dart';
 import '../../services/interview_service.dart';
+import '../../services/mascot_selection_store.dart';
 import '../career_goal_screen.dart';
 import 'interview_feedback_screen.dart';
 import 'interview_room_screen.dart';
 
 class InterviewHomeScreen extends StatefulWidget {
-  const InterviewHomeScreen({super.key});
+  const InterviewHomeScreen({this.jobTitle, super.key});
+
+  final String? jobTitle;
 
   @override
   State<InterviewHomeScreen> createState() => _InterviewHomeScreenState();
@@ -52,6 +55,9 @@ class _InterviewHomeScreenState extends State<InterviewHomeScreen> {
   Future<void> _load() async {
     try {
       final preferences = await SharedPreferences.getInstance();
+      final mascots = await MascotSelectionStore.instance.read(
+        preferences: preferences,
+      );
       final history = await InterviewService.instance.loadHistory();
       final remaining = await InterviewService.instance.remainingToday();
       final rawMastery = jsonDecode(
@@ -66,7 +72,7 @@ class _InterviewHomeScreenState extends State<InterviewHomeScreen> {
       setState(() {
         _careerTitle = preferences.getString('career_goal');
         _mascot =
-            characterById(preferences.getString('selected_mascot')) ??
+            mascots.primary ??
             CharacterSelection.selected ??
             characterData.first;
         _history = history;
@@ -87,6 +93,7 @@ class _InterviewHomeScreenState extends State<InterviewHomeScreen> {
   Future<void> _changeCareer() async {
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
+        settings: const RouteSettings(name: '/onboarding-goal'),
         builder: (_) => const CareerGoalScreen(skipIfSavedUser: false),
       ),
     );
@@ -124,6 +131,7 @@ class _InterviewHomeScreenState extends State<InterviewHomeScreen> {
       );
       await Navigator.of(context).push(
         MaterialPageRoute<void>(
+          settings: const RouteSettings(name: '/interview-room'),
           builder: (_) => InterviewRoomScreen(
             initialSession: session,
             questions: questions,
@@ -211,6 +219,29 @@ class _InterviewHomeScreenState extends State<InterviewHomeScreen> {
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
                 children: [
                   _buildGreeting(),
+                  if (widget.jobTitle != null) ...[
+                    const SizedBox(height: 10),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 11,
+                      ),
+                      decoration: BoxDecoration(
+                        color: _surface,
+                        borderRadius: BorderRadius.circular(15),
+                        border: Border.all(
+                          color: _accent.withValues(alpha: .3),
+                        ),
+                      ),
+                      child: Text(
+                        'Vị trí đang luyện: ${widget.jobTitle}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 14),
                   _buildCareerCard(),
                   if (_skillMastery.isNotEmpty) ...[

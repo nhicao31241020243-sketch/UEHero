@@ -8,7 +8,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/career_goal.dart';
 import '../models/character_data.dart';
 import '../models/xp_entry.dart';
+import '../services/mascot_selection_store.dart';
+import '../services/companion_settings_store.dart';
 import '../services/points_manager.dart';
+import 'mascot_hub_screen.dart';
 import 'xp_ledger_debug_screen.dart';
 import '../widgets/career_goal_option_card.dart';
 
@@ -27,8 +30,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   final _xp = PointsManager.instance;
   CharacterData _companion = characterData.first;
+  MascotSelection _mascots = const MascotSelection();
   CareerGoal _selectedGoal = careerGoals.first;
   bool _loading = true;
+  bool _companionEnabled = true;
+  bool _reminderBubblesEnabled = true;
+  bool _autoMovementEnabled = true;
 
   @override
   void initState() {
@@ -43,9 +50,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _loadProfile() async {
     final preferences = await SharedPreferences.getInstance();
-    final savedCharacter = characterById(
-      preferences.getString('selected_mascot'),
+    final mascots = await MascotSelectionStore.instance.read(
+      preferences: preferences,
     );
+    final companionEnabled = await CompanionSettingsStore.instance
+        .overlayEnabled();
+    final reminderBubblesEnabled = await CompanionSettingsStore.instance
+        .bubblesEnabled();
+    final autoMovementEnabled = await CompanionSettingsStore.instance
+        .autoMovementEnabled();
     final savedGoal = careerGoalByTitle(preferences.getString('career_goal'));
     final mastery = jsonDecode(
       preferences.getString('career_map_skills') ?? '{}',
@@ -59,11 +72,36 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (!mounted) return;
 
     setState(() {
+      _mascots = mascots;
+      _companionEnabled = companionEnabled;
+      _reminderBubblesEnabled = reminderBubblesEnabled;
+      _autoMovementEnabled = autoMovementEnabled;
       _companion =
-          savedCharacter ?? CharacterSelection.selected ?? characterData.first;
-      CharacterSelection.selected = _companion;
+          mascots.primary ??
+          CharacterSelection.selected ??
+          MascotSelectionStore.charactersFor(MascotRole.primary).first;
+      CharacterSelection.selected = mascots.primary;
       _selectedGoal = savedGoal ?? careerGoals.first;
       _loading = false;
+    });
+  }
+
+  Future<void> _openMascotHub() async {
+    final changed = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        settings: const RouteSettings(name: '/mascot-hub'),
+        builder: (_) => MascotHubScreen(initialSelection: _mascots),
+      ),
+    );
+    if (!mounted || changed != true) return;
+    final selection = await MascotSelectionStore.instance.read();
+    if (!mounted) return;
+    setState(() {
+      _mascots = selection;
+      _companion =
+          selection.primary ??
+          MascotSelectionStore.charactersFor(MascotRole.primary).first;
+      CharacterSelection.selected = selection.primary;
     });
   }
 
@@ -123,6 +161,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       _buildMascotCard(),
+                      const SizedBox(height: 12),
+                      _buildMascotHubRow(),
+                      const SizedBox(height: 12),
+                      _buildCompanionSettings(),
                       const SizedBox(height: 18),
                       _buildSkillsCard(),
                       if (kDebugMode) ...[
@@ -136,6 +178,102 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
     );
   }
+
+  Widget _buildMascotHubRow() => Material(
+    color: _surface,
+    borderRadius: BorderRadius.circular(18),
+    child: InkWell(
+      borderRadius: BorderRadius.circular(18),
+      onTap: _openMascotHub,
+      child: const Padding(
+        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          children: [
+            Icon(Icons.pets_rounded, color: _accent, size: 21),
+            SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Linh vật của bạn',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            Icon(Icons.chevron_right_rounded, color: _muted),
+          ],
+        ),
+      ),
+    ),
+  );
+
+  Widget _buildCompanionSettings() => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+    decoration: BoxDecoration(
+      color: _surface,
+      borderRadius: BorderRadius.circular(18),
+      border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+    ),
+    child: Column(
+      children: [
+        SwitchListTile.adaptive(
+          contentPadding: EdgeInsets.zero,
+          value: _companionEnabled,
+          activeThumbColor: _accent,
+          title: const Text(
+            'Bạn đồng hành trên màn hình',
+            style: TextStyle(color: Colors.white, fontSize: 14),
+          ),
+          subtitle: const Text(
+            'Hiện hoặc ẩn thú cưng nổi',
+            style: TextStyle(color: _muted, fontSize: 12),
+          ),
+          onChanged: (enabled) async {
+            await CompanionSettingsStore.instance.setOverlayEnabled(enabled);
+            if (mounted) setState(() => _companionEnabled = enabled);
+          },
+        ),
+        Divider(height: 1, color: Colors.white.withValues(alpha: 0.08)),
+        SwitchListTile.adaptive(
+          contentPadding: EdgeInsets.zero,
+          value: _reminderBubblesEnabled,
+          activeThumbColor: _accent,
+          title: const Text(
+            'Bong bóng nhắc',
+            style: TextStyle(color: Colors.white, fontSize: 14),
+          ),
+          subtitle: const Text(
+            'Nhắc theo dữ liệu và màn hình hiện tại',
+            style: TextStyle(color: _muted, fontSize: 12),
+          ),
+          onChanged: (enabled) async {
+            await CompanionSettingsStore.instance.setBubblesEnabled(enabled);
+            if (mounted) setState(() => _reminderBubblesEnabled = enabled);
+          },
+        ),
+        Divider(height: 1, color: Colors.white.withValues(alpha: 0.08)),
+        SwitchListTile.adaptive(
+          contentPadding: EdgeInsets.zero,
+          value: _autoMovementEnabled,
+          activeThumbColor: _accent,
+          title: const Text(
+            'Tự di chuyển',
+            style: TextStyle(color: Colors.white, fontSize: 14),
+          ),
+          subtitle: const Text(
+            'Bạn đồng hành tự bay hoặc đi dọc mép màn hình',
+            style: TextStyle(color: _muted, fontSize: 12),
+          ),
+          onChanged: (enabled) async {
+            await CompanionSettingsStore.instance.setAutoMovementEnabled(
+              enabled,
+            );
+            if (mounted) setState(() => _autoMovementEnabled = enabled);
+          },
+        ),
+      ],
+    ),
+  );
 
   Widget _buildMascotCard() {
     return Container(

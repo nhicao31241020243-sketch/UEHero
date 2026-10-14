@@ -37,7 +37,7 @@ const dataBusinessCriteria = [
   ),
   GoalCriterion(id: 'contest', label: 'Cuộc thi', weight: 10, enabled: false),
   GoalCriterion(id: 'course', label: 'Khóa học', weight: 10, enabled: false),
-  GoalCriterion(id: 'mentor', label: 'UEH Mentor', weight: 5, enabled: false),
+  GoalCriterion(id: 'mentor', label: 'UEH Mentor', weight: 5, enabled: true),
 ];
 
 const careerGoals = [

@@ -31,6 +31,9 @@ class WelcomeScreen extends StatelessWidget {
                     onPressed: () => Navigator.pushReplacement(
                       context,
                       MaterialPageRoute<void>(
+                        settings: const RouteSettings(
+                          name: '/onboarding-signup',
+                        ),
                         builder: (_) => const SignUpScreen(),
                       ),
                     ),

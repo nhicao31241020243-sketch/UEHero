@@ -4,7 +4,9 @@ import 'home_event_screen.dart';
 import 'screens/interview/interview_home_screen.dart';
 import 'screens/welcome_screen.dart' as onboarding;
 import 'services/points_manager.dart';
+import 'services/app_navigation.dart';
 import 'services/route_observer.dart';
+import 'widgets/companion_overlay.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -18,13 +20,25 @@ class UEHeroApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: appNavigatorKey,
       debugShowCheckedModeBanner: false,
       title: 'UEHero',
       theme: ThemeData.dark().copyWith(
         scaffoldBackgroundColor: const Color(0xFF0D0C13),
       ),
-      navigatorObservers: [ueHeroRouteObserver],
-      home: const onboarding.WelcomeScreen(),
+      navigatorObservers: [ueHeroRouteObserver, companionRouteObserver],
+      initialRoute: '/onboarding',
+      onGenerateRoute: (settings) {
+        if (settings.name != '/onboarding') return null;
+        return MaterialPageRoute<void>(
+          settings: settings,
+          builder: (_) => const onboarding.WelcomeScreen(),
+        );
+      },
+      builder: (context, child) => Stack(
+        fit: StackFit.expand,
+        children: [?child, const CompanionOverlay()],
+      ),
     );
   }
 }
