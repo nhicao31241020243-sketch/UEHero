@@ -214,8 +214,10 @@ class _HomeEventScreenState extends State<HomeEventScreen> {
                       Positioned.fill(
                         child: EventPoster(
                           imagePath: event.image,
+                          imageUrl: event.imageUrl,
+                          sourceUrl: event.sourceUrl,
                           borderRadius: BorderRadius.circular(20),
-                          placeholderIcon: Icons.event,
+                          placeholderIcon: _eventIcon(event.type),
                         ),
                       ),
                       Container(
@@ -382,7 +384,171 @@ class _HomeEventScreenState extends State<HomeEventScreen> {
         trainingPoints: 3 + index,
       ),
     );
-    return _sectionPosterRow(title, sectionEvents);
+    return _sectionPosterGrid(title, sectionEvents);
+  }
+
+  Widget _sectionPosterGrid(String title, List<EventItem> events) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Text(
+            title,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        LayoutBuilder(
+          builder: (context, constraints) => GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            itemCount: events.length,
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+              childAspectRatio: constraints.maxWidth < 400 ? 0.8 : 1,
+            ),
+            itemBuilder: (context, index) {
+              final event = events[index];
+              return ClipRRect(
+                borderRadius: BorderRadius.circular(18),
+                child: Material(
+                  color: const Color(0xFF211D2B),
+                  child: InkWell(
+                    onTap: () => _openDetail(event),
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        EventPoster(
+                          imagePath: event.image,
+                          imageUrl: event.imageUrl,
+                          sourceUrl: event.sourceUrl,
+                          borderRadius: BorderRadius.zero,
+                          placeholderIcon: _eventIcon(event.type),
+                        ),
+                        const DecoratedBox(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.center,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                Colors.transparent,
+                                Color(0xF20D0C13),
+                              ],
+                              stops: [0.05, 1],
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          top: 9,
+                          left: 9,
+                          right: 9,
+                          child: Row(
+                            children: [
+                              Flexible(child: _eventTag(event.tag)),
+                              const Spacer(),
+                              _pointsBadge(event.trainingPoints),
+                            ],
+                          ),
+                        ),
+                        Positioned(
+                          left: 11,
+                          right: 11,
+                          bottom: 10,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                event.title,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 14,
+                                  height: 1.12,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                event.organizer,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: Colors.grey[300],
+                                  fontSize: 10,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _eventTag(String label) => Container(
+    constraints: const BoxConstraints(maxWidth: 150),
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+    decoration: BoxDecoration(
+      color: const Color(0xFF201B2B).withValues(alpha: 0.82),
+      borderRadius: BorderRadius.circular(12),
+    ),
+    child: Text(
+      label,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: const TextStyle(
+        color: Color(0xFFD7C5FF),
+        fontSize: 10,
+        fontWeight: FontWeight.bold,
+      ),
+    ),
+  );
+
+  Widget _pointsBadge(int points) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+    decoration: BoxDecoration(
+      color: const Color(0xFF201B2B).withValues(alpha: 0.82),
+      borderRadius: BorderRadius.circular(12),
+    ),
+    child: Text(
+      '+$points điểm',
+      style: const TextStyle(
+        color: Color(0xFFF2D477),
+        fontSize: 10,
+        fontWeight: FontWeight.bold,
+      ),
+    ),
+  );
+
+  IconData _eventIcon(String type) {
+    final normalized = type.toLowerCase();
+    if (normalized.contains('workshop') || normalized.contains('hội thảo')) {
+      return Icons.groups_2_outlined;
+    }
+    if (normalized.contains('việc làm') || normalized.contains('career')) {
+      return Icons.work_outline_rounded;
+    }
+    if (normalized.contains('thi') || normalized.contains('contest')) {
+      return Icons.emoji_events_outlined;
+    }
+    return Icons.event_outlined;
   }
 
   Widget _sectionPosterRow(String title, List<EventItem> events) {
@@ -413,7 +579,12 @@ class _HomeEventScreenState extends State<HomeEventScreen> {
                       SizedBox(
                         height: 150,
                         width: 125,
-                        child: EventPoster(imagePath: event.image),
+                        child: EventPoster(
+                          imagePath: event.image,
+                          imageUrl: event.imageUrl,
+                          sourceUrl: event.sourceUrl,
+                          placeholderIcon: _eventIcon(event.type),
+                        ),
                       ),
                       const SizedBox(height: 6),
                       Text(

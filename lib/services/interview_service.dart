@@ -5,9 +5,8 @@ import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/interview_models.dart';
-import '../models/career_progress.dart';
+import '../models/xp_entry.dart';
 import 'points_manager.dart';
-import 'progress_service.dart';
 
 class InterviewService {
   InterviewService._();
@@ -53,7 +52,7 @@ class InterviewService {
     final today = _todayKey(DateTime.now());
     final sameDay = preferences.getString(_dayKey) == today;
     final extras = sameDay ? preferences.getInt(_extraKey) ?? 0 : 0;
-    if (!PointsManager.instance.trySpendPoints(50)) return false;
+    if (!await PointsManager.instance.trySpendPoints(50)) return false;
     await preferences.setString(_dayKey, today);
     await preferences.setInt(_extraKey, extras + 1);
     if (!sameDay) await preferences.setInt(_usageKey, 0);
@@ -218,13 +217,11 @@ class InterviewService {
     );
     // TODO(career-map): connect this key to the milestone-completion store.
     await preferences.setBool(interviewDoneKey, true);
-    PointsManager.instance.addCvPoints(30);
-    if (completed.overall >= 70) PointsManager.instance.addCvPoints(10);
-    await ProgressService.instance.initialize();
-    await ProgressService.instance.awardPoints(
-      ProgressEventType.mockInterviewCompleted,
-      refId: 'mock-interview-${completed.id}',
-      metadata: {'overall': completed.overall},
+    await PointsManager.instance.addXP(
+      thanh: XpBar.hoSo,
+      luong: completed.overall >= 70 ? 70 : 60,
+      nguon: 'mock_interview_completed',
+      sourceRef: 'mock-interview-${completed.id}',
     );
   }
 

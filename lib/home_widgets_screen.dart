@@ -17,6 +17,9 @@ import 'screens/mentor_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/second_hand_market_screen.dart';
 import 'screens/uehero_camera_screen.dart';
+import 'services/route_observer.dart';
+import 'services/points_manager.dart';
+import 'widgets/xp_float_overlay.dart';
 
 class HomeWidgetsScreen extends StatefulWidget {
   const HomeWidgetsScreen({super.key});
@@ -26,7 +29,7 @@ class HomeWidgetsScreen extends StatefulWidget {
 }
 
 class _HomeWidgetsScreenState extends State<HomeWidgetsScreen>
-    with TickerProviderStateMixin {
+    with TickerProviderStateMixin, RouteAware {
   static const _backgroundColor = Color(0xFF100E19);
   static const _accentColor = Color(0xFFBFA8FF);
 
@@ -92,7 +95,7 @@ class _HomeWidgetsScreenState extends State<HomeWidgetsScreen>
       'Sự kiện & workshop',
       Color(0xFFFFC76E),
       [Color(0xFFFFF0B5), Color(0xFFFF9F43), Color(0xFF8E3D73)],
-      '',
+      'assets/images/planets/mercury.png',
       'events',
     ),
   ];
@@ -101,6 +104,9 @@ class _HomeWidgetsScreenState extends State<HomeWidgetsScreen>
   late final AnimationController _planetController;
   late final Animation<double> _floatOffset;
   late final Animation<double> _ufoFloatOffset;
+  final _xp = PointsManager.instance;
+  final _xpOverlayKey = GlobalKey<XpFloatOverlayState>();
+  bool _routeSubscribed = false;
   final _searchController = TextEditingController();
   int _selectedTab = 0;
   int? _selectedFeatureIndex;
@@ -141,7 +147,27 @@ class _HomeWidgetsScreenState extends State<HomeWidgetsScreen>
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    if (route != null && !_routeSubscribed) {
+      ueHeroRouteObserver.subscribe(this, route);
+      _routeSubscribed = true;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) => _drainPendingGains());
+  }
+
+  @override
+  void didPopNext() => _drainPendingGains();
+
+  void _drainPendingGains() {
+    if (!mounted) return;
+    _xpOverlayKey.currentState?.showGains(_xp.drainPending());
+  }
+
+  @override
   void dispose() {
+    ueHeroRouteObserver.unsubscribe(this);
     _floatController.dispose();
     _planetController.dispose();
     _searchController.dispose();
@@ -182,9 +208,8 @@ class _HomeWidgetsScreenState extends State<HomeWidgetsScreen>
   }
 
   void _openEvents() {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => const HomeEventScreen()),
-    );
+    Navigator.of(context)
+        .push(MaterialPageRoute<void>(builder: (_) => const HomeEventScreen()));
   }
 
   void _openFlashcards() {
@@ -276,11 +301,7 @@ class _HomeWidgetsScreenState extends State<HomeWidgetsScreen>
           child: Row(
             children: [
               Expanded(
-                child: _buildNavButton(
-                  1,
-                  Icons.route_rounded,
-                  'Career Map',
-                ),
+                child: _buildNavButton(1, Icons.route_rounded, 'Career Map'),
               ),
               Expanded(
                 child: _buildNavButton(
@@ -538,18 +559,21 @@ class _HomeWidgetsScreenState extends State<HomeWidgetsScreen>
                   child: SizedBox(
                     width: mascotSize,
                     height: mascotSize,
-                    child: ModelViewer(
-                      key: ValueKey(companion.modelPath),
-                      src: companion.modelPath,
-                      alt: companion.name,
-                      autoPlay: true,
-                      animationName: companion.animationName,
-                      autoRotate: false,
-                      autoRotateDelay: 0,
-                      cameraControls: true,
-                      disableZoom: true,
-                      backgroundColor: Colors.transparent,
-                      debugLogging: false,
+                    child: XpFloatOverlay(
+                      key: _xpOverlayKey,
+                      child: ModelViewer(
+                        key: ValueKey(companion.modelPath),
+                        src: companion.modelPath,
+                        alt: companion.name,
+                        autoPlay: true,
+                        animationName: companion.animationName,
+                        autoRotate: false,
+                        autoRotateDelay: 0,
+                        cameraControls: true,
+                        disableZoom: true,
+                        backgroundColor: Colors.transparent,
+                        debugLogging: false,
+                      ),
                     ),
                   ),
                   builder: (context, child) => Transform.translate(
@@ -793,9 +817,7 @@ class _PlanetButton extends StatelessWidget {
                       child: RepaintBoundary(
                         child: AnimatedBuilder(
                           animation: rotation,
-                          child: feature.actionKey == 'events'
-                              ? const _PlanetPlaceholder()
-                              : feature.actionKey == 'saturn'
+                          child: feature.actionKey == 'saturn'
                               ? Hero(
                                   tag: FlashcardHomeScreen.heroTag,
                                   child: Image.asset(
@@ -896,42 +918,4 @@ class _DashboardFeature {
   final List<Color> gradientColors;
   final String imagePath;
   final String actionKey;
-}
-
-class _PlanetPlaceholder extends StatelessWidget {
-  const _PlanetPlaceholder();
-
-  @override
-  Widget build(BuildContext context) {
-    return const DecoratedBox(
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: RadialGradient(
-          center: Alignment(-0.25, -0.3),
-          radius: 0.9,
-          colors: [
-            Color(0xFFFFF4C4),
-            Color(0xFFFFA54D),
-            Color(0xFFB83F82),
-            Color(0xFF3D235F),
-          ],
-          stops: [0, 0.35, 0.72, 1],
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Color(0x66FF9F43),
-            blurRadius: 22,
-            spreadRadius: 4,
-          ),
-        ],
-      ),
-      child: Center(
-        child: Icon(
-          Icons.event_rounded,
-          color: Color(0xFFFFF4C4),
-          size: 48,
-        ),
-      ),
-    );
-  }
 }

@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'event_detail_screen.dart';
 import 'models/event_item.dart';
 import 'services/event_repository.dart';
+import 'widgets/event_poster.dart';
 
 class HomeEventScreen extends StatefulWidget {
   const HomeEventScreen({super.key});
@@ -218,41 +219,92 @@ class _HomeEventScreenState extends State<HomeEventScreen> {
 
   Widget _banner(List<EventItem> events) {
     final event = events.isEmpty ? null : events.first;
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        gradient: const LinearGradient(
-          colors: [Color(0xFF3C3065), Color(0xFF1B3D47)],
-        ),
-        border: Border.all(color: Colors.white12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Icon(
-            Icons.rocket_launch_rounded,
-            color: Color(0xFF8CE6CF),
-            size: 30,
-          ),
-          const SizedBox(height: 12),
-          Text(
-            event == null
-                ? 'Chưa có đợt đăng ký nào đang mở, đây là các cuộc thi nên chuẩn bị cho mùa tới'
-                : event.title,
-            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
-          ),
-          if (event != null) ...[
-            const SizedBox(height: 6),
-            Text(event.organizer, style: const TextStyle(color: _muted)),
-            const SizedBox(height: 12),
-            _matchChip(event),
-            TextButton(
-              onPressed: () => _open(event),
-              child: const Text('Xem chi tiết'),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(24),
+      child: AspectRatio(
+        aspectRatio: 1.58,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            EventPoster(
+              imageUrl: event?.imageUrl,
+              sourceUrl: event?.sourceUrl,
+              borderRadius: BorderRadius.zero,
+              placeholderIcon: event == null
+                  ? Icons.rocket_launch_rounded
+                  : _typeIcon(event.type),
             ),
+            const DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.center,
+                  end: Alignment.bottomCenter,
+                  colors: [Colors.transparent, Color(0xEE100E19)],
+                  stops: [0.12, 1],
+                ),
+              ),
+            ),
+            if (event == null)
+              const Positioned(
+                left: 18,
+                right: 18,
+                bottom: 18,
+                child: Text(
+                  'Chưa có đợt đăng ký nào đang mở, đây là các cuộc thi nên chuẩn bị cho mùa tới',
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                ),
+              )
+            else ...[
+              Positioned(
+                top: 12,
+                left: 12,
+                child: _tag(event.type),
+              ),
+              Positioned(top: 10, right: 10, child: _matchChip(event)),
+              Positioned(
+                left: 16,
+                right: 16,
+                bottom: 12,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      event.title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      event.organizer,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(color: _muted, fontSize: 12),
+                    ),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        onPressed: () => _open(event),
+                        child: const Text('Xem chi tiết'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Positioned.fill(
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(onTap: () => _open(event)),
+                ),
+              ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }
@@ -269,7 +321,20 @@ class _HomeEventScreenState extends State<HomeEventScreen> {
             style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 12),
-          ...events.map((event) => _eventCard(event, now)),
+          LayoutBuilder(
+            builder: (context, constraints) => GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: events.length,
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+                childAspectRatio: constraints.maxWidth < 400 ? 0.78 : 1,
+              ),
+              itemBuilder: (context, index) => _eventCard(events[index], now),
+            ),
+          ),
         ],
       ),
     );
@@ -277,64 +342,123 @@ class _HomeEventScreenState extends State<HomeEventScreen> {
 
   Widget _eventCard(EventItem event, DateTime now) {
     final status = event.statusAt(now);
-    return Card(
-      color: _surface,
-      margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(18),
-        onTap: () => _open(event),
-        child: Padding(
-          padding: const EdgeInsets.all(15),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(18),
+      child: Material(
+        color: _surface,
+        child: InkWell(
+          onTap: () => _open(event),
+          child: Stack(
+            fit: StackFit.expand,
             children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Text(
+              EventPoster(
+                imageUrl: event.imageUrl,
+                sourceUrl: event.sourceUrl,
+                borderRadius: BorderRadius.zero,
+                placeholderIcon: _typeIcon(event.type),
+              ),
+              const DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.center,
+                    end: Alignment.bottomCenter,
+                    colors: [Colors.transparent, Color(0xF0100E19)],
+                    stops: [0.05, 0.98],
+                  ),
+                ),
+              ),
+              Positioned(
+                top: 9,
+                left: 9,
+                right: 9,
+                child: Row(
+                  children: [
+                    Flexible(child: _tag(event.type)),
+                    const Spacer(),
+                    _matchChip(event),
+                  ],
+                ),
+              ),
+              Positioned(
+                left: 10,
+                right: 10,
+                bottom: 8,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
                       event.title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        fontSize: 16,
+                        color: Colors.white,
+                        fontSize: 13,
+                        height: 1.1,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
-                  ),
-                  _matchChip(event),
-                ],
-              ),
-              const SizedBox(height: 5),
-              Text(
-                event.organizer,
-                style: const TextStyle(color: _muted, fontSize: 12),
-              ),
-              const SizedBox(height: 9),
-              Wrap(
-                spacing: 6,
-                runSpacing: 6,
-                children: [
-                  _tag(event.type),
-                  _tag(_statusText(event, status, now)),
-                  if (event.notes != null)
-                    _tag('Cần kiểm tra thông tin', warning: true),
-                ],
-              ),
-              const SizedBox(height: 9),
-              Text(
-                'Bạn sẽ luyện: ${event.skills.join(', ')}',
-                style: const TextStyle(color: Color(0xFFB9F2DF), fontSize: 12),
-              ),
-              if (event.sourceUrl != null)
-                Text(
-                  'Đã xác minh ${_date(event.verifiedAt)} · Nguồn: ${Uri.tryParse(event.sourceUrl!)?.host ?? event.sourceUrl}',
-                  style: const TextStyle(color: _muted, fontSize: 10),
+                    const SizedBox(height: 3),
+                    Text(
+                      event.organizer,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(color: _muted, fontSize: 9),
+                    ),
+                    const SizedBox(height: 3),
+                    if (event.skills.isNotEmpty)
+                      Text(
+                        'Bạn sẽ luyện: ${event.skills.join(', ')}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Color(0xFFB9F2DF),
+                          fontSize: 9,
+                        ),
+                      ),
+                    const SizedBox(height: 4),
+                    Wrap(
+                      spacing: 4,
+                      runSpacing: 3,
+                      children: [
+                        _tag(_statusText(event, status, now)),
+                        if (event.notes != null)
+                          _tag('Cần kiểm tra thông tin', warning: true),
+                      ],
+                    ),
+                    if (event.sourceUrl != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 3),
+                        child: Text(
+                          'Đã xác minh ${_date(event.verifiedAt)} · Nguồn: ${Uri.tryParse(event.sourceUrl!)?.host ?? event.sourceUrl}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(color: _muted, fontSize: 8),
+                        ),
+                      ),
+                  ],
                 ),
+              ),
             ],
           ),
         ),
       ),
     );
+  }
+
+  IconData _typeIcon(String type) {
+    final normalized = type.toLowerCase();
+    if (normalized.contains('việc làm') || normalized.contains('career')) {
+      return Icons.work_outline_rounded;
+    }
+    if (normalized.contains('workshop') || normalized.contains('hội thảo')) {
+      return Icons.groups_2_outlined;
+    }
+    if (normalized.contains('hackathon')) return Icons.code_rounded;
+    if (normalized.contains('thi') || normalized.contains('contest')) {
+      return Icons.emoji_events_outlined;
+    }
+    return Icons.event_outlined;
   }
 
   Widget _matchChip(EventItem event) => Container(

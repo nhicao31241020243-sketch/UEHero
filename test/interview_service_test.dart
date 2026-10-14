@@ -3,6 +3,7 @@ import 'package:uehero/services/interview_service.dart';
 import 'package:uehero/models/interview_models.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uehero/services/points_manager.dart';
+import 'package:uehero/models/xp_entry.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -22,13 +23,18 @@ void main() {
 
     test('daily limit can be expanded with 50 points', () async {
       SharedPreferences.setMockInitialValues({});
+      PointsManager.instance.resetForTesting();
       final service = InterviewService.instance;
       expect(await service.remainingToday(), 2);
       expect(await service.startSession(), isTrue);
       expect(await service.startSession(), isTrue);
       expect(await service.startSession(), isFalse);
 
-      PointsManager.instance.addCvPoints(50);
+      await PointsManager.instance.addXP(
+        thanh: XpBar.hoSo,
+        luong: 50,
+        nguon: 'interview_test',
+      );
       expect(await service.buyExtraSession(), isTrue);
       expect(await service.remainingToday(), 1);
       expect(await service.startSession(), isTrue);

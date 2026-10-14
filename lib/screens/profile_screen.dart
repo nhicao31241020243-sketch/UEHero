@@ -1,11 +1,15 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:model_viewer_plus/model_viewer_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/career_goal.dart';
 import '../models/character_data.dart';
+import '../models/xp_entry.dart';
+import '../services/points_manager.dart';
+import 'xp_ledger_debug_screen.dart';
 import '../widgets/career_goal_option_card.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -21,15 +25,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
   static const _muted = Color(0xFFAAA5B8);
   static const _accent = Color(0xFFBFA8FF);
 
+  final _xp = PointsManager.instance;
   CharacterData _companion = characterData.first;
   CareerGoal _selectedGoal = careerGoals.first;
-  Map<String, dynamic> _mastery = {};
   bool _loading = true;
 
   @override
   void initState() {
     super.initState();
+    _xp.addListener(_onXpChanged);
     _loadProfile();
+  }
+
+  void _onXpChanged() {
+    if (mounted) setState(() {});
   }
 
   Future<void> _loadProfile() async {
@@ -41,6 +50,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final mastery = jsonDecode(
       preferences.getString('career_map_skills') ?? '{}',
     );
+    await _xp.initialize(preferences: preferences);
+    await _xp.migrateInitialSkills(
+      savedGoal?.skills ?? careerGoals.first.skills,
+      savedMastery: mastery is Map<String, dynamic> ? mastery : const {},
+      preferences: preferences,
+    );
     if (!mounted) return;
 
     setState(() {
@@ -48,9 +63,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
           savedCharacter ?? CharacterSelection.selected ?? characterData.first;
       CharacterSelection.selected = _companion;
       _selectedGoal = savedGoal ?? careerGoals.first;
-      _mastery = mastery is Map<String, dynamic> ? mastery : {};
       _loading = false;
     });
+  }
+
+  @override
+  void dispose() {
+    _xp.removeListener(_onXpChanged);
+    super.dispose();
   }
 
   Future<void> _changeCareerGoal() async {
@@ -105,6 +125,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       _buildMascotCard(),
                       const SizedBox(height: 18),
                       _buildSkillsCard(),
+                      if (kDebugMode) ...[
+                        const SizedBox(height: 12),
+                        _buildXpDebugControls(),
+                      ],
                     ],
                   ),
                 ),
@@ -244,10 +268,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               padding: const EdgeInsets.symmetric(vertical: 11),
               child: _SkillRatingRow(
                 key: ValueKey('${_selectedGoal.title}-${skill.name}'),
-                skill: CareerSkill(
-                  skill.name,
-                  (_mastery[skill.name] as num?)?.toInt() ?? skill.level,
-                ),
+                skill: CareerSkill(skill.name, _xp.level(skill.name)),
               ),
             ),
           const SizedBox(height: 6),
@@ -258,6 +279,67 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ],
       ),
     );
+  }
+
+  Widget _buildXpDebugControls() {
+    return Column(
+      children: [
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: _addDebugXp,
+            icon: const Icon(Icons.bolt_rounded, size: 17),
+            label: const Text('+10 XP JavaScript'),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: _addDebugBatchXp,
+                icon: const Icon(Icons.auto_awesome_rounded, size: 17),
+                label: const Text('+2 XP x5'),
+              ),
+            ),
+            IconButton(
+              tooltip: 'Mở XP ledger',
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const XpLedgerDebugScreen(),
+                ),
+              ),
+              icon: const Icon(Icons.receipt_long_rounded, color: _accent),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Future<void> _addDebugXp() async {
+    final added = await _xp.addXP(
+      thanh: XpBar.thucChien,
+      skill: 'JavaScript',
+      luong: 10,
+      nguon: 'debug',
+      sourceRef: 'debug-${DateTime.now().microsecondsSinceEpoch}',
+    );
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text('+$added XP JavaScript')));
+  }
+
+  Future<void> _addDebugBatchXp() async {
+    for (var index = 0; index < 5; index++) {
+      await _xp.addXP(
+        thanh: XpBar.thucChien,
+        skill: 'JavaScript',
+        luong: 2,
+        nguon: 'debug',
+        sourceRef: 'batch-${DateTime.now().microsecondsSinceEpoch}-$index',
+      );
+    }
   }
 }
 

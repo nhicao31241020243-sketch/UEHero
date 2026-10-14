@@ -3,11 +3,12 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../config/flashcard_skill_map.dart';
 import '../models/flashcard.dart';
 import '../models/flashcard_deck.dart';
-import '../models/career_progress.dart';
+import '../models/xp_entry.dart';
 import '../services/flashcard_service.dart';
-import '../services/progress_service.dart';
+import '../services/points_manager.dart';
 import '../widgets/code_block.dart';
 import '../widgets/flip_card.dart';
 import 'flashcard_home_screen.dart';
@@ -39,6 +40,7 @@ class _FlashcardStudyScreenState extends State<FlashcardStudyScreen> {
   int _index = 0;
   int _sessionReviewed = 0;
   int _sessionCorrect = 0;
+  int _sessionXp = 0;
   int? _selectedChoice;
   double _swipeDx = 0;
   bool _completionAwarded = false;
@@ -72,11 +74,19 @@ class _FlashcardStudyScreenState extends State<FlashcardStudyScreen> {
   List<_StudyItem> _sourceItems() {
     if (widget.reviewAllDue) {
       final dueIds = _service.dueCards.map((card) => card.id).toSet();
-      return [
+      final items = [
         for (final deck in _service.decks)
           for (final card in deck.cards)
             if (dueIds.contains(card.id)) _StudyItem(deck: deck, card: card),
       ];
+      items.sort(
+        (a, b) =>
+            (a.card.nextReviewAt ?? DateTime.fromMillisecondsSinceEpoch(0))
+                .compareTo(
+                  b.card.nextReviewAt ?? DateTime.fromMillisecondsSinceEpoch(0),
+                ),
+      );
+      return items.take(12).toList();
     }
     final deck = _service.decks.firstWhere(
       (item) => item.id == widget.deckId,
@@ -100,6 +110,7 @@ class _FlashcardStudyScreenState extends State<FlashcardStudyScreen> {
       _index = 0;
       _sessionReviewed = 0;
       _sessionCorrect = 0;
+      _sessionXp = 0;
     } else if (_index >= _queue.length) {
       _index = 0;
     }
@@ -129,6 +140,29 @@ class _FlashcardStudyScreenState extends State<FlashcardStudyScreen> {
       item.card.id,
       known: known && wasCorrect,
     );
+    if (wasCorrect) {
+      final now = DateTime.now();
+      final date =
+          '${now.year.toString().padLeft(4, '0')}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}';
+      final added = await PointsManager.instance.addXP(
+        thanh: XpBar.kienThuc,
+        skill: skillForDeck(item.deck.id),
+        luong: 5,
+        nguon: 'flashcard',
+        sourceRef: '${item.card.id}_$date',
+      );
+      if (added > 0) {
+        _sessionXp += added;
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Hôm nay đủ XP từ flashcard rồi, vẫn ôn thoải mái nhé',
+            ),
+          ),
+        );
+      }
+    }
     if (!mounted) return;
     setState(() {
       _sessionReviewed++;
@@ -143,15 +177,11 @@ class _FlashcardStudyScreenState extends State<FlashcardStudyScreen> {
       final refId = widget.reviewAllDue
           ? 'flashcard-review-${DateTime.now().toIso8601String().substring(0, 10)}'
           : 'flashcard-deck-${item.deck.id}';
-      await ProgressService.instance.initialize();
-      await ProgressService.instance.awardPoints(
-        ProgressEventType.flashcardCompleted,
-        refId: refId,
-        metadata: {
-          'deckId': item.deck.id,
-          'reviewed': _sessionReviewed,
-          'correct': _sessionCorrect,
-        },
+      await PointsManager.instance.addXP(
+        thanh: XpBar.kienThuc,
+        luong: 20,
+        nguon: 'flashcard_completed',
+        sourceRef: refId,
       );
     }
   }
@@ -635,6 +665,11 @@ class _FlashcardStudyScreenState extends State<FlashcardStudyScreen> {
               fontWeight: FontWeight.w800,
             ),
           ),
+          const SizedBox(width: 10),
+          Text(
+            'XP phiên: +$_sessionXp',
+            style: const TextStyle(color: _lime, fontSize: 11),
+          ),
         ],
       ),
       const SizedBox(height: 8),
@@ -999,6 +1034,15 @@ class _FlashcardStudyScreenState extends State<FlashcardStudyScreen> {
               'Độ chính xác: ${_sessionReviewed == 0 ? 0 : (_sessionCorrect * 100 / _sessionReviewed).round()}%',
               style: const TextStyle(color: _muted, fontSize: 13),
             ),
+            const SizedBox(height: 6),
+            Text(
+              'XP phiên: +$_sessionXp',
+              style: const TextStyle(
+                color: _lime,
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
             const SizedBox(height: 8),
             Text(
               '${_service.streak} ngày streak · tổng ${_service.totalReviewed} lượt ôn',
@@ -1015,6 +1059,17 @@ class _FlashcardStudyScreenState extends State<FlashcardStudyScreen> {
                 foregroundColor: FlashcardHomeScreen.background,
               ),
             ),
+            if (widget.reviewAllDue && _service.dueCards.isNotEmpty)
+              TextButton(
+                onPressed: () => Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute<void>(
+                    builder: (_) =>
+                        const FlashcardStudyScreen(reviewAllDue: true),
+                  ),
+                ),
+                child: const Text('Ôn tiếp 12 thẻ'),
+              ),
             if (!widget.reviewAllDue)
               TextButton(
                 onPressed: () {

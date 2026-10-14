@@ -7,9 +7,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../config/career_map_layout.dart';
 import '../config/career_progress_config.dart';
-import '../models/career_progress.dart';
+import '../config/career_goal_config.dart';
 import '../models/character_data.dart';
+import '../models/xp_entry.dart';
+import '../services/points_manager.dart';
 import '../services/progress_service.dart';
+import '../services/goal_progress_service.dart';
+import 'flashcard_home_screen.dart';
 
 class CareerMapScreen extends StatefulWidget {
   const CareerMapScreen({this.embedded = false, super.key});
@@ -25,8 +29,11 @@ class _CareerMapScreenState extends State<CareerMapScreen>
   static const _background = Color(0xFF0D0A1A);
   static const _accent = Color(0xFFFF8FD8);
   static const _cyan = Color(0xFF8DE9FF);
+  static const _galaxyBackgroundUrl =
+      'https://images.unsplash.com/photo-1506703719100-a0f3a48c0f86?q=80&w=1000&auto=format&fit=crop';
 
   final _progress = ProgressService.instance;
+  final _goalProgress = GoalProgressService.instance;
   final _steps = buildCareerMapSteps();
   final _scrollController = ScrollController();
   late final AnimationController _travelController;
@@ -49,18 +56,20 @@ class _CareerMapScreenState extends State<CareerMapScreen>
       duration: const Duration(milliseconds: 1700),
     )..repeat();
     _progress.addListener(_onProgressChanged);
+    _goalProgress.addListener(_onGoalChanged);
     _initialize();
   }
 
   Future<void> _initialize() async {
     try {
       await _progress.initialize();
+      await _goalProgress.initialize();
       final preferences = await SharedPreferences.getInstance();
       _companion =
           characterById(preferences.getString('selected_mascot')) ??
           CharacterSelection.selected ??
           characterData.first;
-      _targetStone = stoneIndexForPoints(_progress.totalPoints, _steps);
+      _targetStone = _goalStone;
       _displayStone = _targetStone.toDouble();
       await _progress.consumePendingAnimation();
       if (mounted) {
@@ -77,15 +86,22 @@ class _CareerMapScreenState extends State<CareerMapScreen>
     }
   }
 
-  void _onProgressChanged() {
-    if (!_progress.isInitialized || !mounted) return;
-    final next = stoneIndexForPoints(_progress.totalPoints, _steps);
-    if (next == _targetStone) return;
-    final start = _displayStone;
+  int get _goalStone =>
+      ((_goalProgress.totalProgress(_goalProgress.selectedGoal) *
+                  (_steps.length - 1))
+              .round())
+          .clamp(0, _steps.length - 1);
+
+  void _onGoalChanged() {
+    if (!mounted) return;
+    final next = _goalStone;
+    if (next == _targetStone) {
+      setState(() {});
+      return;
+    }
     _targetStone = next;
     if (MediaQuery.maybeOf(context)?.disableAnimations ?? false) {
       _displayStone = next.toDouble();
-      _scrollToMascot();
       setState(() {});
       return;
     }
@@ -93,7 +109,11 @@ class _CareerMapScreenState extends State<CareerMapScreen>
       ..reset()
       ..addStatusListener(_finishTravel)
       ..forward();
-    _displayStone = start;
+    setState(() {});
+  }
+
+  void _onProgressChanged() {
+    _onGoalChanged();
   }
 
   void _finishTravel(AnimationStatus status) {
@@ -127,6 +147,7 @@ class _CareerMapScreenState extends State<CareerMapScreen>
   @override
   void dispose() {
     _progress.removeListener(_onProgressChanged);
+    _goalProgress.removeListener(_onGoalChanged);
     _scrollController.dispose();
     _travelController.dispose();
     _pulseController.dispose();
@@ -158,10 +179,7 @@ class _CareerMapScreenState extends State<CareerMapScreen>
                   ListView(
                     controller: _scrollController,
                     padding: const EdgeInsets.only(bottom: 48),
-                    children: [
-                      _buildHeader(),
-                      _buildMapCanvas(),
-                    ],
+                    children: [_buildHeader(), _buildMapCanvas()],
                   ),
                   _buildTopHint(),
                 ],
@@ -188,7 +206,9 @@ class _CareerMapScreenState extends State<CareerMapScreen>
             colors: [Color(0xFF452348), Color(0xFF20204A)],
           ),
           border: Border.all(color: const Color(0x66FF9FD9)),
-          boxShadow: const [BoxShadow(color: Color(0x443B1B6B), blurRadius: 22)],
+          boxShadow: const [
+            BoxShadow(color: Color(0x443B1B6B), blurRadius: 22),
+          ],
         ),
         child: Column(
           children: [
@@ -241,7 +261,9 @@ class _CareerMapScreenState extends State<CareerMapScreen>
                 ),
                 const Spacer(),
                 Text(
-                  next == null ? 'Đã tới đích' : 'Còn ${next.threshold - points}',
+                  next == null
+                      ? 'Đã tới đích'
+                      : 'Còn ${next.threshold - points}',
                   style: const TextStyle(color: Colors.white70, fontSize: 12),
                 ),
               ],
@@ -260,10 +282,77 @@ class _CareerMapScreenState extends State<CareerMapScreen>
             Align(
               alignment: Alignment.centerLeft,
               child: Text(
-                next == null
-                    ? 'Job Galaxy đã mở'
-                    : 'Tiếp theo: ${next.title}',
+                next == null ? 'Job Galaxy đã mở' : 'Tiếp theo: ${next.title}',
                 style: const TextStyle(color: Colors.white70, fontSize: 11),
+              ),
+            ),
+            _goalSummary(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _goalSummary() {
+    final goal = _goalProgress.selectedGoal;
+    final progress = _goalProgress.totalProgress(goal);
+    return Padding(
+      padding: const EdgeInsets.only(top: 13),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'Tuyến đường tới ${goal.name} · ${(progress * 100).round()}%',
+            style: const TextStyle(color: Colors.white70, fontSize: 11),
+          ),
+          const SizedBox(height: 8),
+          LinearProgressIndicator(
+            value: progress,
+            minHeight: 6,
+            backgroundColor: Colors.white12,
+            valueColor: const AlwaysStoppedAnimation(_cyan),
+          ),
+          const SizedBox(height: 9),
+          ...goal.criteria.map((criterion) => _criterionRow(goal, criterion)),
+        ],
+      ),
+    );
+  }
+
+  Widget _criterionRow(CareerGoal goal, GoalCriterion criterion) {
+    final progress = _goalProgress.criterionProgress(goal, criterion.id);
+    return InkWell(
+      onTap: criterion.enabled && criterion.id == 'flashcard'
+          ? () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const FlashcardHomeScreen(),
+              ),
+            )
+          : null,
+      child: Padding(
+        padding: const EdgeInsets.only(top: 5),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                criterion.enabled
+                    ? '${criterion.label} ${(progress * 100).round()}%'
+                    : '${criterion.label} · Sắp có',
+                style: TextStyle(
+                  color: criterion.enabled ? Colors.white70 : Colors.white30,
+                  fontSize: 10,
+                ),
+              ),
+            ),
+            SizedBox(
+              width: 70,
+              child: LinearProgressIndicator(
+                value: criterion.enabled ? progress : 0,
+                minHeight: 4,
+                backgroundColor: Colors.white12,
+                valueColor: AlwaysStoppedAnimation(
+                  criterion.enabled ? _accent : Colors.white24,
+                ),
               ),
             ),
           ],
@@ -279,6 +368,16 @@ class _CareerMapScreenState extends State<CareerMapScreen>
         child: Stack(
           children: [
             const Positioned.fill(child: _SpaceBackdrop()),
+            Positioned.fill(
+              child: Image.network(
+                _galaxyBackgroundUrl,
+                fit: BoxFit.cover,
+                color: Colors.black.withValues(alpha: 0.2),
+                colorBlendMode: BlendMode.darken,
+                errorBuilder: (context, error, stackTrace) =>
+                    const SizedBox.shrink(),
+              ),
+            ),
             _planet(
               'assets/images/planets/neptune.png',
               left: -70,
@@ -480,10 +579,11 @@ class _CareerMapScreenState extends State<CareerMapScreen>
   );
 
   Future<void> _grantDebugStardust() async {
-    final awarded = await _progress.awardPoints(
-      ProgressEventType.debugGrant,
-      refId: 'debug-${DateTime.now().microsecondsSinceEpoch}',
-      metadata: const {'source': 'debug_button'},
+    final awarded = await PointsManager.instance.addXP(
+      thanh: XpBar.thucChien,
+      luong: 100,
+      nguon: 'debug',
+      sourceRef: 'debug-${DateTime.now().microsecondsSinceEpoch}',
     );
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -557,12 +657,17 @@ class _CareerMapScreenState extends State<CareerMapScreen>
                         unlocked
                             ? Icons.check_circle_rounded
                             : Icons.radio_button_unchecked,
-                        color: unlocked ? const Color(0xFF77D6AE) : Colors.white38,
+                        color: unlocked
+                            ? const Color(0xFF77D6AE)
+                            : Colors.white38,
                         size: 18,
                       ),
                       const SizedBox(width: 8),
                       Expanded(
-                        child: Text(task, style: const TextStyle(color: Colors.white70)),
+                        child: Text(
+                          task,
+                          style: const TextStyle(color: Colors.white70),
+                        ),
                       ),
                     ],
                   ),
@@ -603,9 +708,12 @@ class _SpaceBackdropPainter extends CustomPainter {
       canvas.drawCircle(Offset(x, y), index % 11 == 0 ? 1.4 : 0.65, stars);
     }
     final nebula = Paint()
-      ..shader = const RadialGradient(
-        colors: [Color(0x664F176E), Color(0x001E123A)],
-      ).createShader(Rect.fromCircle(center: Offset(size.width * .52, 370), radius: 270));
+      ..shader =
+          const RadialGradient(
+            colors: [Color(0x664F176E), Color(0x001E123A)],
+          ).createShader(
+            Rect.fromCircle(center: Offset(size.width * .52, 370), radius: 270),
+          );
     canvas.drawCircle(Offset(size.width * .52, 370), 270, nebula);
   }
 

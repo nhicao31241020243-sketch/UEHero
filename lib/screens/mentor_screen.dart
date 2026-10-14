@@ -3,8 +3,8 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../models/mentor_model.dart';
-import '../models/career_progress.dart';
-import '../services/progress_service.dart';
+import '../models/xp_entry.dart';
+import '../services/points_manager.dart';
 
 class MentorScreen extends StatefulWidget {
   const MentorScreen({super.key});
@@ -146,11 +146,11 @@ class _MentorScreenState extends State<MentorScreen> {
               height: 50,
               child: FilledButton(
                 onPressed: () async {
-                  await ProgressService.instance.initialize();
-                  await ProgressService.instance.awardPoints(
-                    ProgressEventType.mentorBooked,
-                    refId: 'mentor-booking-${mentor.name}',
-                    metadata: {'mentor': mentor.name},
+                  await PointsManager.instance.addXP(
+                    thanh: XpBar.thucChien,
+                    luong: 10,
+                    nguon: 'mentor_booked',
+                    sourceRef: 'mentor-booking-${mentor.name}',
                   );
                   if (sheetContext.mounted) Navigator.of(sheetContext).pop();
                 },

@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:model_viewer_plus/model_viewer_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -8,11 +10,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/career_goal.dart';
 import '../models/character_data.dart';
 import '../models/cv_check.dart';
-import '../models/career_progress.dart';
+import '../models/xp_entry.dart';
 import '../services/cv_analyzer.dart';
+import '../services/cv_document_reader.dart';
+import '../services/cv_score_store.dart';
+import '../services/goal_progress_service.dart';
 import '../services/points_manager.dart';
-import '../services/progress_service.dart';
 import '../widgets/match_bar.dart';
+import 'career_map_screen.dart';
 import 'job_screen.dart';
 
 class CvCheckScreen extends StatefulWidget {
@@ -30,22 +35,29 @@ class _CvCheckScreenState extends State<CvCheckScreen> {
   static const _accent = Color(0xFFBFA8FF);
   static const _cyan = Color(0xFF70D8F2);
   static const _muted = Color(0xFFAAA5B8);
-  static const _cvTextKey = 'cv_check_text';
-  static const _bestScoreKey = 'cv_check_best_score';
-  static const _historyKey = 'cv_check_history';
+  static const _legacyCvTextKey = 'cv_check_text';
   static const _careerSkillsKey = 'career_map_skills';
 
   final _cvController = TextEditingController();
   final _analyzer = const CvAnalyzer();
+  final _documentReader = const CvDocumentReader();
+  final _scoreStore = CvScoreStore();
   CareerGoal _career = careerGoals.first;
   CharacterData _mascot = characterData.first;
   CvCheckJob? _job;
   CvAnalysis? _analysis;
   bool _loading = true;
   bool _checking = false;
+  bool _readingCv = false;
   bool _showScoreMode = false;
   int _bestScore = 0;
+  int _previousBest = 0;
+  int _xpEarned = 0;
   int _statusIndex = 0;
+  bool _hasPreviousCheck = false;
+  String? _fileName;
+  String? _filePath;
+  int _fileSize = 0;
   List<Map<String, Object>> _history = [];
   int _fixedIssueCount = 0;
   int? _selectedIssueLine;
@@ -57,6 +69,8 @@ class _CvCheckScreenState extends State<CvCheckScreen> {
     'Đang kiểm tra cấu trúc CV...',
     'Đang đối chiếu mục tiêu nghề nghiệp...',
   ];
+
+  bool get _hasSelectedFile => _filePath != null;
 
   @override
   void initState() {
@@ -74,6 +88,7 @@ class _CvCheckScreenState extends State<CvCheckScreen> {
 
   Future<void> _loadSavedData() async {
     final preferences = await SharedPreferences.getInstance();
+    await preferences.remove(_legacyCvTextKey);
     final goal =
         careerGoalByTitle(preferences.getString('career_goal')) ??
         careerGoals.first;
@@ -81,13 +96,17 @@ class _CvCheckScreenState extends State<CvCheckScreen> {
         characterById(preferences.getString('selected_mascot')) ??
         CharacterSelection.selected ??
         characterData.first;
-    final encodedHistory = preferences.getString(_historyKey);
-    final history = encodedHistory == null
-        ? <Map<String, Object>>[]
-        : (jsonDecode(encodedHistory) as List<dynamic>)
-              .whereType<Map<String, dynamic>>()
-              .map((entry) => Map<String, Object>.from(entry))
-              .toList();
+    final entries = await _scoreStore.entries(preferences: preferences);
+    final bestScore = await _scoreStore.bestScore(preferences: preferences);
+    final history = entries
+        .map(
+          (entry) => <String, Object>{
+            'date': entry.createdAt.toIso8601String(),
+            'score': entry.score,
+            'target': entry.target ?? entry.goalId,
+          },
+        )
+        .toList();
     if (!mounted) return;
     setState(() {
       _career = goal;
@@ -95,8 +114,7 @@ class _CvCheckScreenState extends State<CvCheckScreen> {
       if (widget.job == null) {
         _job = null;
       }
-      _cvController.text = preferences.getString(_cvTextKey) ?? '';
-      _bestScore = preferences.getInt(_bestScoreKey) ?? 0;
+      _bestScore = bestScore;
       _history = history;
       _loading = false;
     });
@@ -119,14 +137,39 @@ class _CvCheckScreenState extends State<CvCheckScreen> {
   }
 
   Future<void> _runCheck() async {
-    final text = _cvController.text.trim();
-    if (text.isEmpty) {
-      _showMessage('Hãy dán nội dung CV trước khi kiểm tra.');
+    final filePath = _filePath;
+    final fileName = _fileName;
+    if (filePath == null || fileName == null || _checking || _readingCv) return;
+
+    setState(() => _readingCv = true);
+    late final String text;
+    try {
+      final extension = fileName.split('.').last.toLowerCase();
+      text = await _documentReader.read(
+        file: File(filePath),
+        extension: extension,
+      );
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _readingCv = false);
+      _showMessage('Không đọc được nội dung file, hãy thử file khác');
       return;
     }
-    if (_checking) return;
-
+    if (!mounted) return;
+    final normalizedText = text.trim();
+    if (normalizedText.isEmpty) {
+      setState(() => _readingCv = false);
+      _showMessage('Không đọc được nội dung file, hãy thử file khác');
+      return;
+    }
+    if (normalizedText.length < 200) {
+      setState(() => _readingCv = false);
+      _showMessage('CV cần có ít nhất 200 ký tự để kiểm tra.');
+      return;
+    }
+    _cvController.text = normalizedText;
     setState(() {
+      _readingCv = false;
       _checking = true;
       _statusIndex = 0;
     });
@@ -145,30 +188,51 @@ class _CvCheckScreenState extends State<CvCheckScreen> {
     final previousIssues = _analysis?.issues ?? const <CvIssue>[];
     final result = _analyzer.analyze(text: text, career: _career, job: _job);
     final preferences = await SharedPreferences.getInstance();
-    await preferences.setString(_cvTextKey, text);
-
-    final previousBest = _bestScore;
+    final scoreRecord = await _scoreStore.record(
+      score: result.score,
+      goalId: _career.title,
+      target: _job?.label ?? _career.title,
+    );
+    final previousBest = scoreRecord.previousBest;
+    final xpAmount = cvCheckXp(
+      score: result.score,
+      previousBest: previousBest,
+      isFirstCheck: scoreRecord.isFirstCheck,
+    );
+    var xpEarned = 0;
+    if (xpAmount > 0) {
+      xpEarned = await PointsManager.instance.addXP(
+        thanh: XpBar.hoSo,
+        luong: xpAmount,
+        nguon: 'cv_check',
+        sourceRef: _cvSourceRef(result.score),
+      );
+    }
+    final savedEntries = await _scoreStore.entries(preferences: preferences);
     final points = previousBest == 0
         ? (result.score / 5).ceil()
         : result.score > previousBest
         ? ((result.score - previousBest) / 3).ceil()
         : 0;
-    if (result.score > previousBest) {
-      await preferences.setInt(_bestScoreKey, result.score);
-      _bestScore = result.score;
-    }
-    final historyEntry = <String, Object>{
-      'date': DateTime.now().toIso8601String(),
-      'score': result.score,
-      'target': _job?.label ?? _career.title,
-    };
-    _history = [historyEntry, ..._history].take(10).toList();
-    await preferences.setString(_historyKey, jsonEncode(_history));
+    _bestScore = scoreRecord.bestScore;
+    _history = savedEntries
+        .map(
+          (entry) => <String, Object>{
+            'date': entry.createdAt.toIso8601String(),
+            'score': entry.score,
+            'target': entry.target ?? entry.goalId,
+          },
+        )
+        .toList();
     await _updateSkillMastery(preferences, text);
+    await GoalProgressService.instance.initialize();
 
     if (!mounted) return;
     setState(() {
       _analysis = result;
+      _previousBest = previousBest;
+      _hasPreviousCheck = !scoreRecord.isFirstCheck;
+      _xpEarned = xpEarned;
       _checking = false;
       _showScoreMode = false;
       _fixedIssueCount = previousIssues
@@ -183,18 +247,51 @@ class _CvCheckScreenState extends State<CvCheckScreen> {
           .length;
     });
     if (points > 0) {
-      PointsManager.instance.addCvPoints(points);
-      await ProgressService.instance.initialize();
-      await ProgressService.instance.awardPoints(
-        previousBest == 0
-            ? ProgressEventType.cvFirstCheck
-            : ProgressEventType.cvScoreImproved,
-        refId: previousBest == 0
+      await PointsManager.instance.addXP(
+        thanh: XpBar.hoSo,
+        luong: points + (previousBest == 0 ? 25 : 10),
+        nguon: previousBest == 0 ? 'cv_first_check' : 'cv_score_improved',
+        sourceRef: previousBest == 0
             ? 'cv-first-check'
             : 'cv-score-${result.score}',
-        metadata: {'score': result.score, 'previousBest': previousBest},
       );
       _showCelebration(points, result.score > previousBest);
+    }
+  }
+
+  String _cvSourceRef(int score) {
+    final now = DateTime.now();
+    final date =
+        '${now.year.toString().padLeft(4, '0')}'
+        '${now.month.toString().padLeft(2, '0')}'
+        '${now.day.toString().padLeft(2, '0')}';
+    return 'cv_${date}_$score';
+  }
+
+  Future<void> _chooseCvFile() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: const ['pdf', 'docx'],
+      );
+      if (!mounted || result == null || result.files.isEmpty) return;
+      final selected = result.files.single;
+      if (selected.size > 5 * 1024 * 1024) {
+        _showMessage('File vượt quá 5MB. Vui lòng chọn file nhỏ hơn.');
+        return;
+      }
+      if (selected.path == null) {
+        _showMessage('Không thể mở file CV này. Vui lòng chọn file khác.');
+        return;
+      }
+      setState(() {
+        _fileName = selected.name;
+        _filePath = selected.path;
+        _fileSize = selected.size;
+        _cvController.clear();
+      });
+    } catch (_) {
+      if (mounted) _showMessage('Không thể chọn file CV. Vui lòng thử lại.');
     }
   }
 
@@ -364,6 +461,8 @@ class _CvCheckScreenState extends State<CvCheckScreen> {
             ? const Center(child: CircularProgressIndicator(color: _accent))
             : _checking
             ? _buildCheckingView()
+            : _readingCv
+            ? _buildReadingCvView()
             : _analysis == null
             ? _buildInputView()
             : _showScoreMode
@@ -383,45 +482,11 @@ class _CvCheckScreenState extends State<CvCheckScreen> {
           const SizedBox(height: 15),
           _buildMascotPrompt(),
           const SizedBox(height: 16),
-          TextField(
-            controller: _cvController,
-            minLines: 13,
-            maxLines: 22,
-            keyboardType: TextInputType.multiline,
-            textCapitalization: TextCapitalization.sentences,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 14,
-              height: 1.5,
-            ),
-            decoration: InputDecoration(
-              hintText: 'Dán nội dung CV của bạn vào đây...',
-              hintStyle: const TextStyle(color: _muted),
-              filled: true,
-              fillColor: _surface,
-              contentPadding: const EdgeInsets.all(16),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(18),
-                borderSide: BorderSide(
-                  color: Colors.white.withValues(alpha: 0.12),
-                ),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(18),
-                borderSide: BorderSide(
-                  color: Colors.white.withValues(alpha: 0.12),
-                ),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(18),
-                borderSide: const BorderSide(color: _accent, width: 1.4),
-              ),
-            ),
-          ),
+          _buildUploadControls(),
           const Padding(
             padding: EdgeInsets.only(left: 5, top: 7),
             child: Text(
-              'Không cần dán số điện thoại/địa chỉ. CV chỉ được lưu trên thiết bị này.',
+              'File chỉ được xử lý trên thiết bị này, không được tải lên máy chủ.',
               style: TextStyle(color: _muted, fontSize: 11),
             ),
           ),
@@ -460,7 +525,7 @@ class _CvCheckScreenState extends State<CvCheckScreen> {
           SizedBox(
             height: 54,
             child: FilledButton.icon(
-              onPressed: _runCheck,
+              onPressed: _hasSelectedFile ? _runCheck : null,
               icon: const Icon(Icons.fact_check_rounded),
               label: const Text(
                 'Kiểm tra CV',
@@ -488,6 +553,123 @@ class _CvCheckScreenState extends State<CvCheckScreen> {
       ),
     );
   }
+
+  Widget _buildUploadControls() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        GestureDetector(
+          onTap: _chooseCvFile,
+          child: CustomPaint(
+            foregroundPainter: _DashedBorderPainter(
+              color: _accent.withValues(alpha: 0.6),
+              radius: 18,
+            ),
+            child: Container(
+              height: _fileName == null ? 292 : 122,
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: _surface,
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: _fileName == null
+                  ? Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.upload_file_rounded,
+                          size: 38,
+                          color: _accent,
+                        ),
+                        const SizedBox(height: 9),
+                        const Text(
+                          'Chạm để chọn file CV',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 16,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        const Text(
+                          'Hỗ trợ PDF, DOCX (tối đa 5MB)',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: _muted, fontSize: 12),
+                        ),
+                      ],
+                    )
+                  : Row(
+                      children: [
+                        Icon(
+                          _fileName!.toLowerCase().endsWith('.pdf')
+                              ? Icons.picture_as_pdf_outlined
+                              : Icons.article_outlined,
+                          size: 34,
+                          color: _cyan,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _fileName!,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                _formatFileSize(_fileSize),
+                                style: const TextStyle(
+                                  color: _muted,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          tooltip: 'Xóa file đã chọn',
+                          onPressed: () => setState(() {
+                            _fileName = null;
+                            _filePath = null;
+                            _fileSize = 0;
+                            _cvController.clear();
+                          }),
+                          icon: const Icon(Icons.close_rounded, color: _muted),
+                        ),
+                      ],
+                    ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _formatFileSize(int bytes) {
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).ceil()} KB';
+    return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+  }
+
+  Widget _buildReadingCvView() => const Center(
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        CircularProgressIndicator(color: _cyan),
+        SizedBox(height: 16),
+        Text(
+          'Đang đọc CV...',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+        ),
+      ],
+    ),
+  );
 
   Widget _buildTargetSummary() {
     return Container(
@@ -644,6 +826,8 @@ class _CvCheckScreenState extends State<CvCheckScreen> {
               ),
             ),
           _buildSummaryBar(analysis),
+          const SizedBox(height: 10),
+          _buildScoreChange(analysis),
           const SizedBox(height: 13),
           _buildAnnotatedPaper(analysis),
           const SizedBox(height: 14),
@@ -691,6 +875,55 @@ class _CvCheckScreenState extends State<CvCheckScreen> {
                   'Khớp ${analysis.jobMatchCount}/${analysis.jobRequirementCount} yêu cầu',
               color: _accent,
             ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildScoreChange(CvAnalysis analysis) {
+    final change = analysis.score - _previousBest;
+    final changeText = change > 0 ? '+$change' : '$change';
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: _surface,
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: _cyan.withValues(alpha: 0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            _hasPreviousCheck
+                ? '${analysis.score} điểm, $changeText so với lần trước'
+                : '${analysis.score} điểm · lần kiểm tra đầu tiên',
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w800,
+              fontSize: 15,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Điểm cao nhất: $_bestScore/100',
+            style: const TextStyle(color: _muted, fontSize: 12),
+          ),
+          if (_xpEarned > 0) ...[
+            const SizedBox(height: 5),
+            Text(
+              '+$_xpEarned XP',
+              style: const TextStyle(
+                color: Color(0xFF6CD9A5),
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ] else if (_hasPreviousCheck && change <= 0) ...[
+            const SizedBox(height: 5),
+            const Text(
+              'Giữ nhịp nhé, thử cập nhật CV theo gợi ý rồi chấm lại.',
+              style: TextStyle(color: _muted, fontSize: 12),
+            ),
+          ],
         ],
       ),
     );
@@ -807,6 +1040,15 @@ class _CvCheckScreenState extends State<CvCheckScreen> {
             style: OutlinedButton.styleFrom(foregroundColor: _accent),
           ),
         ],
+        const SizedBox(height: 8),
+        OutlinedButton.icon(
+          onPressed: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(builder: (_) => const CareerMapScreen()),
+          ),
+          icon: const Icon(Icons.route_rounded),
+          label: const Text('Về Career Map'),
+          style: OutlinedButton.styleFrom(foregroundColor: _cyan),
+        ),
       ],
     );
   }
@@ -820,6 +1062,8 @@ class _CvCheckScreenState extends State<CvCheckScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Center(child: _AnimatedScoreCircle(score: analysis.score)),
+          const SizedBox(height: 12),
+          _buildScoreChange(analysis),
           const SizedBox(height: 14),
           const Text(
             'Độ khớp với mục tiêu',
@@ -969,6 +1213,37 @@ class _CvCheckScreenState extends State<CvCheckScreen> {
     if (date == null) return 'Lần kiểm tra trước';
     return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
   }
+}
+
+class _DashedBorderPainter extends CustomPainter {
+  const _DashedBorderPainter({required this.color, required this.radius});
+
+  final Color color;
+  final double radius;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final path = Path()
+      ..addRRect(
+        RRect.fromRectAndRadius(Offset.zero & size, Radius.circular(radius)),
+      );
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.2;
+    for (final metric in path.computeMetrics()) {
+      var distance = 0.0;
+      while (distance < metric.length) {
+        final end = distance + 7 < metric.length ? distance + 7 : metric.length;
+        canvas.drawPath(metric.extractPath(distance, end), paint);
+        distance = end + 5;
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(_DashedBorderPainter oldDelegate) =>
+      oldDelegate.color != color || oldDelegate.radius != radius;
 }
 
 class _JobPickerSheet extends StatelessWidget {

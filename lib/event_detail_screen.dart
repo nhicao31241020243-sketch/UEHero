@@ -5,9 +5,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'models/event_item.dart';
-import 'models/career_progress.dart';
+import 'models/xp_entry.dart';
 import 'services/points_manager.dart';
-import 'services/progress_service.dart';
 
 class EventDetailScreen extends StatefulWidget {
   final EventItem event;
@@ -51,14 +50,14 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
 
   Future<void> _markRegistered() async {
     if (_registered) return;
+    await PointsManager.instance.addXP(
+      thanh: XpBar.thucChien,
+      luong: widget.event.trainingPoints + 5,
+      nguon: 'event_registration',
+      sourceRef: 'event-registration-$_id',
+    );
     await _preferences.setBool('event_registered_$_id', true);
     PointsManager.instance.joinEvent(widget.event);
-    await ProgressService.instance.initialize();
-    await ProgressService.instance.awardPoints(
-      ProgressEventType.eventRegistered,
-      refId: 'event-registration-$_id',
-      metadata: {'eventId': _id},
-    );
     if (!mounted) return;
     setState(() => _registered = true);
     _message('Đã đánh dấu đăng ký sự kiện');
@@ -68,11 +67,11 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     if (!_registered || _attended) return;
     await _preferences.setBool('event_attended_$_id', true);
     await _increaseMastery();
-    await ProgressService.instance.initialize();
-    await ProgressService.instance.awardPoints(
-      ProgressEventType.eventCheckedIn,
-      refId: 'event-checkin-$_id',
-      metadata: {'eventId': _id},
+    await PointsManager.instance.addXP(
+      thanh: XpBar.thucChien,
+      luong: 15,
+      nguon: 'event_checkin',
+      sourceRef: 'event-checkin-$_id',
     );
     if (!mounted) return;
     setState(() => _attended = true);

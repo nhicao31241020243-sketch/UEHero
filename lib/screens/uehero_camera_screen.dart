@@ -11,6 +11,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/career_goal.dart';
 import '../models/character_data.dart';
+import '../models/xp_entry.dart';
 import '../services/points_manager.dart';
 
 class UEHeroCameraScreen extends StatefulWidget {
@@ -37,7 +38,6 @@ class _UEHeroCameraScreenState extends State<UEHeroCameraScreen>
   static const _historyKey = 'study_question_history';
   static const _flashcardsKey = 'study_flashcards';
   static const _skillPracticeKey = 'study_skill_practice_counts';
-  static const _dailyPointsKey = 'study_daily_points';
   static const _masteryKey = 'career_map_skills';
 
   final _imagePicker = ImagePicker();
@@ -549,25 +549,21 @@ class _UEHeroCameraScreenState extends State<UEHeroCameraScreen>
             .map((key, value) => MapEntry(key, (value as num).toDouble()));
     mastery[skill] = ((mastery[skill] ?? 0) + 0.5).clamp(0.0, 10.0);
     await preferences.setString(_masteryKey, jsonEncode(mastery));
-    await _awardDailyPracticePoints(preferences, now);
+    await _awardDailyPracticePoints(now);
     if (widget.careerMapMilestoneId != null && count >= 3) {
       // TODO(career-map): mark the supplied milestone complete after three practice questions.
     }
   }
 
-  Future<void> _awardDailyPracticePoints(
-    SharedPreferences preferences,
-    DateTime now,
-  ) async {
-    final date = '${now.year}-${now.month}-${now.day}';
-    final saved = preferences.getString(_dailyPointsKey)?.split('|') ?? [];
-    final awardedToday = saved.length == 2 && saved.first == date
-        ? int.tryParse(saved.last) ?? 0
-        : 0;
-    if (awardedToday >= 3) return;
-    PointsManager.instance.addCvPoints(5);
-    await preferences.setString(_dailyPointsKey, '$date|${awardedToday + 1}');
-    _showMessage('Ba câu luyện kỹ năng · +5 điểm UEHero!');
+  Future<void> _awardDailyPracticePoints(DateTime now) async {
+    final added = await PointsManager.instance.addXP(
+      thanh: XpBar.thucChien,
+      luong: 5,
+      nguon: 'skill_practice',
+      sourceRef: 'skill-practice-${now.toIso8601String()}',
+      at: now,
+    );
+    if (added > 0) _showMessage('Ba câu luyện kỹ năng · +5 điểm UEHero!');
   }
 
   Future<void> _saveFlashcard() async {

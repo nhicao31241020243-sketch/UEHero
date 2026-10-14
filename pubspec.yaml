@@ -38,8 +38,20 @@ dependencies:
   model_viewer_plus: ^1.10.0
   image_picker: ^1.2.4
   camera: ^0.12.1
+  file_picker: ^10.3.7
+  google_mlkit_text_recognition: ^0.15.0
+  syncfusion_flutter_pdf: ^32.1.20
+  pdfx: ^2.9.2
+  archive: ^4.0.7
+  xml: ^6.6.1
   shared_preferences: ^2.5.4
   url_launcher: ^6.3.2
+  cached_network_image: 3.4.1
+  http: ^1.6.0
+
+dependency_overrides:
+  path_provider_foundation: 2.4.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

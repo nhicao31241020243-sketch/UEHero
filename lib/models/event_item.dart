@@ -13,6 +13,7 @@ class EventItem {
   final String? fee;
   final String? officialUrl;
   final String? sourceUrl;
+  final String? imageUrl;
   final String? lastSeason;
   final bool isRecurring;
   final String? notes;
@@ -39,6 +40,7 @@ class EventItem {
     this.fee,
     this.officialUrl,
     this.sourceUrl,
+    this.imageUrl,
     this.lastSeason,
     this.isRecurring = false,
     this.notes,
@@ -68,6 +70,7 @@ class EventItem {
       fee: json['fee'] as String?,
       officialUrl: json['officialUrl'] as String?,
       sourceUrl: json['sourceUrl'] as String?,
+      imageUrl: json['imageUrl'] as String?,
       lastSeason: json['lastSeason'] as String?,
       isRecurring: json['isRecurring'] as bool? ?? false,
       notes: json['notes'] as String?,

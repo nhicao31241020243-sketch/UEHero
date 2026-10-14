@@ -3,8 +3,12 @@ import 'package:flutter/material.dart';
 import 'home_event_screen.dart';
 import 'screens/interview/interview_home_screen.dart';
 import 'screens/welcome_screen.dart' as onboarding;
+import 'services/points_manager.dart';
+import 'services/route_observer.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await PointsManager.instance.initialize();
   runApp(const UEHeroApp());
 }
 
@@ -19,6 +23,7 @@ class UEHeroApp extends StatelessWidget {
       theme: ThemeData.dark().copyWith(
         scaffoldBackgroundColor: const Color(0xFF0D0C13),
       ),
+      navigatorObservers: [ueHeroRouteObserver],
       home: const onboarding.WelcomeScreen(),
     );
   }

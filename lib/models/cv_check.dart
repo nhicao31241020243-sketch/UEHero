@@ -77,6 +77,43 @@ class CvAnalysis {
       issues.where((issue) => issue.severity == CvIssueSeverity.warning).length;
 }
 
+class CvScoreEntry {
+  const CvScoreEntry({
+    required this.score,
+    required this.goalId,
+    required this.createdAt,
+    this.target,
+    this.previousBest,
+  });
+
+  final int score;
+  final String goalId;
+  final DateTime createdAt;
+  final String? target;
+  final int? previousBest;
+
+  factory CvScoreEntry.fromJson(Map<String, dynamic> json) => CvScoreEntry(
+    score: ((json['score'] as num?)?.toInt() ?? 0).clamp(0, 100),
+    goalId: json['goalId']?.toString() ?? json['target']?.toString() ?? '',
+    createdAt:
+        DateTime.tryParse(
+          json['createdAt']?.toString() ?? json['date']?.toString() ?? '',
+        ) ??
+        DateTime.fromMillisecondsSinceEpoch(0),
+    target: json['target']?.toString(),
+    previousBest: (json['previousBest'] as num?)?.toInt(),
+  );
+
+  Map<String, Object> toJson() => {
+    'score': score,
+    'goalId': goalId,
+    'createdAt': createdAt.toIso8601String(),
+    'date': createdAt.toIso8601String(),
+    'target': ?target,
+    'previousBest': ?previousBest,
+  };
+}
+
 const sampleCvJobs = <CvCheckJob>[
   CvCheckJob(
     title: 'Business Analyst Intern',

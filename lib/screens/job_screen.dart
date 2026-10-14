@@ -8,9 +8,8 @@ import 'package:url_launcher/url_launcher.dart';
 import '../models/career_goal.dart';
 import '../models/cv_check.dart';
 import '../models/student_job.dart';
-import '../models/career_progress.dart';
+import '../models/xp_entry.dart';
 import '../services/points_manager.dart';
-import '../services/progress_service.dart';
 import '../widgets/match_bar.dart';
 import 'cv_check_screen.dart';
 
@@ -308,14 +307,13 @@ class _JobScreenState extends State<JobScreen> with WidgetsBindingObserver {
     final rewarded =
         preferences.getStringList(_awardedJobsKey)?.toSet() ?? <String>{};
     if (rewarded.add(job.id)) {
-      await preferences.setStringList(_awardedJobsKey, rewarded.toList());
-      PointsManager.instance.addJobApplicationPoints(10);
-      await ProgressService.instance.initialize();
-      await ProgressService.instance.awardPoints(
-        ProgressEventType.jobApplied,
-        refId: 'job-application-${job.id}',
-        metadata: {'jobId': job.id},
+      await PointsManager.instance.addXP(
+        thanh: XpBar.hoSo,
+        luong: 20,
+        nguon: 'job_applied',
+        sourceRef: 'job-application-${job.id}',
       );
+      await preferences.setStringList(_awardedJobsKey, rewarded.toList());
       _showMessage('Đã cập nhật trạng thái · +10 điểm UEHero!');
     }
     // TODO(career-map): mark the “Ứng tuyển thực tập” milestone completed.

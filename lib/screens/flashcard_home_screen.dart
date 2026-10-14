@@ -4,8 +4,10 @@ import '../data/decks/deck_helpers.dart';
 import '../data/flashcard_seed.dart';
 import '../models/flashcard_deck.dart';
 import '../services/flashcard_service.dart';
+import '../services/goal_progress_service.dart';
 import '../widgets/deck_tile.dart';
 import 'flashcard_study_screen.dart';
+import 'career_map_screen.dart';
 
 class FlashcardHomeScreen extends StatefulWidget {
   const FlashcardHomeScreen({super.key});
@@ -24,7 +26,9 @@ class FlashcardHomeScreen extends StatefulWidget {
 
 class _FlashcardHomeScreenState extends State<FlashcardHomeScreen> {
   final _service = FlashcardService.instance;
+  final _goalProgress = GoalProgressService.instance;
   final _searchController = TextEditingController();
+  final _deckActionKeys = <String, GlobalKey>{};
   String _query = '';
   FlashcardGroup? _groupFilter;
   FlashcardLevel? _levelFilter;
@@ -41,6 +45,7 @@ class _FlashcardHomeScreenState extends State<FlashcardHomeScreen> {
   Future<void> _initialize() async {
     try {
       await _service.initialize();
+      await _goalProgress.initialize();
       if (!mounted) return;
       setState(() => _loading = false);
     } catch (error) {
@@ -60,7 +65,7 @@ class _FlashcardHomeScreenState extends State<FlashcardHomeScreen> {
 
   List<FlashcardDeck> get _filteredDecks {
     final query = _query.trim().toLowerCase();
-    return _service.decks.where((deck) {
+    final decks = _service.decks.where((deck) {
       return (_groupFilter == null || deck.group == _groupFilter) &&
           (_levelFilter == null || deck.level == _levelFilter) &&
           (query.isEmpty ||
@@ -68,6 +73,7 @@ class _FlashcardHomeScreenState extends State<FlashcardHomeScreen> {
                   .toLowerCase()
                   .contains(query));
     }).toList();
+    return decks;
   }
 
   List<FlashcardDeck> get _inProgressDecks => _filteredDecks
@@ -85,11 +91,20 @@ class _FlashcardHomeScreenState extends State<FlashcardHomeScreen> {
         .toList();
   }
 
-  void _openStudy(FlashcardDeck deck) {
-    Navigator.of(context).push(
+  Future<void> _openStudy(FlashcardDeck deck) async {
+    await Navigator.of(context).push<void>(
       MaterialPageRoute<void>(
         builder: (_) => FlashcardStudyScreen(deckId: deck.id),
       ),
+    );
+    if (!mounted) return;
+    final deckContext = _deckActionKeys[deck.id]?.currentContext;
+    if (deckContext == null || !deckContext.mounted) return;
+    await Scrollable.ensureVisible(
+      deckContext,
+      alignment: 0.5,
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOutCubic,
     );
   }
 
@@ -367,7 +382,7 @@ class _FlashcardHomeScreenState extends State<FlashcardHomeScreen> {
           : _loadError != null
           ? _errorState()
           : AnimatedBuilder(
-              animation: _service,
+              animation: Listenable.merge([_service, _goalProgress]),
               builder: (context, _) => _libraryBody(),
             ),
       bottomNavigationBar: _loading || _loadError != null ? null : _bottomBar(),
@@ -408,6 +423,10 @@ class _FlashcardHomeScreenState extends State<FlashcardHomeScreen> {
       SliverPadding(
         padding: const EdgeInsets.fromLTRB(18, 10, 18, 0),
         sliver: SliverToBoxAdapter(child: _todayReviewBanner()),
+      ),
+      SliverPadding(
+        padding: const EdgeInsets.fromLTRB(18, 10, 18, 0),
+        sliver: SliverToBoxAdapter(child: _goalBanner()),
       ),
       SliverPadding(
         padding: const EdgeInsets.fromLTRB(18, 14, 18, 0),
@@ -593,13 +612,25 @@ class _FlashcardHomeScreenState extends State<FlashcardHomeScreen> {
             const Icon(Icons.bolt_rounded, color: FlashcardHomeScreen.lime),
             const SizedBox(width: 9),
             Expanded(
-              child: Text(
-                'Ôn hôm nay: ${_service.dueCards.length} thẻ',
-                style: const TextStyle(
-                  color: FlashcardHomeScreen.text,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 12,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Ôn hôm nay: ${_service.dueCards.length} thẻ',
+                    style: const TextStyle(
+                      color: FlashcardHomeScreen.text,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12,
+                    ),
+                  ),
+                  Text(
+                    'XP flashcard hôm nay: ${_goalProgress.flashcardXpToday()}/100',
+                    style: const TextStyle(
+                      color: FlashcardHomeScreen.muted,
+                      fontSize: 10,
+                    ),
+                  ),
+                ],
               ),
             ),
             Text(
@@ -620,6 +651,42 @@ class _FlashcardHomeScreenState extends State<FlashcardHomeScreen> {
       ),
     ),
   );
+
+  Widget _goalBanner() {
+    final goal = _goalProgress.selectedGoal;
+    final percent = (_goalProgress.totalProgress(goal) * 100).round();
+    return InkWell(
+      borderRadius: BorderRadius.circular(16),
+      onTap: () => Navigator.of(
+        context,
+      ).push(MaterialPageRoute<void>(builder: (_) => const CareerMapScreen())),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+        decoration: BoxDecoration(
+          color: const Color(0xFF30234A),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.purpleAccent.withValues(alpha: 0.3)),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.route_rounded, color: Colors.purpleAccent),
+            const SizedBox(width: 9),
+            Expanded(
+              child: Text(
+                'Hành trình ${goal.name} · $percent%',
+                style: const TextStyle(
+                  color: FlashcardHomeScreen.text,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 12,
+                ),
+              ),
+            ),
+            const Icon(Icons.chevron_right_rounded, color: Colors.white54),
+          ],
+        ),
+      ),
+    );
+  }
 
   Widget _filters() => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
@@ -725,16 +792,56 @@ class _FlashcardHomeScreenState extends State<FlashcardHomeScreen> {
         ),
         itemBuilder: (context, index) {
           final deck = decks[index];
-          return DeckTile(
-            key: ValueKey('flashcard-deck-${deck.id}'),
-            deck: deck,
-            mastered: _service.masteredCount(deck),
-            progress: _service.masteryProgress(deck),
-            isInProgress: _service.masteredCount(deck) > 0,
-            onTap: () => _openStudy(deck),
-            onEdit: () => _editDeck(deck),
-            onDelete: () => _deleteDeck(deck),
-            onReset: () => _resetDeck(deck),
+          final inGoal = _goalProgress.selectedGoal.deckIds.contains(deck.id);
+          return Stack(
+            children: [
+              DeckTile(
+                deck: deck,
+                mastered: _service.masteredCount(deck),
+                progress: _service.masteryProgress(deck),
+                isInProgress: _service.masteredCount(deck) > 0,
+                onTap: () => _openStudy(deck),
+                onEdit: () => _editDeck(deck),
+                onDelete: () => _deleteDeck(deck),
+                onReset: () => _resetDeck(deck),
+              ),
+              if (inGoal)
+                Positioned(
+                  top: 10,
+                  left: 10,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF452348),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+                      child: Text(
+                        'Thuộc lộ trình',
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              Positioned(
+                top: 0,
+                left: 0,
+                width: 64,
+                height: 64,
+                child: KeyedSubtree(
+                  key: ValueKey('flashcard-deck-${deck.id}'),
+                  child: GestureDetector(
+                    key: _deckActionKeys.putIfAbsent(deck.id, GlobalKey.new),
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () => _openStudy(deck),
+                  ),
+                ),
+              ),
+            ],
           );
         },
       ),
