@@ -27,7 +27,7 @@ class AllJobsScreen extends StatefulWidget {
 class _AllJobsScreenState extends State<AllJobsScreen>
     with WidgetsBindingObserver {
   static const _background = Color(0xFF100E19);
-  static const _surface = Color(0xFF211D2B);
+  static const _surface = Color(0xD9142E52);
   static const _accent = Color(0xFFBFA8FF);
   static const _muted = Color(0xFFAAA5B8);
 
@@ -237,9 +237,9 @@ class _AllJobsScreenState extends State<AllJobsScreen>
   Widget build(BuildContext context) {
     final jobs = _visibleJobs;
     return Scaffold(
-      backgroundColor: _background,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
-        backgroundColor: _background,
+        backgroundColor: Colors.transparent,
         foregroundColor: Colors.white,
         title: const Text(
           'Tất cả việc',

@@ -430,9 +430,9 @@ class _CvCheckScreenState extends State<CvCheckScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _background,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
-        backgroundColor: _background,
+        backgroundColor: Colors.transparent,
         foregroundColor: Colors.white,
         title: const Text(
           'CV Check',

@@ -27,7 +27,7 @@ class InterviewFeedbackScreen extends StatefulWidget {
 
 class _InterviewFeedbackScreenState extends State<InterviewFeedbackScreen> {
   static const _background = Color(0xFF100E19);
-  static const _surface = Color(0xFF211D2B);
+  static const _surface = Color(0xD9142E52);
   static const _flashcardsKey = 'study_flashcards';
 
   int _selectedQuestion = 0;
@@ -138,9 +138,9 @@ class _InterviewFeedbackScreenState extends State<InterviewFeedbackScreen> {
         ? const <String, dynamic>{}
         : questions[_selectedQuestion.clamp(0, questions.length - 1)];
     return Scaffold(
-      backgroundColor: _background,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
-        backgroundColor: _background,
+        backgroundColor: Colors.transparent,
         foregroundColor: Colors.white,
         title: const Text(
           'Nhận xét phỏng vấn',

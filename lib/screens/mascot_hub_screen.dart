@@ -151,7 +151,7 @@ class _MascotHubScreenState extends State<MascotHubScreen> {
         if (!didPop) _confirmLeave();
       },
       child: Scaffold(
-        backgroundColor: _background,
+        backgroundColor: Colors.transparent,
         body: SafeArea(
           child: _loading
               ? const Center(child: CircularProgressIndicator(color: _accent))

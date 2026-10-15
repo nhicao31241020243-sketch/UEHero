@@ -82,7 +82,7 @@ class _CareerGoalScreenState extends State<CareerGoalScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _background,
+      backgroundColor: Colors.transparent,
       body: Stack(
         children: [
           const Positioned.fill(child: _Starfield()),

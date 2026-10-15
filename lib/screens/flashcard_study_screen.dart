@@ -220,7 +220,7 @@ class _FlashcardStudyScreenState extends State<FlashcardStudyScreen> {
     var unmastered = _unmasteredOnly;
     final result = await showModalBottomSheet<_StudyFilter>(
       context: context,
-      backgroundColor: FlashcardHomeScreen.background,
+      backgroundColor: const Color(0xF0142E52),
       isScrollControlled: true,
       useSafeArea: true,
       shape: const RoundedRectangleBorder(
@@ -495,7 +495,7 @@ class _FlashcardStudyScreenState extends State<FlashcardStudyScreen> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    backgroundColor: FlashcardHomeScreen.background,
+    backgroundColor: Colors.transparent,
     appBar: _loading || _loadError != null ? null : _appBar(),
     body: _loading
         ? const Center(child: CircularProgressIndicator(color: _teal))
@@ -511,7 +511,7 @@ class _FlashcardStudyScreenState extends State<FlashcardStudyScreen> {
   PreferredSizeWidget _appBar() {
     final item = _current;
     return AppBar(
-      backgroundColor: FlashcardHomeScreen.background,
+      backgroundColor: Colors.transparent,
       foregroundColor: _text,
       elevation: 0,
       leading: IconButton(

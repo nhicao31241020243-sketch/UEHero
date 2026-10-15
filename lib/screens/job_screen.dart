@@ -27,7 +27,7 @@ class JobScreen extends StatefulWidget {
 
 class _JobScreenState extends State<JobScreen> with WidgetsBindingObserver {
   static const _background = Color(0xFF100E19);
-  static const _surface = Color(0xFF211D2B);
+  static const _surface = Color(0xD9142E52);
   static const _accent = Color(0xFFBFA8FF);
   static const _muted = Color(0xFFAAA5B8);
   static const _locations = [
@@ -286,9 +286,9 @@ class _JobScreenState extends State<JobScreen> with WidgetsBindingObserver {
     final suggestions = _suggestions;
     final newest = _newestJobs;
     return Scaffold(
-      backgroundColor: _background,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
-        backgroundColor: _background,
+        backgroundColor: Colors.transparent,
         foregroundColor: Colors.white,
         title: const Text(
           'Khám phá việc làm',

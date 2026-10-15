@@ -26,7 +26,6 @@ class CareerMapScreen extends StatefulWidget {
 
 class _CareerMapScreenState extends State<CareerMapScreen>
     with TickerProviderStateMixin {
-  static const _background = Color(0xFF0D0A1A);
   static const _accent = Color(0xFFFF8FD8);
   static const _cyan = Color(0xFF8DE9FF);
   static const _galaxyBackgroundUrl =
@@ -157,9 +156,9 @@ class _CareerMapScreenState extends State<CareerMapScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _background,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
-        backgroundColor: _background.withValues(alpha: 0.92),
+        backgroundColor: Colors.transparent,
         elevation: 0,
         automaticallyImplyLeading: !widget.embedded,
         title: const Text(

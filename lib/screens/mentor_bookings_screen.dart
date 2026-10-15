@@ -16,7 +16,6 @@ class MentorBookingsScreen extends StatefulWidget {
 }
 
 class _MentorBookingsScreenState extends State<MentorBookingsScreen> {
-  static const _background = Color(0xFF100E19);
   static const _accent = Color(0xFFBFA8FF);
 
   final _service = MentorBookingService.instance;
@@ -115,9 +114,9 @@ class _MentorBookingsScreenState extends State<MentorBookingsScreen> {
       ),
     ];
     return Scaffold(
-      backgroundColor: _background,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
-        backgroundColor: _background,
+        backgroundColor: Colors.transparent,
         foregroundColor: Colors.white,
         title: const Text('Lịch hẹn của tôi'),
       ),

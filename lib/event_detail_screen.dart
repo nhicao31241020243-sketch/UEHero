@@ -18,7 +18,6 @@ class EventDetailScreen extends StatefulWidget {
 }
 
 class _EventDetailScreenState extends State<EventDetailScreen> {
-  static const _background = Color(0xFF100E19);
   static const _surface = Color(0xFF211D2B);
   static const _muted = Color(0xFFAAA5B8);
   static const _accent = Color(0xFFBFA8FF);
@@ -129,9 +128,9 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
         _registered &&
         (event.eventStart == null || !now.isBefore(event.eventStart!));
     return Scaffold(
-      backgroundColor: _background,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
-        backgroundColor: _background,
+        backgroundColor: Colors.transparent,
         title: const Text('Launchpad'),
       ),
       body: !_ready

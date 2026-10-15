@@ -21,7 +21,6 @@ class ChatbotScreen extends StatefulWidget {
 
 class _ChatbotScreenState extends State<ChatbotScreen> {
   static const _historyKey = 'companion_chat_history_v1';
-  static const _background = Color(0xFF100E19);
 
   final _messageController = TextEditingController();
   final _scrollController = ScrollController();
@@ -190,9 +189,9 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
   Widget build(BuildContext context) {
     final companion = _companion;
     return Scaffold(
-      backgroundColor: _background,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF191622),
+        backgroundColor: Colors.transparent,
         foregroundColor: Colors.white,
         titleSpacing: 8,
         title: Row(

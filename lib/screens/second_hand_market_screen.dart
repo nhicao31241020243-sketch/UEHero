@@ -189,7 +189,7 @@ class _SecondHandMarketScreenState extends State<SecondHandMarketScreen> {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      backgroundColor: _background,
+      backgroundColor: const Color(0xE8142E52),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -325,7 +325,7 @@ class _SecondHandMarketScreenState extends State<SecondHandMarketScreen> {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      backgroundColor: _background,
+      backgroundColor: const Color(0xE8142E52),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
       ),
@@ -368,9 +368,9 @@ class _SecondHandMarketScreenState extends State<SecondHandMarketScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _background,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
-        backgroundColor: _background,
+        backgroundColor: Colors.transparent,
         foregroundColor: Colors.white,
         elevation: 0,
         title: const Text(

@@ -24,7 +24,7 @@ class InterviewHomeScreen extends StatefulWidget {
 
 class _InterviewHomeScreenState extends State<InterviewHomeScreen> {
   static const _background = Color(0xFF100E19);
-  static const _surface = Color(0xFF211D2B);
+  static const _surface = Color(0xD9142E52);
   static const _accent = Color(0xFFBFA8FF);
   static const _cyan = Color(0xFF70D8F2);
   static const _modes = {
@@ -184,9 +184,9 @@ class _InterviewHomeScreenState extends State<InterviewHomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _background,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
-        backgroundColor: _background,
+        backgroundColor: Colors.transparent,
         foregroundColor: Colors.white,
         elevation: 0,
         title: const Text(

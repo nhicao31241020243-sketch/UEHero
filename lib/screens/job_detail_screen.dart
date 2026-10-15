@@ -21,7 +21,7 @@ class JobDetailScreen extends StatefulWidget {
 class _JobDetailScreenState extends State<JobDetailScreen>
     with WidgetsBindingObserver {
   static const _background = Color(0xFF100E19);
-  static const _surface = Color(0xFF211D2B);
+  static const _surface = Color(0xD9142E52);
   static const _muted = Color(0xFFAAA5B8);
   static const _accent = Color(0xFFBFA8FF);
 
@@ -171,7 +171,7 @@ class _JobDetailScreenState extends State<JobDetailScreen>
   Widget build(BuildContext context) {
     if (_loading) {
       return const Scaffold(
-        backgroundColor: _background,
+        backgroundColor: Colors.transparent,
         body: Center(child: CircularProgressIndicator(color: _accent)),
       );
     }
@@ -179,9 +179,9 @@ class _JobDetailScreenState extends State<JobDetailScreen>
     final percent = _matchService.matchPercent(job);
     final missing = _matchService.missingSkills(job);
     return Scaffold(
-      backgroundColor: _background,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
-        backgroundColor: _background,
+        backgroundColor: Colors.transparent,
         foregroundColor: Colors.white,
         title: const Text('Chi tiết công việc'),
       ),

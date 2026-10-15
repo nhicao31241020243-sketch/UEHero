@@ -126,7 +126,7 @@ class _InterviewRoomScreenState extends State<InterviewRoomScreen>
     final exit = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: const Color(0xFF211D2B),
+        backgroundColor: const Color(0xD9142E52),
         title: const Text(
           'Thoát buổi phỏng vấn?',
           style: TextStyle(color: Colors.white),
@@ -187,7 +187,7 @@ class _InterviewRoomScreenState extends State<InterviewRoomScreen>
     final skip = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: const Color(0xFF211D2B),
+        backgroundColor: const Color(0xD9142E52),
         title: const Text(
           'Bỏ qua câu này?',
           style: TextStyle(color: Colors.white),
@@ -274,7 +274,7 @@ class _InterviewRoomScreenState extends State<InterviewRoomScreen>
     final finish = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: const Color(0xFF211D2B),
+        backgroundColor: const Color(0xD9142E52),
         title: const Text(
           'Kết thúc phỏng vấn?',
           style: TextStyle(color: Colors.white),
@@ -303,7 +303,7 @@ class _InterviewRoomScreenState extends State<InterviewRoomScreen>
     setState(() => _hintsUsed += 1);
     await showModalBottomSheet<void>(
       context: context,
-      backgroundColor: const Color(0xFF211D2B),
+      backgroundColor: const Color(0xD9142E52),
       showDragHandle: true,
       builder: (context) => SafeArea(
         child: Padding(
@@ -344,7 +344,7 @@ class _InterviewRoomScreenState extends State<InterviewRoomScreen>
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: const Color(0xFF211D2B),
+      backgroundColor: const Color(0xD9142E52),
       showDragHandle: true,
       builder: (sheetContext) => Padding(
         padding: EdgeInsets.fromLTRB(
@@ -412,7 +412,7 @@ class _InterviewRoomScreenState extends State<InterviewRoomScreen>
         if (!didPop && !_allowPop) _confirmExit();
       },
       child: Scaffold(
-        backgroundColor: const Color(0xFF100E19),
+        backgroundColor: Colors.transparent,
         body: SafeArea(
           child: Column(
             children: [

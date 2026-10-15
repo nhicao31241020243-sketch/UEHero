@@ -20,6 +20,7 @@ import 'screens/uehero_camera_screen.dart';
 import 'services/route_observer.dart';
 import 'services/points_manager.dart';
 import 'widgets/xp_float_overlay.dart';
+import 'widgets/space_glass_widgets.dart';
 
 class HomeWidgetsScreen extends StatefulWidget {
   const HomeWidgetsScreen({super.key});
@@ -30,7 +31,6 @@ class HomeWidgetsScreen extends StatefulWidget {
 
 class _HomeWidgetsScreenState extends State<HomeWidgetsScreen>
     with TickerProviderStateMixin, RouteAware {
-  static const _backgroundColor = Color(0xFF100E19);
   static const _accentColor = Color(0xFFBFA8FF);
 
   static const _features = [
@@ -275,7 +275,7 @@ class _HomeWidgetsScreenState extends State<HomeWidgetsScreen>
     ];
 
     return Scaffold(
-      backgroundColor: _backgroundColor,
+      backgroundColor: Colors.transparent,
       body: IndexedStack(index: _selectedTab, children: tabs),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       floatingActionButton: Semantics(
@@ -284,27 +284,45 @@ class _HomeWidgetsScreenState extends State<HomeWidgetsScreen>
         child: SizedBox(
           width: 64,
           height: 64,
-          child: Material(
-            color: const Color(0xFFBFA8FF),
-            elevation: 2,
-            shape: const CircleBorder(),
-            clipBehavior: Clip.antiAlias,
-            child: InkWell(
-              customBorder: const CircleBorder(),
-              onTap: _openChatbot,
-              child: AnimatedBuilder(
-                animation: _ufoFloatOffset,
-                child: Image.asset(
-                  'assets/images/rocket-removebg-preview.png',
-                  width: 50,
-                  height: 50,
-                  fit: BoxFit.contain,
-                  filterQuality: FilterQuality.high,
-                  semanticLabel: 'Tên lửa UEH Hero',
+          child: Container(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white.withValues(alpha: 0.14),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.62)),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x994B78FF),
+                  blurRadius: 22,
+                  spreadRadius: 2,
                 ),
-                builder: (context, child) => Transform.translate(
-                  offset: Offset(0, _ufoFloatOffset.value),
-                  child: child,
+                BoxShadow(
+                  color: Color(0x666F45FF),
+                  blurRadius: 28,
+                  offset: Offset(0, 4),
+                ),
+              ],
+            ),
+            child: ClipOval(
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  customBorder: const CircleBorder(),
+                  onTap: _openChatbot,
+                  child: AnimatedBuilder(
+                    animation: _ufoFloatOffset,
+                    child: Image.asset(
+                      'assets/images/rocket-removebg-preview.png',
+                      width: 50,
+                      height: 50,
+                      fit: BoxFit.contain,
+                      filterQuality: FilterQuality.high,
+                      semanticLabel: 'Tên lửa UEH Hero',
+                    ),
+                    builder: (context, child) => Transform.translate(
+                      offset: Offset(0, _ufoFloatOffset.value),
+                      child: child,
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -313,38 +331,47 @@ class _HomeWidgetsScreenState extends State<HomeWidgetsScreen>
       ),
       bottomNavigationBar: SafeArea(
         top: false,
-        child: BottomAppBar(
-          height: 68,
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 5),
-          color: const Color(0xFF191622),
-          elevation: 16,
-          shape: const CircularNotchedRectangle(),
-          notchMargin: 7,
-          child: Row(
-            children: [
-              Expanded(
-                child: _buildNavButton(1, Icons.route_rounded, 'Career Map'),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(10, 0, 10, 6),
+          child: BottomAppBar(
+            height: 72,
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 5),
+            color: Colors.transparent,
+            elevation: 0,
+            shape: const CircularNotchedRectangle(),
+            notchMargin: 7,
+            child: GlassBottomBar(
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _buildNavButton(1, Icons.route_rounded, 'Career Map'),
+                  ),
+                  Expanded(
+                    child: _buildNavButton(
+                      2,
+                      Icons.record_voice_over_rounded,
+                      'Phỏng vấn',
+                    ),
+                  ),
+                  const SizedBox(width: 58),
+                  Expanded(
+                    child: _buildNavButton(
+                      3,
+                      Icons.calculate_rounded,
+                      'GPA Calc',
+                    ),
+                  ),
+                  Expanded(
+                    child: _buildNavButton(
+                      4,
+                      Icons.person_rounded,
+                      'Profile',
+                      onTap: _openProfile,
+                    ),
+                  ),
+                ],
               ),
-              Expanded(
-                child: _buildNavButton(
-                  2,
-                  Icons.record_voice_over_rounded,
-                  'Phỏng vấn',
-                ),
-              ),
-              const SizedBox(width: 58),
-              Expanded(
-                child: _buildNavButton(3, Icons.calculate_rounded, 'GPA Calc'),
-              ),
-              Expanded(
-                child: _buildNavButton(
-                  4,
-                  Icons.person_rounded,
-                  'Profile',
-                  onTap: _openProfile,
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),
@@ -368,24 +395,35 @@ class _HomeWidgetsScreenState extends State<HomeWidgetsScreen>
         onTap: onTap ?? () => setState(() => _selectedTab = index),
         child: SizedBox(
           height: 54,
-          child: Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(icon, color: color, size: 21),
-                const SizedBox(height: 2),
-                Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: color,
-                    fontSize: 9,
-                    height: 1,
-                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            margin: const EdgeInsets.symmetric(horizontal: 2),
+            decoration: BoxDecoration(
+              color: selected ? Colors.white.withValues(alpha: 0.14) : null,
+              borderRadius: BorderRadius.circular(22),
+              border: selected
+                  ? Border.all(color: Colors.white.withValues(alpha: 0.16))
+                  : null,
+            ),
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(icon, color: color, size: 21),
+                  const SizedBox(height: 2),
+                  Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: color,
+                      fontSize: 9,
+                      height: 1,
+                      fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -796,102 +834,86 @@ class _PlanetButton extends StatelessWidget {
               duration: const Duration(milliseconds: 180),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(25),
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: selected
-                      ? [
-                          feature.gradientColors[1].withValues(alpha: 0.4),
-                          const Color(0xFF211C31),
-                        ]
-                      : [
-                          feature.gradientColors[2].withValues(alpha: 0.32),
-                          const Color(0xFF1B1825),
-                        ],
-                ),
+                color: selected
+                    ? feature.gradientColors[1].withValues(alpha: 0.1)
+                    : null,
                 border: Border.all(
                   color: selected
-                      ? feature.color.withValues(alpha: 0.95)
-                      : feature.color.withValues(alpha: 0.48),
-                  width: selected ? 2 : 1,
+                      ? feature.color.withValues(alpha: 0.7)
+                      : feature.color.withValues(alpha: 0.24),
+                  width: selected ? 1.5 : 1,
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: feature.color.withValues(
-                      alpha: selected ? 0.38 : 0.16,
-                    ),
-                    blurRadius: selected ? 22 : 12,
-                    spreadRadius: selected ? 1 : 0,
-                  ),
-                  const BoxShadow(
-                    color: Color(0xAA07050D),
-                    blurRadius: 12,
-                    offset: Offset(0, 7),
-                  ),
-                ],
               ),
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(8, 7, 8, 11),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Expanded(
-                      child: RepaintBoundary(
-                        child: AnimatedBuilder(
-                          animation: rotation,
-                          child: feature.actionKey == 'saturn'
-                              ? Hero(
-                                  tag: FlashcardHomeScreen.heroTag,
-                                  child: Image.asset(
+              child: GlassCard(
+                padding: EdgeInsets.zero,
+                borderRadius: 24,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(8, 7, 8, 11),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        child: RepaintBoundary(
+                          child: AnimatedBuilder(
+                            animation: rotation,
+                            child: feature.actionKey == 'saturn'
+                                ? Hero(
+                                    tag: FlashcardHomeScreen.heroTag,
+                                    child: Image.asset(
+                                      feature.imagePath,
+                                      fit: BoxFit.contain,
+                                      filterQuality: FilterQuality.high,
+                                    ),
+                                  )
+                                : Image.asset(
                                     feature.imagePath,
                                     fit: BoxFit.contain,
                                     filterQuality: FilterQuality.high,
                                   ),
-                                )
-                              : Image.asset(
-                                  feature.imagePath,
-                                  fit: BoxFit.contain,
-                                  filterQuality: FilterQuality.high,
+                            builder: (context, child) {
+                              final angle =
+                                  rotation.value * 2 * math.pi + phase;
+                              return Transform.translate(
+                                offset: Offset(0, math.sin(angle * 2) * 3),
+                                child: Transform.scale(
+                                  scale: 1.04,
+                                  child: Transform.rotate(
+                                    angle: angle,
+                                    child: child,
+                                  ),
                                 ),
-                          builder: (context, child) {
-                            final angle = rotation.value * 2 * math.pi + phase;
-                            return Transform.translate(
-                              offset: Offset(0, math.sin(angle * 2) * 3),
-                              child: Transform.rotate(
-                                angle: angle,
-                                child: child,
-                              ),
-                            );
-                          },
+                              );
+                            },
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 5),
-                    Text(
-                      feature.planet,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: selected ? feature.color : Colors.white,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w800,
+                      const SizedBox(height: 5),
+                      Text(
+                        feature.planet,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: selected ? feature.color : Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      feature.label,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: Color(0xFFD0CBD9),
-                        fontSize: 10,
-                        height: 1.15,
-                        fontWeight: FontWeight.w600,
+                      const SizedBox(height: 3),
+                      Text(
+                        feature.label,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: Color(0xFFE0E9FA),
+                          fontSize: 10,
+                          height: 1.15,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),

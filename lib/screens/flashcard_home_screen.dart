@@ -283,7 +283,7 @@ class _FlashcardHomeScreenState extends State<FlashcardHomeScreen> {
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: FlashcardHomeScreen.background,
+      backgroundColor: const Color(0xE8142E52),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
       ),
@@ -374,7 +374,7 @@ class _FlashcardHomeScreenState extends State<FlashcardHomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: FlashcardHomeScreen.background,
+      backgroundColor: Colors.transparent,
       body: _loading
           ? const Center(
               child: CircularProgressIndicator(color: FlashcardHomeScreen.teal),

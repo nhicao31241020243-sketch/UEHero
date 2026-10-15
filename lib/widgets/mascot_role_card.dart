@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'dart:ui' as ui;
 
 import '../models/character_data.dart';
 import '../services/mascot_selection_store.dart';
+import 'space_glass_widgets.dart';
 
 class MascotRoleCard extends StatelessWidget {
   const MascotRoleCard({
@@ -38,85 +40,86 @@ class MascotRoleCard extends StatelessWidget {
               Positioned.fill(
                 child: ClipPath(
                   clipper: const _DiagonalCardClipper(),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 420),
-                    curve: Curves.easeOutCubic,
-                    padding: const EdgeInsets.fromLTRB(132, 24, 21, 21),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          color.withValues(alpha: character == null ? 1 : .96),
-                          Color.lerp(color, const Color(0xFF15121F), .36)!,
+                  child: BackdropFilter(
+                    filter: ui.ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 420),
+                      curve: Curves.easeOutCubic,
+                      padding: const EdgeInsets.fromLTRB(132, 24, 21, 21),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            color.withValues(
+                              alpha: character == null ? .12 : .2,
+                            ),
+                            const Color(0xD9142E52),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(27),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: .15),
+                        ),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Color(0xB9000000),
+                            blurRadius: 19,
+                            offset: Offset(0, 12),
+                          ),
                         ],
                       ),
-                      borderRadius: BorderRadius.circular(27),
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: .15),
-                      ),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Color(0xB9000000),
-                          blurRadius: 19,
-                          offset: Offset(0, 12),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 17,
-                            fontWeight: FontWeight.w900,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 17,
+                              fontWeight: FontWeight.w900,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 7),
-                        Text(
-                          description,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: .83),
-                            fontSize: 11,
-                            height: 1.3,
-                            fontWeight: FontWeight.w600,
+                          const SizedBox(height: 7),
+                          Text(
+                            description,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: .83),
+                              fontSize: 11,
+                              height: 1.3,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
-                        ),
-                        const Spacer(),
-                        Text(
-                          character?.name ?? 'Chưa chọn',
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w800,
+                          const Spacer(),
+                          Text(
+                            character?.name ?? 'Chưa chọn',
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w800,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 8),
-                        SizedBox(
-                          height: 38,
-                          child: OutlinedButton(
-                            onPressed: onTap,
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: Colors.white,
-                              side: BorderSide(
-                                color: Colors.white.withValues(alpha: .72),
-                              ),
+                          const SizedBox(height: 8),
+                          SizedBox(
+                            height: 38,
+                            child: GlassButton(
+                              onPressed: onTap,
+                              borderRadius: 19,
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 17,
+                                vertical: 8,
                               ),
+                              child: Text(character == null ? 'Chọn' : 'Đổi'),
                             ),
-                            child: Text(character == null ? 'Chọn' : 'Đổi'),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),

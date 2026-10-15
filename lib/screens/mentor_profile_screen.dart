@@ -17,7 +17,6 @@ class MentorProfileScreen extends StatefulWidget {
 class _MentorProfileScreenState extends State<MentorProfileScreen> {
   Mentor get mentor => widget.mentor;
 
-  static const _background = Color(0xFF100E19);
   static const _surface = Color(0xFF211D2B);
   static const _accent = Color(0xFFBFA8FF);
 
@@ -198,9 +197,9 @@ class _MentorProfileScreenState extends State<MentorProfileScreen> {
   Widget build(BuildContext context) {
     final slots = List<DateTime>.of(mentor.availableSlots)..sort();
     return Scaffold(
-      backgroundColor: _background,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
-        backgroundColor: _background,
+        backgroundColor: Colors.transparent,
         foregroundColor: Colors.white,
         title: const Text('Hồ sơ mentor'),
       ),

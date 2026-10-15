@@ -7,6 +7,8 @@ import 'services/points_manager.dart';
 import 'services/app_navigation.dart';
 import 'services/route_observer.dart';
 import 'widgets/companion_overlay.dart';
+import 'theme/space_theme.dart';
+import 'widgets/space_glass_widgets.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -23,9 +25,7 @@ class UEHeroApp extends StatelessWidget {
       navigatorKey: appNavigatorKey,
       debugShowCheckedModeBanner: false,
       title: 'UEHero',
-      theme: ThemeData.dark().copyWith(
-        scaffoldBackgroundColor: const Color(0xFF0D0C13),
-      ),
+      theme: SpaceTheme.data,
       navigatorObservers: [ueHeroRouteObserver, companionRouteObserver],
       initialRoute: '/onboarding',
       onGenerateRoute: (settings) {
@@ -37,7 +37,11 @@ class UEHeroApp extends StatelessWidget {
       },
       builder: (context, child) => Stack(
         fit: StackFit.expand,
-        children: [?child, const CompanionOverlay()],
+        children: [
+          const SpaceBackground(),
+          ?child,
+          const CompanionOverlay(),
+        ],
       ),
     );
   }

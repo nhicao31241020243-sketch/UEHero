@@ -20,8 +20,7 @@ class CalendarScreen extends StatefulWidget {
 }
 
 class _CalendarScreenState extends State<CalendarScreen> {
-  static const _background = Color(0xFF100E19);
-  static const _surface = Color(0xFF211D2B);
+  static const _surface = Color(0xD9142E52);
   static const _muted = Color(0xFFAAA5B8);
   static const _mars = Color(0xFFFF704E);
   static const _weekdays = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
@@ -694,7 +693,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
   Widget build(BuildContext context) {
     if (_loading) {
       return const Scaffold(
-        backgroundColor: _background,
+        backgroundColor: Colors.transparent,
         body: Center(child: CircularProgressIndicator(color: _mars)),
       );
     }
@@ -702,7 +701,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
     final selectedTasks = _selectedTasks;
 
     return Scaffold(
-      backgroundColor: _background,
+      backgroundColor: Colors.transparent,
       floatingActionButton: FloatingActionButton(
         onPressed: _showAddTaskSheet,
         tooltip: 'Thêm công việc',
