@@ -28,8 +28,10 @@ class _CareerMapScreenState extends State<CareerMapScreen>
     with TickerProviderStateMixin {
   static const _accent = Color(0xFFFF8FD8);
   static const _cyan = Color(0xFF8DE9FF);
-  static const _galaxyBackgroundUrl =
-      'https://images.unsplash.com/photo-1506703719100-a0f3a48c0f86?q=80&w=1000&auto=format&fit=crop';
+  static const ImageProvider _careerMapBackground = ResizeImage(
+    AssetImage('assets/images/career_map_bg.png'),
+    width: 900,
+  );
 
   final _progress = ProgressService.instance;
   final _goalProgress = GoalProgressService.instance;
@@ -155,35 +157,65 @@ class _CareerMapScreenState extends State<CareerMapScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        automaticallyImplyLeading: !widget.embedded,
-        title: const Text(
-          'Career Map',
-          style: TextStyle(fontWeight: FontWeight.w900),
-        ),
-      ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator(color: _cyan))
-          : _loadError != null
-          ? _errorState()
-          : GestureDetector(
-              behavior: HitTestBehavior.translucent,
-              onTap: _skipTravel,
-              child: Stack(
-                children: [
-                  ListView(
-                    controller: _scrollController,
-                    padding: const EdgeInsets.only(bottom: 48),
-                    children: [_buildHeader(), _buildMapCanvas()],
-                  ),
-                  _buildTopHint(),
-                ],
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        const RepaintBoundary(
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              Image(
+                image: _careerMapBackground,
+                fit: BoxFit.cover,
+                filterQuality: FilterQuality.low,
               ),
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Color(0x33000000),
+                      Color(0x26000000),
+                      Color(0x38000000),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        Scaffold(
+          backgroundColor: Colors.transparent,
+          appBar: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            automaticallyImplyLeading: !widget.embedded,
+            title: const Text(
+              'Career Map',
+              style: TextStyle(fontWeight: FontWeight.w900),
             ),
+          ),
+          body: _loading
+              ? const Center(child: CircularProgressIndicator(color: _cyan))
+              : _loadError != null
+              ? _errorState()
+              : GestureDetector(
+                  behavior: HitTestBehavior.translucent,
+                  onTap: _skipTravel,
+                  child: Stack(
+                    children: [
+                      ListView(
+                        controller: _scrollController,
+                        padding: const EdgeInsets.only(bottom: 48),
+                        children: [_buildHeader(), _buildMapCanvas()],
+                      ),
+                      _buildTopHint(),
+                    ],
+                  ),
+                ),
+        ),
+      ],
     );
   }
 
@@ -366,17 +398,6 @@ class _CareerMapScreenState extends State<CareerMapScreen>
       child: RepaintBoundary(
         child: Stack(
           children: [
-            const Positioned.fill(child: _SpaceBackdrop()),
-            Positioned.fill(
-              child: Image.network(
-                _galaxyBackgroundUrl,
-                fit: BoxFit.cover,
-                color: Colors.black.withValues(alpha: 0.2),
-                colorBlendMode: BlendMode.darken,
-                errorBuilder: (context, error, stackTrace) =>
-                    const SizedBox.shrink(),
-              ),
-            ),
             _planet(
               'assets/images/planets/neptune.png',
               left: -70,
@@ -677,47 +698,6 @@ class _CareerMapScreenState extends State<CareerMapScreen>
       ),
     );
   }
-}
-
-class _SpaceBackdrop extends StatelessWidget {
-  const _SpaceBackdrop();
-
-  @override
-  Widget build(BuildContext context) =>
-      CustomPaint(painter: _SpaceBackdropPainter());
-}
-
-class _SpaceBackdropPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final rect = Offset.zero & size;
-    canvas.drawRect(
-      rect,
-      Paint()
-        ..shader = const LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Color(0xFF211239), Color(0xFF100D28), Color(0xFF241132)],
-        ).createShader(rect),
-    );
-    final stars = Paint()..color = Colors.white.withValues(alpha: 0.28);
-    for (var index = 0; index < 150; index++) {
-      final x = (index * 97.0) % size.width;
-      final y = (index * 173.0) % size.height;
-      canvas.drawCircle(Offset(x, y), index % 11 == 0 ? 1.4 : 0.65, stars);
-    }
-    final nebula = Paint()
-      ..shader =
-          const RadialGradient(
-            colors: [Color(0x664F176E), Color(0x001E123A)],
-          ).createShader(
-            Rect.fromCircle(center: Offset(size.width * .52, 370), radius: 270),
-          );
-    canvas.drawCircle(Offset(size.width * .52, 370), 270, nebula);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 class _PathPainter extends CustomPainter {
