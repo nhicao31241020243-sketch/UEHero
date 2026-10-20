@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/character_data.dart';
+import '../services/ai_chat_service.dart';
 import '../services/companion_context_service.dart';
 import '../services/mascot_selection_store.dart';
 import 'calendar_screen.dart';
@@ -25,6 +26,8 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
   final _messageController = TextEditingController();
   final _scrollController = ScrollController();
   final _messages = <_ChatMessage>[];
+  final _aiService = const AiChatService();
+  bool _isSending = false;
   CharacterData? _companion;
   CompanionContext? _contextData;
   Future<void> _persistQueue = Future.value();
@@ -79,6 +82,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
   }
 
   Future<void> _sendMessage() async {
+    if (_isSending || _loading) return;
     final text = _messageController.text.trim();
     if (text.isEmpty) return;
     _messageController.clear();
@@ -92,24 +96,65 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
       await _answerQuickQuestion(text);
       return;
     }
+
+    // Send only conversation turns (not notices) to preserve chat context.
+    final history = _messages
+        .where((message) => !message.isNotice)
+        .map((message) => {
+              'role': message.fromAssistant ? 'assistant' : 'user',
+              'content': message.text,
+            })
+        .toList()
+        .reversed
+        .take(10)
+        .toList()
+        .reversed
+        .toList();
+
     setState(() {
       _messages.add(_ChatMessage(text: text, fromAssistant: false));
-      _messages.add(
-        const _ChatMessage(
-          text:
-              'Dịch vụ AI chưa được kết nối trong ứng dụng hiện tại. '
-              'Bạn vẫn có thể dùng các câu hỏi nhanh để nhận câu trả lời '
-              'dựa trên dữ liệu đã lưu trên thiết bị.',
-          fromAssistant: true,
-          isNotice: true,
-        ),
-      );
+      _isSending = true;
     });
-    await _persistHistory();
     _scrollToBottom();
+    try {
+      final answer = await _aiService.ask(
+        message: text,
+        history: history,
+        appContext: _contextData?.summary ?? '',
+      );
+      if (!mounted) return;
+      setState(() => _messages.add(
+        _ChatMessage(text: answer, fromAssistant: true),
+      ));
+    } on AiChatException catch (error) {
+      if (!mounted) return;
+      setState(() => _messages.add(
+        _ChatMessage(text: error.message, fromAssistant: true, isNotice: true),
+      ));
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _messages.add(const _ChatMessage(
+        text: 'Không thể nhận phản hồi AI. Kiểm tra backend và thử lại.',
+        fromAssistant: true,
+        isNotice: true,
+      )));
+    } finally {
+      if (mounted) {
+        setState(() => _isSending = false);
+        await _persistHistory();
+        _scrollToBottom();
+      }
+    }
+  }
+
+  void _askSuggestion(String suggestion) {
+    if (_isSending || _loading) return;
+    _messageController.text = suggestion;
+    _sendMessage();
   }
 
   Future<void> _answerQuickQuestion(String question) async {
+    if (_isSending || _loading) return;
     final data = _contextData ?? await CompanionContextService.instance.load();
     if (!mounted) return;
     final route = _routeForQuestion(question, data);
@@ -257,6 +302,27 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                       ),
                     ),
             ),
+            if (_isSending)
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Color(0xFFBFA8FF),
+                      ),
+                    ),
+                    SizedBox(width: 10),
+                    Text(
+                      'UEHero AI đang trả lời...',
+                      style: TextStyle(color: Color(0xFFB5B0C1), fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
             _buildComposer(),
           ],
         ),
@@ -269,31 +335,38 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
     child: ListView(
       scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-      children:
-          [
-            'Hôm nay có gì?',
-            'Còn bao nhiêu thẻ chưa học?',
-            'Cuộc thi sắp hết hạn?',
-            'Nên làm gì trước?',
-          ].map((question) {
-            return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: ActionChip(
-                backgroundColor: const Color(0xFF29233A),
-                side: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
-                label: Text(
-                  question,
-                  style: const TextStyle(
-                    color: Color(0xFFE9E2FF),
-                    fontSize: 12,
-                  ),
-                ),
-                onPressed: _loading
-                    ? null
-                    : () => _answerQuickQuestion(question),
-              ),
-            );
-          }).toList(),
+      children: [
+        'Có sự kiện nghề nghiệp nào phù hợp?',
+        'Luyện phỏng vấn Business Analyst intern',
+        'CV thực tập nên viết thế nào?',
+        'Hôm nay có gì?',
+        'Còn bao nhiêu thẻ chưa học?',
+        'Cuộc thi sắp hết hạn?',
+        'Nên làm gì trước?',
+      ].map((question) {
+        final isLocalQuestion = const {
+          'Hôm nay có gì?',
+          'Còn bao nhiêu thẻ chưa học?',
+          'Cuộc thi sắp hết hạn?',
+          'Nên làm gì trước?',
+        }.contains(question);
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: ActionChip(
+            backgroundColor: const Color(0xFF29233A),
+            side: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+            label: Text(
+              question,
+              style: const TextStyle(color: Color(0xFFE9E2FF), fontSize: 12),
+            ),
+            onPressed: _loading || _isSending
+                ? null
+                : () => isLocalQuestion
+                    ? _answerQuickQuestion(question)
+                    : _askSuggestion(question),
+          ),
+        );
+      }).toList(),
     ),
   );
 
@@ -327,7 +400,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
         ),
         const SizedBox(width: 9),
         IconButton.filled(
-          onPressed: _sendMessage,
+          onPressed: _isSending || _loading ? null : _sendMessage,
           tooltip: 'Gửi tin nhắn',
           style: IconButton.styleFrom(
             backgroundColor: const Color(0xFFBFA8FF),

@@ -124,3 +124,12 @@ app.*.symbols
 
 /raw_models/
 _backup_career_map/
+# Local AI backend
+ai_backend/.venv/
+ai_backend/**/__pycache__/
+ai_backend/.pytest_cache/
+
+# Local AI backend
+ai_backend/.venv/
+ai_backend/**/__pycache__/
+ai_backend/.pytest_cache/
