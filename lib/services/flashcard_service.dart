@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../data/flashcard_seed.dart';
@@ -12,6 +12,8 @@ class FlashcardService extends ChangeNotifier {
 
   static final FlashcardService instance = FlashcardService._();
   static const storageKey = 'flashcard_library_v1';
+  static const practiceDeckId = 'generated-practice';
+  static const _legacyStudyCardsKey = 'study_flashcards';
 
   List<FlashcardDeck> _decks = [];
   Set<String> _hiddenDeckIds = {};
@@ -69,8 +71,55 @@ class FlashcardService extends ChangeNotifier {
       _totalReviewed = (decoded['totalReviewed'] as num?)?.toInt() ?? 0;
       _totalCorrect = (decoded['totalCorrect'] as num?)?.toInt() ?? 0;
     }
-    _initialized = true;
+    final legacyCardsJson = preferences.getString(_legacyStudyCardsKey);
+    if (legacyCardsJson != null) {
+      final decoded = jsonDecode(legacyCardsJson);
+      if (decoded is! List) {
+        throw const FormatException('Legacy study cards must be a JSON list.');
+      }
+      final cards = <Flashcard>[];
+      for (var index = 0; index < decoded.length; index++) {
+        final entry = decoded[index];
+        if (entry is! Map) {
+          throw const FormatException('Legacy study card must be an object.');
+        }
+        final data = Map<String, dynamic>.from(entry);
+        final question = data['question'];
+        final answer = data['answer'];
+        if (question is! String || answer is! String) {
+          throw const FormatException(
+            'Legacy study card must have a question and answer.',
+          );
+        }
+        final source = data['source']?.toString();
+        final createdAt = data['createdAt']?.toString() ?? '';
+        final id = base64Url.encode(
+          utf8.encode('$index|$createdAt|$question'),
+        );
+        cards.add(
+          Flashcard(
+            id: 'legacy-$id',
+            deckId: practiceDeckId,
+            type: source == 'interview'
+                ? FlashcardType.interview
+                : FlashcardType.concept,
+            front: question,
+            back: answer,
+            subTopic: data['subject']?.toString() ?? '',
+            tags: source == null ? const [] : [source],
+          ),
+        );
+      }
+      _mergePracticeCards(cards);
+    }
     await _persist();
+    if (legacyCardsJson != null) {
+      final removed = await preferences.remove(_legacyStudyCardsKey);
+      if (!removed) {
+        throw StateError('Could not remove migrated study cards.');
+      }
+    }
+    _initialized = true;
     notifyListeners();
   }
 
@@ -131,6 +180,55 @@ class FlashcardService extends ChangeNotifier {
       throw ArgumentError.value(card.id, 'card.id', 'Card ID already exists.');
     }
     await updateDeck(deck.copyWith(cards: [...deck.cards, card]));
+  }
+
+  Future<void> addPracticeCards(Iterable<Flashcard> cards) async {
+    _requireInitialized();
+    final additions = cards
+        .map((card) => card.copyWith(deckId: practiceDeckId))
+        .toList(growable: false);
+    if (additions.isEmpty) return;
+    _mergePracticeCards(additions);
+    await _persistAndNotify();
+  }
+
+  void _mergePracticeCards(List<Flashcard> cards) {
+    _hiddenDeckIds.remove(practiceDeckId);
+    final deckIndex = _decks.indexWhere(
+      (deck) => deck.id == practiceDeckId,
+    );
+    final existingDeck = deckIndex < 0 ? null : _decks[deckIndex];
+    final existingIds = {
+      for (final card in existingDeck?.cards ?? const <Flashcard>[])
+        card.id,
+    };
+    final additions = cards
+        .where((card) => existingIds.add(card.id))
+        .toList(growable: false);
+    if (additions.isEmpty) return;
+
+    if (existingDeck != null) {
+      _decks[deckIndex] = existingDeck.copyWith(
+        cards: [...existingDeck.cards, ...additions],
+      );
+      _hiddenDeckIds.remove(practiceDeckId);
+      return;
+    }
+
+    _decks = [
+      ..._decks,
+      FlashcardDeck(
+        id: practiceDeckId,
+        title: 'Thẻ luyện tập của bạn',
+        iconCodePoint: Icons.auto_awesome_rounded.codePoint,
+        colorValue: const Color(0xFF9BB4FF).toARGB32(),
+        group: FlashcardGroup.communication,
+        level: FlashcardLevel.intermediate,
+        description: 'Các thẻ đã tạo từ CV Check, phỏng vấn và Study Buddy.',
+        cards: additions,
+        isCustom: true,
+      ),
+    ];
   }
 
   Future<void> updateCard(Flashcard card) async {

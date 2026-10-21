@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -15,11 +17,30 @@ void main() {
   test(
     'seed library, favorite, Leitner boxes, streak and custom CRUD',
     () async {
-      SharedPreferences.setMockInitialValues({});
+      SharedPreferences.setMockInitialValues({
+        'study_flashcards': jsonEncode([
+          {
+            'question': 'Câu hỏi cũ',
+            'answer': 'Câu trả lời cũ',
+            'subject': 'Kỹ năng',
+            'createdAt': '2026-10-21T00:00:00.000',
+            'source': 'interview',
+          },
+        ]),
+      });
       final service = FlashcardService.instance;
       await service.initialize();
 
-      expect(service.decks, hasLength(flashcardSeedDecks.length));
+      expect(service.decks, hasLength(flashcardSeedDecks.length + 1));
+      final practiceDeck = service.decks.firstWhere(
+        (deck) => deck.id == FlashcardService.practiceDeckId,
+      );
+      expect(practiceDeck.cards.single.front, 'Câu hỏi cũ');
+      expect(practiceDeck.cards.single.back, 'Câu trả lời cũ');
+      expect(
+        (await SharedPreferences.getInstance()).getString('study_flashcards'),
+        isNull,
+      );
       expect(
         service.decks.firstWhere((deck) => deck.id == sqlDeckId).cards,
         hasLength(18),
@@ -103,6 +124,21 @@ void main() {
         service.decks.firstWhere((deck) => deck.id == 'custom-test').cards,
         hasLength(1),
       );
+      await service.addPracticeCards([
+        const Flashcard(
+          id: 'generated-test-card',
+          deckId: FlashcardService.practiceDeckId,
+          type: FlashcardType.interview,
+          front: 'Câu hỏi luyện tập',
+          back: 'Câu trả lời luyện tập',
+        ),
+      ]);
+      final updatedPracticeDeck = service.decks.firstWhere(
+        (deck) => deck.id == FlashcardService.practiceDeckId,
+      );
+      expect(updatedPracticeDeck.cards, hasLength(2));
+      expect(updatedPracticeDeck.cards.last.front, 'Câu hỏi luyện tập');
+      expect(updatedPracticeDeck.cards.last.back, 'Câu trả lời luyện tập');
       await service.deleteCard('custom-test', 'custom-test-card');
       await service.deleteDeck('custom-test');
       expect(service.decks.any((deck) => deck.id == 'custom-test'), isFalse);

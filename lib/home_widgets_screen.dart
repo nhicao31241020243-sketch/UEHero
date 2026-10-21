@@ -512,6 +512,9 @@ class _HomeWidgetsScreenState extends State<HomeWidgetsScreen>
                           } else if (feature.actionKey == 'uranus') {
                             Navigator.of(context).push(
                               MaterialPageRoute<void>(
+                                settings: const RouteSettings(
+                                  name: '/cv-check',
+                                ),
                                 builder: (_) => const CvCheckScreen(),
                               ),
                             );

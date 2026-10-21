@@ -10,15 +10,18 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/career_goal.dart';
 import '../models/character_data.dart';
 import '../models/cv_check.dart';
+import '../models/flashcard.dart';
 import '../models/xp_entry.dart';
 import '../services/cv_analyzer.dart';
 import '../services/cv_document_reader.dart';
 import '../services/cv_score_store.dart';
+import '../services/flashcard_service.dart';
 import '../services/goal_progress_service.dart';
 import '../services/points_manager.dart';
 import '../services/mascot_selection_store.dart';
 import '../widgets/match_bar.dart';
 import 'career_map_screen.dart';
+import 'flashcard_home_screen.dart';
 import 'job_screen.dart';
 
 class CvCheckScreen extends StatefulWidget {
@@ -397,6 +400,44 @@ class _CvCheckScreenState extends State<CvCheckScreen> {
     _runCheck();
   }
 
+  void _openCareerMap() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        settings: const RouteSettings(name: '/career-map'),
+        builder: (_) => const CareerMapScreen(),
+      ),
+    );
+  }
+
+  Future<void> _practiceSkill(String skill) async {
+    final createdAt = DateTime.now();
+    try {
+      final flashcards = FlashcardService.instance;
+      await flashcards.initialize();
+      await flashcards.addPracticeCards([
+        Flashcard(
+          id: 'cv-${createdAt.microsecondsSinceEpoch}',
+          deckId: FlashcardService.practiceDeckId,
+          type: FlashcardType.interview,
+          front: 'Làm thế nào để thể hiện kỹ năng $skill trong CV?',
+          back:
+              'Nêu một ví dụ cụ thể về cách bạn áp dụng $skill, hành động của bạn và kết quả có thể đo lường được.',
+          subTopic: skill,
+          tags: const ['CV Check'],
+        ),
+      ]);
+      if (!mounted) return;
+      await Navigator.of(context).push<void>(
+        MaterialPageRoute<void>(
+          settings: const RouteSettings(name: '/flashcards'),
+          builder: (_) => const FlashcardHomeScreen(),
+        ),
+      );
+    } on Exception catch (error) {
+      if (mounted) _showMessage('Không thể tạo thẻ luyện tập: $error');
+    }
+  }
+
   void _showIssue(CvIssue issue) {
     setState(() => _selectedIssueLine = issue.lineIndex);
     showModalBottomSheet<void>(
@@ -411,11 +452,12 @@ class _CvCheckScreenState extends State<CvCheckScreen> {
         issue: issue,
         onAddToCareerMap: () {
           Navigator.pop(context);
-          _showMessage('TODO: Kết nối kỹ năng với lộ trình Career Map.');
+          _openCareerMap();
         },
         onPracticeFlashcards: () {
           Navigator.pop(context);
-          _showMessage('TODO: Mở bộ flashcard luyện kỹ năng.');
+          final skill = issue.skill;
+          if (skill != null) _practiceSkill(skill);
         },
       ),
     );
@@ -1044,9 +1086,7 @@ class _CvCheckScreenState extends State<CvCheckScreen> {
         ],
         const SizedBox(height: 8),
         OutlinedButton.icon(
-          onPressed: () => Navigator.of(context).push(
-            MaterialPageRoute<void>(builder: (_) => const CareerMapScreen()),
-          ),
+          onPressed: _openCareerMap,
           icon: const Icon(Icons.route_rounded),
           label: const Text('Về Career Map'),
           style: OutlinedButton.styleFrom(foregroundColor: _cyan),
@@ -1098,10 +1138,8 @@ class _CvCheckScreenState extends State<CvCheckScreen> {
             icon: Icons.add_circle_outline_rounded,
             skills: missing,
             bright: false,
-            onAdd: (skill) =>
-                _showMessage('TODO: Thêm "$skill" vào Career Map.'),
-            onPractice: (skill) =>
-                _showMessage('TODO: Mở flashcard luyện "$skill".'),
+            onAdd: (_) => _openCareerMap(),
+            onPractice: _practiceSkill,
           ),
           const SizedBox(height: 13),
           Container(

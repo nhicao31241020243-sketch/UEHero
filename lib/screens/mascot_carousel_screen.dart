@@ -21,7 +21,6 @@ class MascotCarouselScreen extends StatefulWidget {
 class _MascotCarouselScreenState extends State<MascotCarouselScreen> {
   late final PageController _pageController;
   int _currentIndex = 0;
-  final bool _savingSelection = false;
 
   @override
   void initState() {
@@ -41,7 +40,6 @@ class _MascotCarouselScreenState extends State<MascotCarouselScreen> {
   }
 
   void _selectCharacter(CharacterData character) {
-    if (_savingSelection) return;
     Navigator.of(context).pop(character);
   }
 
@@ -66,7 +64,6 @@ class _MascotCarouselScreenState extends State<MascotCarouselScreen> {
             total: characters.length,
             title: title,
             showViewer: index == _currentIndex,
-            isSavingSelection: _savingSelection,
             onSelect: () => _selectCharacter(characters[index]),
           ),
         ),
@@ -82,7 +79,6 @@ class _CharacterCarouselPage extends StatelessWidget {
     required this.total,
     required this.title,
     required this.showViewer,
-    required this.isSavingSelection,
     required this.onSelect,
   });
 
@@ -91,7 +87,6 @@ class _CharacterCarouselPage extends StatelessWidget {
   final int total;
   final String title;
   final bool showViewer;
-  final bool isSavingSelection;
   final VoidCallback onSelect;
 
   @override
@@ -111,98 +106,114 @@ class _CharacterCarouselPage extends StatelessWidget {
                 children: [
                   Expanded(
                     flex: 55,
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        Center(
-                          child: Container(
-                            width: constraints.maxWidth * 0.78,
-                            height: constraints.maxWidth * 0.78,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              gradient: RadialGradient(
-                                colors: [
-                                  Colors.white.withValues(alpha: 0.46),
-                                  Colors.white.withValues(alpha: 0.04),
-                                ],
+                    child: LayoutBuilder(
+                      builder: (context, viewerConstraints) {
+                        final widthBasedSize = viewerConstraints.maxWidth * 0.78;
+                        final heightBasedSize =
+                            viewerConstraints.maxHeight * 0.78;
+                        final orbSize = widthBasedSize < heightBasedSize
+                            ? widthBasedSize
+                            : heightBasedSize;
+                        return Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            Center(
+                              child: Container(
+                                width: orbSize,
+                                height: orbSize,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  gradient: RadialGradient(
+                                    colors: [
+                                      Colors.white.withValues(alpha: 0.46),
+                                      Colors.white.withValues(alpha: 0.04),
+                                    ],
+                                  ),
+                                ),
                               ),
                             ),
-                          ),
-                        ),
-                        if (showViewer)
-                          ModelViewer(
-                            src: character.modelPath,
-                            alt: character.name,
-                            autoPlay: true,
-                            animationName: character.animationName,
-                            autoRotate: true,
-                            autoRotateDelay: 0,
-                            cameraControls: true,
-                            disableZoom: true,
-                            backgroundColor: Colors.transparent,
-                            debugLogging: true,
-                          )
-                        else
-                          Center(
-                            child: Text(
-                              character.emoji,
-                              style: const TextStyle(fontSize: 96),
-                            ),
-                          ),
-                        Positioned(
-                          left: 20,
-                          top: 12,
-                          child: Text(
-                            title.toUpperCase(),
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.9),
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 1.4,
-                              shadows: const [
-                                Shadow(color: Colors.black26, blurRadius: 8),
-                              ],
-                            ),
-                          ),
-                        ),
-                        Positioned(
-                          right: 18,
-                          top: 5,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 13,
-                              vertical: 8,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.25),
-                              borderRadius: BorderRadius.circular(24),
-                            ),
-                            child: Text(
-                              '${index + 1} / $total',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
+                            if (showViewer)
+                              ModelViewer(
+                                src: character.modelPath,
+                                alt: character.name,
+                                autoPlay: true,
+                                animationName: character.animationName,
+                                autoRotate: true,
+                                autoRotateDelay: 0,
+                                cameraControls: true,
+                                disableZoom: true,
+                                backgroundColor: Colors.transparent,
+                                debugLogging: true,
+                              )
+                            else
+                              Center(
+                                child: Text(
+                                  character.emoji,
+                                  style: const TextStyle(fontSize: 96),
+                                ),
+                              ),
+                            Positioned(
+                              left: 20,
+                              top: 12,
+                              child: Text(
+                                title.toUpperCase(),
+                                style: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.9),
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 1.4,
+                                  shadows: const [
+                                    Shadow(
+                                      color: Colors.black26,
+                                      blurRadius: 8,
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
-                          ),
-                        ),
-                        const Positioned(
-                          bottom: 14,
-                          left: 0,
-                          right: 0,
-                          child: Text(
-                            'Vuốt để xoay • Lướt để đổi linh vật',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              shadows: [
-                                Shadow(color: Colors.black26, blurRadius: 8),
-                              ],
+                            Positioned(
+                              right: 18,
+                              top: 5,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 13,
+                                  vertical: 8,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.25),
+                                  borderRadius: BorderRadius.circular(24),
+                                ),
+                                child: Text(
+                                  '${index + 1} / $total',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
                             ),
-                          ),
-                        ),
-                      ],
+                            const Positioned(
+                              bottom: 14,
+                              left: 0,
+                              right: 0,
+                              child: Text(
+                                'Vuốt để xoay • Lướt để đổi linh vật',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  shadows: [
+                                    Shadow(
+                                      color: Colors.black26,
+                                      blurRadius: 8,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        );
+                      },
                     ),
                   ),
                   Expanded(
@@ -296,7 +307,7 @@ class _CharacterCarouselPage extends StatelessWidget {
                             width: double.infinity,
                             height: 58,
                             child: ElevatedButton(
-                              onPressed: isSavingSelection ? null : onSelect,
+                              onPressed: onSelect,
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFF30215F),
                                 foregroundColor: Colors.white,

@@ -11,9 +11,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/career_goal.dart';
 import '../models/character_data.dart';
+import '../models/flashcard.dart';
 import '../models/xp_entry.dart';
 import '../services/points_manager.dart';
 import '../services/mascot_selection_store.dart';
+import '../services/flashcard_service.dart';
+import 'flashcard_home_screen.dart';
 
 class UEHeroCameraScreen extends StatefulWidget {
   const UEHeroCameraScreen({
@@ -37,7 +40,6 @@ class _UEHeroCameraScreenState extends State<UEHeroCameraScreen>
   static const _cyanColor = Color(0xFF70D8F2);
   static const _minimumCropSize = 0.08;
   static const _historyKey = 'study_question_history';
-  static const _flashcardsKey = 'study_flashcards';
   static const _skillPracticeKey = 'study_skill_practice_counts';
   static const _masteryKey = 'career_map_skills';
 
@@ -570,22 +572,28 @@ class _UEHeroCameraScreenState extends State<UEHeroCameraScreen>
   }
 
   Future<void> _saveFlashcard() async {
-    final preferences = await SharedPreferences.getInstance();
-    final cards =
-        (jsonDecode(preferences.getString(_flashcardsKey) ?? '[]') as List)
-            .whereType<Map>()
-            .map((entry) => Map<String, dynamic>.from(entry))
-            .toList();
-    cards.insert(0, {
-      'question': _questionText,
-      'answer': _solutionSteps.join('\n'),
-      'subject': _subject,
-      'createdAt': DateTime.now().toIso8601String(),
-    });
-    await preferences.setString(_flashcardsKey, jsonEncode(cards));
-    _showMessage(
-      'Đã lưu câu hỏi và lời giải vào kho flashcard. TODO: nối màn Flashcard.',
+    final flashcards = FlashcardService.instance;
+    await flashcards.initialize();
+    final createdAt = DateTime.now();
+    await flashcards.addPracticeCards([
+      Flashcard(
+        id: 'study-buddy-${createdAt.microsecondsSinceEpoch}',
+        deckId: FlashcardService.practiceDeckId,
+        type: FlashcardType.scenario,
+        front: _questionText,
+        back: _solutionSteps.join('\n'),
+        subTopic: _subject,
+        tags: const ['Study Buddy'],
+      ),
+    ]);
+    if (!mounted) return;
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        settings: const RouteSettings(name: '/flashcards'),
+        builder: (_) => const FlashcardHomeScreen(),
+      ),
     );
+    if (mounted) _showMessage('Đã lưu câu hỏi và lời giải vào Flashcard.');
   }
 
   Future<void> _showStudyHistory() async {

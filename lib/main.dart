@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:firebase_core/firebase_core.dart';
 
 import 'home_event_screen.dart';
-import 'screens/interview/interview_home_screen.dart';
 import 'screens/welcome_screen.dart' as onboarding;
+import 'services/firebase_bootstrap.dart';
 import 'services/points_manager.dart';
 import 'services/app_navigation.dart';
 import 'services/route_observer.dart';
@@ -12,7 +14,27 @@ import 'widgets/space_glass_widgets.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.light,
+      systemNavigationBarColor: Colors.transparent,
+      systemNavigationBarDividerColor: Colors.transparent,
+      systemNavigationBarIconBrightness: Brightness.light,
+      systemNavigationBarContrastEnforced: false,
+    ),
+  );
   await PointsManager.instance.initialize();
+  try {
+    await FirebaseBootstrap.initialize();
+  } on FirebaseException catch (error) {
+    debugPrint(
+      'Firebase initialization failed: ${error.message ?? error.code}',
+    );
+  } on PlatformException catch (error) {
+    debugPrint('Firebase initialization failed: ${error.message}');
+  }
   runApp(const UEHeroApp());
 }
 
@@ -37,11 +59,7 @@ class UEHeroApp extends StatelessWidget {
       },
       builder: (context, child) => Stack(
         fit: StackFit.expand,
-        children: [
-          const SpaceBackground(),
-          ?child,
-          const CompanionOverlay(),
-        ],
+        children: [const SpaceBackground(), ?child, const CompanionOverlay()],
       ),
     );
   }
@@ -125,6 +143,9 @@ class WelcomeScreen extends StatelessWidget {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
+                                  settings: const RouteSettings(
+                                    name: '/events',
+                                  ),
                                   builder: (context) =>
                                       const MainNavigationScreen(),
                                 ),
@@ -163,6 +184,9 @@ class WelcomeScreen extends StatelessWidget {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
+                                  settings: const RouteSettings(
+                                    name: '/events',
+                                  ),
                                   builder: (context) =>
                                       const MainNavigationScreen(),
                                 ),
@@ -229,63 +253,11 @@ class WelcomeScreen extends StatelessWidget {
   }
 }
 
-// Màn hình chứa Bottom Navigation Bar ghép Màn hình Sự kiện
-class MainNavigationScreen extends StatefulWidget {
+class MainNavigationScreen extends StatelessWidget {
   const MainNavigationScreen({super.key});
 
   @override
-  State<MainNavigationScreen> createState() => _MainNavigationScreenState();
-}
-
-class _MainNavigationScreenState extends State<MainNavigationScreen> {
-  int _currentIndex = 0;
-
-  final List<Widget> _screens = [
-    const HomeEventScreen(),
-    const Center(
-      child: Text("Explore Page", style: TextStyle(color: Colors.white)),
-    ),
-    const Center(
-      child: Text("My List Page", style: TextStyle(color: Colors.white)),
-    ),
-  ];
-
-  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: _screens[_currentIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: (index) {
-          if (index == 3) {
-            Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (_) => const InterviewHomeScreen(),
-              ),
-            );
-            return;
-          }
-          setState(() {
-            _currentIndex = index;
-          });
-        },
-        backgroundColor: const Color(0xFF0D0C13),
-        selectedItemColor: const Color(0xFF8B5CF6),
-        unselectedItemColor: Colors.grey[600],
-        type: BottomNavigationBarType.fixed,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home_filled), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Explore'),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.bookmark_outline),
-            label: 'My List',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.record_voice_over_rounded),
-            label: 'Phỏng vấn',
-          ),
-        ],
-      ),
-    );
+    return const HomeEventScreen();
   }
 }

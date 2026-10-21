@@ -1,0 +1,1 @@
+{"firestore":{"rules":"firestore.rules"},"flutter":{"platforms":{"android":{"default":{"projectId":"uehero-32792","appId":"1:1055874027643:android:516959ada930cdc0fe52de","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"uehero-32792","configurations":{"android":"1:1055874027643:android:516959ada930cdc0fe52de"}}}}}}

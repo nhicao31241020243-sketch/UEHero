@@ -1,4 +1,6 @@
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_core/firebase_core.dart';
 
 import '../models/app_task.dart';
 import '../models/event_item.dart';
@@ -152,7 +154,10 @@ class CompanionContextService {
             .toList()
           ..sort(_compareTasks);
 
-    final events = await LocalEventRepository().fetchEvents();
+    final events = Firebase.apps.isEmpty
+        ? const <EventItem>[]
+        : await FirestoreEventRepository(FirebaseFirestore.instance)
+              .fetchEvents();
     final competition =
         events.where((event) {
           final deadline = event.registrationDeadline;

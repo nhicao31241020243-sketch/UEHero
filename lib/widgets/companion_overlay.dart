@@ -166,6 +166,7 @@ class _CompanionOverlayState extends State<CompanionOverlay>
       'interview-room',
       'camera',
       'full-screen',
+      'events',
     ].any(name.contains);
   }
 

@@ -1,11 +1,12 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../models/character_data.dart';
+import '../../models/flashcard.dart';
 import '../../models/interview_models.dart';
+import '../../services/flashcard_service.dart';
 import '../../services/interview_service.dart';
+import '../calendar_screen.dart';
+import '../flashcard_home_screen.dart';
 import 'interview_room_screen.dart';
 
 class InterviewFeedbackScreen extends StatefulWidget {
@@ -28,7 +29,6 @@ class InterviewFeedbackScreen extends StatefulWidget {
 class _InterviewFeedbackScreenState extends State<InterviewFeedbackScreen> {
   static const _background = Color(0xFF100E19);
   static const _surface = Color(0xD9142E52);
-  static const _flashcardsKey = 'study_flashcards';
 
   int _selectedQuestion = 0;
   bool _restarting = false;
@@ -94,36 +94,45 @@ class _InterviewFeedbackScreenState extends State<InterviewFeedbackScreen> {
       return;
     }
     try {
-      final preferences = await SharedPreferences.getInstance();
-      final raw = preferences.getString(_flashcardsKey) ?? '[]';
-      final decoded = jsonDecode(raw);
-      if (decoded is! List) {
-        throw const FormatException('Flashcard data is not a list.');
-      }
-      final cards = decoded
-          .whereType<Map>()
-          .map(Map<String, dynamic>.from)
-          .toList();
-      for (final skill in _weakSkills) {
-        cards.insert(0, {
-          'question':
-              'Ôn tập kỹ năng $skill trong phỏng vấn ${widget.session.career}',
-          'answer':
-              'Chuẩn bị một câu trả lời có bối cảnh, cách bạn xử lý và kết quả cụ thể về kỹ năng $skill.',
-          'subject': skill,
-          'createdAt': DateTime.now().toIso8601String(),
-          'source': 'interview',
-        });
-      }
-      await preferences.setString(_flashcardsKey, jsonEncode(cards));
-      _message(
-        'Đã thêm ${_weakSkills.length} thẻ vào study_flashcards. TODO: mở màn Flashcard.',
+      final flashcards = FlashcardService.instance;
+      await flashcards.initialize();
+      final createdAt = DateTime.now();
+      await flashcards.addPracticeCards([
+        for (var index = 0; index < _weakSkills.length; index++)
+          Flashcard(
+            id: 'interview-${createdAt.microsecondsSinceEpoch}-$index',
+            deckId: FlashcardService.practiceDeckId,
+            type: FlashcardType.interview,
+            front:
+                'Ôn tập kỹ năng ${_weakSkills[index]} trong phỏng vấn ${widget.session.career}',
+            back:
+                'Chuẩn bị một câu trả lời có bối cảnh, cách bạn xử lý và kết quả cụ thể về kỹ năng ${_weakSkills[index]}.',
+            subTopic: _weakSkills[index],
+            tags: const ['Phỏng vấn'],
+          ),
+      ]);
+      if (!mounted) return;
+      await Navigator.of(context).push<void>(
+        MaterialPageRoute<void>(
+          settings: const RouteSettings(name: '/flashcards'),
+          builder: (_) => const FlashcardHomeScreen(),
+        ),
       );
+      if (mounted) _message('Đã thêm ${_weakSkills.length} thẻ luyện tập.');
     } on FormatException catch (error) {
       _message('Không thể đọc kho flashcard: $error');
     } on Exception catch (error) {
       _message('Không thể lưu flashcard: $error');
     }
+  }
+
+  void _openCalendar() {
+    Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        settings: const RouteSettings(name: '/weekly-plan'),
+        builder: (_) => const CalendarScreen(),
+      ),
+    );
   }
 
   void _message(String text) {
@@ -291,11 +300,9 @@ class _InterviewFeedbackScreenState extends State<InterviewFeedbackScreen> {
             ),
             const SizedBox(height: 8),
             _actionButton(
-              label: 'Thêm việc luyện lại vào Kế hoạch tuần',
+              label: 'Mở Kế hoạch tuần',
               icon: Icons.event_note_rounded,
-              onPressed: () => _message(
-                'TODO(calendar): nối API tạo việc luyện kỹ năng vào Kế hoạch tuần.',
-              ),
+              onPressed: _openCalendar,
             ),
             const SizedBox(height: 8),
             _actionButton(

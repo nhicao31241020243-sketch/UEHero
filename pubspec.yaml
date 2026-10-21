@@ -48,6 +48,14 @@ dependencies:
   url_launcher: ^6.3.2
   cached_network_image: 3.4.1
   http: ^1.6.0
+  firebase_core: ^5.0.0
+  cloud_firestore: ^7.0.0
+  firebase_auth: ^7.0.0
+  flutter_local_notifications: ^22.3.2
+  timezone: ^0.11.2
+  flutter_timezone: ^5.1.1
+  share_plus: ^12.0.2
+  diacritic: ^0.1.6
 
 dependency_overrides:
   path_provider_foundation: 2.4.2
@@ -82,7 +90,6 @@ flutter:
     - assets/mascot_previews/
     - assets/interview_questions.json
     - assets/learning_resources.json
-    - assets/data/events.json
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
