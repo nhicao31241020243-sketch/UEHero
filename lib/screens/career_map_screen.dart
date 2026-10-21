@@ -1,19 +1,30 @@
 import 'dart:math' as math;
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:model_viewer_plus/model_viewer_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-import '../config/career_map_layout.dart';
-import '../config/career_progress_config.dart';
-import '../config/career_goal_config.dart';
+import '../config/career_roadmap_config.dart';
 import '../models/character_data.dart';
 import '../models/xp_entry.dart';
-import '../services/points_manager.dart';
-import '../services/progress_service.dart';
-import '../services/goal_progress_service.dart';
 import '../services/mascot_selection_store.dart';
-import 'flashcard_home_screen.dart';
+import '../services/points_manager.dart';
+import '../theme/space_theme.dart';
+import '../widgets/space_glass_widgets.dart';
+import '../widgets/space_home_widgets.dart';
+
+const _planetPalettes = <List<Color>>[
+  [Color(0xFF7DE8FF), Color(0xFF2E7BD6)],
+  [Color(0xFFFFB86B), Color(0xFFD1581F)],
+  [Color(0xFFB89BFF), Color(0xFF5B3BC7)],
+  [Color(0xFF8CFFC4), Color(0xFF1E9B6B)],
+  [Color(0xFFFF9FD8), Color(0xFFB8328F)],
+  [Color(0xFFFFE27A), Color(0xFFE08A1E)],
+];
+
+const _lockedPalette = [Color(0xFF6B7088), Color(0xFF2A2D40)];
+const _gold = Color(0xFFFFD36E);
+
+enum _NodeState { completed, current, locked }
 
 class CareerMapScreen extends StatefulWidget {
   const CareerMapScreen({this.embedded = false, super.key});
@@ -25,364 +36,236 @@ class CareerMapScreen extends StatefulWidget {
 }
 
 class _CareerMapScreenState extends State<CareerMapScreen>
-    with TickerProviderStateMixin {
-  static const _accent = Color(0xFFFF8FD8);
-  static const _cyan = Color(0xFF8DE9FF);
-  static const ImageProvider _careerMapBackground = ResizeImage(
-    AssetImage('assets/images/career_map_bg.png'),
-    width: 900,
-  );
+    with SingleTickerProviderStateMixin {
+  static const _spacing = 168.0;
+  static const _topPad = 70.0;
+  static const _bottomPad = 90.0;
 
-  final _progress = ProgressService.instance;
-  final _goalProgress = GoalProgressService.instance;
-  final _steps = buildCareerMapSteps();
-  final _scrollController = ScrollController();
-  late final AnimationController _travelController;
-  late final AnimationController _pulseController;
-  CharacterData _companion = characterData.first;
-  double _displayStone = 0;
-  int _targetStone = 0;
+  final _scroll = ScrollController();
+  late final AnimationController _pulse;
+  String _role = defaultRoadmapRole;
+  Set<int> _done = {};
+  String _mascot = '🚀';
   bool _loading = true;
-  Object? _loadError;
+  bool _scrolled = false;
+
+  List<Milestone> get _milestones => roadmapFor(_role);
+  String get _doneKey => 'roadmap_done_$_role';
+
+  int get _currentIndex {
+    var index = 0;
+    while (index < _milestones.length && _done.contains(index)) {
+      index++;
+    }
+    return index;
+  }
 
   @override
   void initState() {
     super.initState();
-    _travelController = AnimationController(
+    _pulse = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 900),
-    )..addListener(() => setState(() {}));
-    _pulseController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1700),
-    )..repeat();
-    _progress.addListener(_onProgressChanged);
-    _goalProgress.addListener(_onGoalChanged);
-    _initialize();
+      duration: const Duration(milliseconds: 1800),
+    );
+    _load();
   }
 
-  Future<void> _initialize() async {
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final reduce = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    if (reduce) {
+      _pulse.stop();
+    } else if (!_pulse.isAnimating) {
+      _pulse.repeat(reverse: true);
+    }
+  }
+
+  Future<void> _load() async {
+    final prefs = await SharedPreferences.getInstance();
+    await PointsManager.instance.initialize();
+    final role = resolveRoadmapRole(prefs.getString('career_goal'));
+    final done = (prefs.getStringList('roadmap_done_$role') ?? const [])
+        .map(int.tryParse)
+        .whereType<int>()
+        .toSet();
+    var mascot = '🚀';
     try {
-      await _progress.initialize();
-      await _goalProgress.initialize();
       final mascots = await MascotSelectionStore.instance.read();
-      _companion =
-          mascots.primary ??
-          CharacterSelection.selected ??
-          MascotSelectionStore.charactersFor(MascotRole.primary).first;
-      _targetStone = _goalStone;
-      _displayStone = _targetStone.toDouble();
-      await _progress.consumePendingAnimation();
-      if (mounted) {
-        setState(() => _loading = false);
-        WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToMascot());
-      }
-    } catch (error) {
-      if (mounted) {
-        setState(() {
-          _loadError = error;
-          _loading = false;
-        });
-      }
-    }
-  }
-
-  int get _goalStone =>
-      ((_goalProgress.totalProgress(_goalProgress.selectedGoal) *
-                  (_steps.length - 1))
-              .round())
-          .clamp(0, _steps.length - 1);
-
-  void _onGoalChanged() {
+      mascot = (mascots.primary ?? CharacterSelection.selected)?.emoji ?? '🚀';
+    } catch (_) {}
     if (!mounted) return;
-    final next = _goalStone;
-    if (next == _targetStone) {
-      setState(() {});
-      return;
-    }
-    _targetStone = next;
-    if (MediaQuery.maybeOf(context)?.disableAnimations ?? false) {
-      _displayStone = next.toDouble();
-      setState(() {});
-      return;
-    }
-    _travelController
-      ..reset()
-      ..addStatusListener(_finishTravel)
-      ..forward();
-    setState(() {});
+    setState(() {
+      _role = role;
+      _done = done;
+      _mascot = mascot;
+      _loading = false;
+    });
   }
 
-  void _onProgressChanged() {
-    _onGoalChanged();
+  double _mapHeight(int count) => _topPad + _bottomPad + (count - 1) * _spacing;
+
+  double _nodeY(int index, int count) =>
+      _mapHeight(count) - _bottomPad - index * _spacing;
+
+  Offset _nodeCenter(int index, int count, double width) {
+    final x = width * (0.5 + 0.26 * (index.isEven ? -1 : 1));
+    return Offset(x, _nodeY(index, count));
   }
 
-  void _finishTravel(AnimationStatus status) {
-    if (status != AnimationStatus.completed) return;
-    _travelController.removeStatusListener(_finishTravel);
-    _displayStone = _targetStone.toDouble();
-    _scrollToMascot();
+  void _scrollToCurrent(BoxConstraints box) {
+    if (_scrolled || !_scroll.hasClients) return;
+    _scrolled = true;
+    final count = _milestones.length;
+    final index = math.min(_currentIndex, count - 1);
+    final target = _nodeY(index, count) - box.maxHeight * 0.6;
+    _scroll.jumpTo(target.clamp(0, _scroll.position.maxScrollExtent));
   }
 
-  void _skipTravel() {
-    if (_travelController.isAnimating) {
-      _travelController.value = 1;
-      _displayStone = _targetStone.toDouble();
-    }
+  Future<void> _complete(int index) async {
+    final milestone = _milestones[index];
+    final prefs = await SharedPreferences.getInstance();
+    final next = {..._done, index};
+    await prefs.setStringList(
+      _doneKey,
+      (next.toList()..sort()).map((e) => '$e').toList(),
+    );
+    await PointsManager.instance.addXP(
+      thanh: XpBar.kienThuc,
+      luong: milestone.xp,
+      nguon: 'roadmap',
+      skill: _role,
+      sourceRef: '$_role#$index',
+    );
+    if (!mounted) return;
+    setState(() => _done = next);
   }
 
-  void _scrollToMascot() {
-    if (!_scrollController.hasClients) return;
-    final contentHeight = _mapHeight;
-    final stone = _steps[_targetStone];
-    final target = (1 - stone.y) * contentHeight - 150;
-    _scrollController.animateTo(
-      target.clamp(0, _scrollController.position.maxScrollExtent),
-      duration: const Duration(milliseconds: 650),
-      curve: Curves.easeOutCubic,
+  void _openMilestone(int index, _NodeState state) {
+    final milestone = _milestones[index];
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => _MilestoneSheet(
+        number: index + 1,
+        milestone: milestone,
+        state: state,
+        onComplete: () async {
+          await _complete(index);
+          if (sheetContext.mounted) Navigator.of(sheetContext).pop();
+          if (!mounted) return;
+          final isLast = index == _milestones.length - 1;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                isLast
+                    ? 'Hoàn thành lộ trình! +${milestone.xp} XP'
+                    : '+${milestone.xp} XP · Đã mở chặng ${index + 2}',
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 
-  double get _mapHeight => math.max(1500, _steps.length * 92.0);
-
   @override
   void dispose() {
-    _progress.removeListener(_onProgressChanged);
-    _goalProgress.removeListener(_onGoalChanged);
-    _scrollController.dispose();
-    _travelController.dispose();
-    _pulseController.dispose();
+    _scroll.dispose();
+    _pulse.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        const RepaintBoundary(
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              Image(
-                image: _careerMapBackground,
-                fit: BoxFit.cover,
-                filterQuality: FilterQuality.low,
-              ),
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Color(0x33000000),
-                      Color(0x26000000),
-                      Color(0x38000000),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        automaticallyImplyLeading: !widget.embedded,
+        title: const Text(
+          'Career Map',
+          style: TextStyle(fontWeight: FontWeight.w700),
         ),
-        Scaffold(
-          backgroundColor: Colors.transparent,
-          appBar: AppBar(
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            automaticallyImplyLeading: !widget.embedded,
-            title: const Text(
-              'Career Map',
-              style: TextStyle(fontWeight: FontWeight.w900),
+      ),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : Column(
+              children: [
+                _buildHeader(),
+                Expanded(child: _buildRoadmap()),
+              ],
             ),
-          ),
-          body: _loading
-              ? const Center(child: CircularProgressIndicator(color: _cyan))
-              : _loadError != null
-              ? _errorState()
-              : GestureDetector(
-                  behavior: HitTestBehavior.translucent,
-                  onTap: _skipTravel,
-                  child: Stack(
-                    children: [
-                      ListView(
-                        controller: _scrollController,
-                        padding: const EdgeInsets.only(bottom: 48),
-                        children: [_buildHeader(), _buildMapCanvas()],
-                      ),
-                      _buildTopHint(),
-                    ],
-                  ),
-                ),
-        ),
-      ],
     );
   }
 
   Widget _buildHeader() {
-    final points = _progress.totalPoints;
-    final next = _progress.nextNodeFor(points);
-    final current = _progress.currentNodeFor(points);
-    final progress = next == null
-        ? 1.0
-        : ((points - current.threshold) / (next.threshold - current.threshold))
-              .clamp(0.0, 1.0);
+    final total = _milestones.length;
+    final progress = _done.length.clamp(0, total) / total;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(17, 14, 17, 15),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(24),
-          gradient: const LinearGradient(
-            colors: [Color(0xFF452348), Color(0xFF20204A)],
-          ),
-          border: Border.all(color: const Color(0x66FF9FD9)),
-          boxShadow: const [
-            BoxShadow(color: Color(0x443B1B6B), blurRadius: 22),
-          ],
-        ),
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+      child: GlassCard(
+        padding: const EdgeInsets.fromLTRB(18, 14, 18, 14),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                const Icon(Icons.auto_awesome, color: _accent, size: 20),
-                const SizedBox(width: 8),
-                const Expanded(
-                  child: Text(
-                    'STEPPING STONE PATH',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      letterSpacing: 1.1,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                ),
-                Text(
-                  _progress.rankFor(points),
-                  style: const TextStyle(
-                    color: Color(0xFFFFD36E),
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ],
+            Text(
+              'LỘ TRÌNH: ${_role.toUpperCase()}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 14,
+                letterSpacing: 0.8,
+                fontWeight: FontWeight.w700,
+              ),
             ),
-            const SizedBox(height: 11),
+            const SizedBox(height: 8),
             Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text(
-                  '$points',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 31,
-                    fontWeight: FontWeight.w900,
+                ListenableBuilder(
+                  listenable: PointsManager.instance,
+                  builder: (_, _) => Text(
+                    formatXp(PointsManager.instance.totalXp),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 26,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
                 const Padding(
-                  padding: EdgeInsets.only(left: 7, bottom: 5),
+                  padding: EdgeInsets.only(left: 6, bottom: 4),
                   child: Text(
                     'STARDUST',
                     style: TextStyle(
-                      color: _cyan,
+                      color: SpaceTheme.glow,
                       fontSize: 11,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
                 const Spacer(),
                 Text(
-                  next == null
-                      ? 'Đã tới đích'
-                      : 'Còn ${next.threshold - points}',
+                  '${(progress * 100).round()}% · ${_done.length}/$total chặng',
                   style: const TextStyle(color: Colors.white70, fontSize: 12),
                 ),
               ],
             ),
-            const SizedBox(height: 9),
+            const SizedBox(height: 10),
             ClipRRect(
               borderRadius: BorderRadius.circular(8),
-              child: LinearProgressIndicator(
-                value: progress,
-                minHeight: 8,
-                backgroundColor: Colors.white12,
-                valueColor: const AlwaysStoppedAnimation(_accent),
-              ),
-            ),
-            const SizedBox(height: 7),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                next == null ? 'Job Galaxy đã mở' : 'Tiếp theo: ${next.title}',
-                style: const TextStyle(color: Colors.white70, fontSize: 11),
-              ),
-            ),
-            _goalSummary(),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _goalSummary() {
-    final goal = _goalProgress.selectedGoal;
-    final progress = _goalProgress.totalProgress(goal);
-    return Padding(
-      padding: const EdgeInsets.only(top: 13),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            'Tuyến đường tới ${goal.name} · ${(progress * 100).round()}%',
-            style: const TextStyle(color: Colors.white70, fontSize: 11),
-          ),
-          const SizedBox(height: 8),
-          LinearProgressIndicator(
-            value: progress,
-            minHeight: 6,
-            backgroundColor: Colors.white12,
-            valueColor: const AlwaysStoppedAnimation(_cyan),
-          ),
-          const SizedBox(height: 9),
-          ...goal.criteria.map((criterion) => _criterionRow(goal, criterion)),
-        ],
-      ),
-    );
-  }
-
-  Widget _criterionRow(CareerGoal goal, GoalCriterion criterion) {
-    final progress = _goalProgress.criterionProgress(goal, criterion.id);
-    return InkWell(
-      onTap: criterion.enabled && criterion.id == 'flashcard'
-          ? () => Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (_) => const FlashcardHomeScreen(),
-              ),
-            )
-          : null,
-      child: Padding(
-        padding: const EdgeInsets.only(top: 5),
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(
-                criterion.enabled
-                    ? '${criterion.label} ${(progress * 100).round()}%'
-                    : '${criterion.label} · Sắp có',
-                style: TextStyle(
-                  color: criterion.enabled ? Colors.white70 : Colors.white30,
-                  fontSize: 10,
-                ),
-              ),
-            ),
-            SizedBox(
-              width: 70,
-              child: LinearProgressIndicator(
-                value: criterion.enabled ? progress : 0,
-                minHeight: 4,
-                backgroundColor: Colors.white12,
-                valueColor: AlwaysStoppedAnimation(
-                  criterion.enabled ? _accent : Colors.white24,
+              child: TweenAnimationBuilder<double>(
+                tween: Tween(end: progress),
+                duration: const Duration(milliseconds: 600),
+                builder: (_, value, _) => LinearProgressIndicator(
+                  value: value,
+                  minHeight: 8,
+                  backgroundColor: Colors.white12,
+                  valueColor: const AlwaysStoppedAnimation(_gold),
                 ),
               ),
             ),
@@ -392,306 +275,144 @@ class _CareerMapScreenState extends State<CareerMapScreen>
     );
   }
 
-  Widget _buildMapCanvas() {
-    return SizedBox(
-      height: _mapHeight,
-      child: RepaintBoundary(
-        child: Stack(
-          children: [
-            _planet(
-              'assets/images/planets/neptune.png',
-              left: -70,
-              top: 155,
-              size: 220,
-              opacity: 0.68,
-            ),
-            _planet(
-              'assets/images/planets/uranus.png',
-              right: -88,
-              top: 535,
-              size: 230,
-              opacity: 0.55,
-            ),
-            _planet(
-              'assets/images/planets/jupiter.png',
-              left: -78,
-              top: 930,
-              size: 220,
-              opacity: 0.6,
-            ),
-            _planet(
-              'assets/images/planets/mars.png',
-              right: -58,
-              top: 1250,
-              size: 180,
-              opacity: 0.55,
-            ),
-            Positioned.fill(
-              child: CustomPaint(
-                painter: _PathPainter(
-                  steps: _steps,
-                  mapHeight: _mapHeight,
-                  currentStone: _targetStone,
-                ),
-              ),
-            ),
-            for (final step in _steps)
-              _buildStone(step, step.index == _targetStone),
-            _buildMascot(),
-            if (kDebugMode)
-              Positioned(
-                top: 12,
-                right: 16,
-                child: OutlinedButton.icon(
-                  onPressed: _grantDebugStardust,
-                  icon: const Icon(Icons.bolt_rounded, size: 16),
-                  label: const Text('+100 Stardust'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: _cyan,
-                    side: const BorderSide(color: _cyan),
+  Widget _buildRoadmap() {
+    final milestones = _milestones;
+    final count = milestones.length;
+    final current = _currentIndex;
+    return LayoutBuilder(
+      builder: (context, box) {
+        final width = box.maxWidth;
+        WidgetsBinding.instance.addPostFrameCallback(
+          (_) => _scrollToCurrent(box),
+        );
+        final centers = [
+          for (var i = 0; i < count; i++) _nodeCenter(i, count, width),
+        ];
+        return SingleChildScrollView(
+          controller: _scroll,
+          child: SizedBox(
+            width: width,
+            height: _mapHeight(count),
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: RepaintBoundary(
+                    child: CustomPaint(
+                      painter: _PathPainter(centers: centers, reached: current),
+                    ),
                   ),
                 ),
-              ),
-          ],
-        ),
-      ),
+                for (var i = 0; i < count; i++)
+                  _buildNode(i, milestones[i], centers[i], current),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
-  Widget _planet(
-    String asset, {
-    double? left,
-    double? right,
-    required double top,
-    required double size,
-    required double opacity,
-  }) {
-    return Positioned(
-      left: left,
-      right: right,
-      top: top,
-      child: Opacity(
-        opacity: opacity,
-        child: Image.asset(asset, width: size, height: size),
-      ),
-    );
-  }
+  Widget _buildNode(int i, Milestone milestone, Offset center, int current) {
+    final state = _done.contains(i)
+        ? _NodeState.completed
+        : (i == current ? _NodeState.current : _NodeState.locked);
+    final size = state == _NodeState.current ? 96.0 : 76.0;
+    const slotWidth = 140.0;
+    const slotHeight = 190.0;
+    final palette = state == _NodeState.locked
+        ? _lockedPalette
+        : _planetPalettes[i % _planetPalettes.length];
 
-  Widget _buildStone(StoneStep step, bool current) {
-    final points = _progress.totalPoints;
-    final reached = step.progress <= points;
-    final isMilestone = step.isMilestone;
-    final reduceMotion = MediaQuery.of(context).disableAnimations;
-    final size = isMilestone ? 106.0 : 62.0;
-    final left = step.x * MediaQuery.sizeOf(context).width - size / 2;
-    final top = (1 - step.y) * _mapHeight - size / 2;
-    final color = reached
-        ? (isMilestone ? const Color(0xFFE477B8) : const Color(0xFF9D4E9D))
-        : const Color(0xFF332743);
-    return Positioned(
-      left: left,
-      top: top,
+    final planet = SizedBox(
       width: size,
       height: size,
-      child: GestureDetector(
-        onTap: isMilestone ? () => _showNode(step.milestoneId!) : null,
-        child: AnimatedBuilder(
-          animation: _pulseController,
-          builder: (context, child) => Transform.rotate(
-            angle: reduceMotion || !isMilestone
-                ? 0
-                : math.sin(_pulseController.value * math.pi) * 0.025,
-            child: child,
-          ),
-          child: CustomPaint(
-            painter: _StonePainter(
-              color: color,
-              glow: current || isMilestone && reached,
-              milestone: isMilestone,
-            ),
-            child: Center(
-              child: isMilestone
-                  ? Icon(
-                      reached ? Icons.flag_rounded : Icons.lock_rounded,
-                      color: reached ? Colors.white : Colors.white38,
-                      size: 27,
-                    )
-                  : null,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMascot() {
-    final index = _displayStone.round().clamp(0, _steps.length - 1);
-    final step = _steps[index];
-    final baseX = step.x * MediaQuery.sizeOf(context).width;
-    final baseY = (1 - step.y) * _mapHeight - 76;
-    final travel = _travelController.value;
-    final reduceMotion = MediaQuery.of(context).disableAnimations;
-    final hop = !reduceMotion && _travelController.isAnimating
-        ? math.sin(travel * math.pi) * 52
-        : reduceMotion
-        ? 0
-        : math.sin(_pulseController.value * math.pi * 2) * 4;
-    return Positioned(
-      left: baseX - 39,
-      top: baseY - hop,
-      width: 78,
-      height: 82,
-      child: IgnorePointer(
-        child: Column(
-          children: [
-            Expanded(
-              child: ModelViewer(
-                key: ValueKey(_companion.modelPath),
-                src: _companion.modelPath,
-                alt: _companion.name,
-                autoPlay: true,
-                animationName: _companion.animationName,
-                cameraControls: false,
-                disableZoom: true,
-                backgroundColor: Colors.transparent,
-                debugLogging: false,
-              ),
-            ),
-            Container(
-              width: 30,
-              height: 7,
-              decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.35),
-                borderRadius: BorderRadius.circular(99),
-                boxShadow: const [
-                  BoxShadow(color: Color(0x66FF7BCB), blurRadius: 9),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTopHint() => Positioned(
-    left: 20,
-    right: 20,
-    bottom: 14,
-    child: IgnorePointer(
-      child: Center(
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: const Color(0xDD1B1630),
-            borderRadius: BorderRadius.circular(99),
-            border: Border.all(color: Colors.white12),
-          ),
-          child: const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 13, vertical: 7),
-            child: Text(
-              'Chạm vào bậc lớn để xem chặng  •  Chạm màn hình để bỏ qua hop',
-              style: TextStyle(color: Colors.white70, fontSize: 10),
-            ),
-          ),
-        ),
-      ),
-    ),
-  );
-
-  Future<void> _grantDebugStardust() async {
-    final awarded = await PointsManager.instance.addXP(
-      thanh: XpBar.thucChien,
-      luong: 100,
-      nguon: 'debug',
-      sourceRef: 'debug-${DateTime.now().microsecondsSinceEpoch}',
-    );
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          awarded == 0
-              ? 'Đã chạm giới hạn Stardust hôm nay.'
-              : 'Đã nhận +$awarded Stardust demo.',
-        ),
-      ),
-    );
-  }
-
-  Widget _errorState() => Center(
-    child: TextButton(
-      onPressed: () {
-        setState(() {
-          _loading = true;
-          _loadError = null;
-        });
-        _initialize();
-      },
-      child: const Text('Không thể tải Career Map · Thử lại'),
-    ),
-  );
-
-  void _showNode(String nodeId) {
-    final node = careerNodes.firstWhere((item) => item.id == nodeId);
-    final unlocked = _progress.totalPoints >= node.threshold;
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: const Color(0xFF211A31),
-      showDragHandle: true,
-      builder: (context) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(22, 8, 22, 28),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                node.title,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 23,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                node.description,
-                style: const TextStyle(color: Colors.white70, height: 1.4),
-              ),
-              const SizedBox(height: 13),
-              Text(
-                unlocked
-                    ? 'Đã mở · ${node.threshold} Stardust'
-                    : 'Khóa · cần ${node.threshold} Stardust',
-                style: const TextStyle(
-                  color: _cyan,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 14),
-              for (final task in node.tasks)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Row(
-                    children: [
-                      Icon(
-                        unlocked
-                            ? Icons.check_circle_rounded
-                            : Icons.radio_button_unchecked,
-                        color: unlocked
-                            ? const Color(0xFF77D6AE)
-                            : Colors.white38,
-                        size: 18,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          task,
-                          style: const TextStyle(color: Colors.white70),
-                        ),
+      child: Stack(
+        clipBehavior: Clip.none,
+        alignment: Alignment.center,
+        children: [
+          if (state != _NodeState.locked)
+            AnimatedBuilder(
+              animation: _pulse,
+              builder: (_, _) {
+                final t = state == _NodeState.current ? _pulse.value : 0.5;
+                return Container(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: palette.first.withValues(alpha: 0.35 + 0.3 * t),
+                        blurRadius: 20 + 18 * t,
+                        spreadRadius: 2 + 4 * t,
                       ),
                     ],
                   ),
+                );
+              },
+            ),
+          PlanetOrb(
+            colors: palette,
+            style: state == _NodeState.current
+                ? PlanetStyle.ringed
+                : (i.isEven ? PlanetStyle.bands : PlanetStyle.rocky),
+            seed: i + 3,
+          ),
+          if (state == _NodeState.locked)
+            const Icon(Icons.lock_rounded, color: Colors.white70, size: 28),
+          if (state == _NodeState.completed)
+            Positioned(top: -4, left: -4, child: _NumberBadge(number: i + 1)),
+        ],
+      ),
+    );
+
+    return Positioned(
+      left: center.dx - slotWidth / 2,
+      top: center.dy - slotHeight / 2 + 12,
+      width: slotWidth,
+      height: slotHeight,
+      child: PressScale(
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => _openMilestone(i, state),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              SizedBox(
+                height: 44,
+                child: state == _NodeState.current
+                    ? AnimatedBuilder(
+                        animation: _pulse,
+                        builder: (_, child) => Transform.translate(
+                          offset: Offset(0, -6 * _pulse.value),
+                          child: child,
+                        ),
+                        child: Text(
+                          _mascot,
+                          style: const TextStyle(fontSize: 34),
+                        ),
+                      )
+                    : null,
+              ),
+              planet,
+              const SizedBox(height: 8),
+              Text(
+                'Chặng ${i + 1}: ${milestone.shortLabel}',
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: state == _NodeState.locked
+                      ? Colors.white54
+                      : Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
                 ),
+              ),
+              SizedBox(
+                height: 20,
+                child: state == _NodeState.completed
+                    ? const Text('⭐⭐⭐', style: TextStyle(fontSize: 12))
+                    : null,
+              ),
             ],
           ),
         ),
@@ -700,119 +421,184 @@ class _CareerMapScreenState extends State<CareerMapScreen>
   }
 }
 
-class _PathPainter extends CustomPainter {
-  const _PathPainter({
-    required this.steps,
-    required this.mapHeight,
-    required this.currentStone,
-  });
+class _NumberBadge extends StatelessWidget {
+  const _NumberBadge({required this.number});
 
-  final List<StoneStep> steps;
-  final double mapHeight;
-  final int currentStone;
+  final int number;
 
   @override
-  void paint(Canvas canvas, Size size) {
-    final path = Path();
-    for (var index = 0; index < steps.length; index++) {
-      final step = steps[index];
-      final point = Offset(step.x * size.width, (1 - step.y) * mapHeight);
-      if (index == 0) {
-        path.moveTo(point.dx, point.dy);
-      } else {
-        final previous = steps[index - 1];
-        final previousPoint = Offset(
-          previous.x * size.width,
-          (1 - previous.y) * mapHeight,
-        );
-        path.cubicTo(
-          (previousPoint.dx + point.dx) / 2,
-          previousPoint.dy,
-          (previousPoint.dx + point.dx) / 2,
-          point.dy,
-          point.dx,
-          point.dy,
-        );
-      }
-    }
-    canvas.drawPath(
-      path,
-      Paint()
-        ..color = const Color(0xAAE879C6)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 3
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8),
-    );
-    canvas.drawPath(
-      path,
-      Paint()
-        ..color = const Color(0x886E4AB0)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.5,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant _PathPainter oldDelegate) =>
-      oldDelegate.currentStone != currentStone;
+  Widget build(BuildContext context) => Container(
+    width: 24,
+    height: 24,
+    alignment: Alignment.center,
+    decoration: BoxDecoration(
+      shape: BoxShape.circle,
+      color: const Color(0xFF141A47),
+      border: Border.all(color: _gold, width: 1.5),
+    ),
+    child: Text(
+      '$number',
+      style: const TextStyle(
+        color: _gold,
+        fontSize: 12,
+        fontWeight: FontWeight.w700,
+      ),
+    ),
+  );
 }
 
-class _StonePainter extends CustomPainter {
-  const _StonePainter({
-    required this.color,
-    required this.glow,
-    required this.milestone,
-  });
+class _PathPainter extends CustomPainter {
+  const _PathPainter({required this.centers, required this.reached});
 
-  final Color color;
-  final bool glow;
-  final bool milestone;
+  final List<Offset> centers;
+  final int reached;
 
   @override
   void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = size.width * (milestone ? .46 : .43);
-    final path = Path();
-    for (var index = 0; index < 7; index++) {
-      final angle = -math.pi / 2 + index * 2 * math.pi / 7;
-      final point = center + Offset(math.cos(angle), math.sin(angle)) * radius;
-      if (index == 0) {
-        path.moveTo(point.dx, point.dy);
-      } else {
-        path.lineTo(point.dx, point.dy);
+    for (var i = 0; i < centers.length - 1; i++) {
+      final a = centers[i];
+      final b = centers[i + 1];
+      final mid = (a.dy + b.dy) / 2;
+      final path = Path()
+        ..moveTo(a.dx, a.dy)
+        ..cubicTo(a.dx, mid, b.dx, mid, b.dx, b.dy);
+      final lit = i < reached;
+      final color = lit ? SpaceTheme.glow : Colors.white24;
+      final glow = Paint()
+        ..color = color.withValues(alpha: lit ? 0.35 : 0.1)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 7
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5);
+      final line = Paint()
+        ..color = color.withValues(alpha: lit ? 0.95 : 0.5)
+        ..style = PaintingStyle.stroke
+        ..strokeCap = StrokeCap.round
+        ..strokeWidth = 2.5;
+      for (final metric in path.computeMetrics()) {
+        var distance = 0.0;
+        while (distance < metric.length) {
+          final segment = metric.extractPath(distance, distance + 9);
+          canvas.drawPath(segment, glow);
+          canvas.drawPath(segment, line);
+          distance += 17;
+        }
       }
     }
-    path.close();
-    if (glow) {
-      canvas.drawPath(
-        path,
-        Paint()
-          ..color = color.withValues(alpha: .65)
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 13),
-      );
-    }
-    canvas.drawPath(
-      path,
-      Paint()
-        ..shader = LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [color.withValues(alpha: .95), color.withValues(alpha: .3)],
-        ).createShader(Offset.zero & size)
-        ..style = PaintingStyle.fill,
-    );
-    canvas.drawPath(
-      path,
-      Paint()
-        ..color = color.withValues(alpha: glow ? .95 : .45)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = glow ? 2.5 : 1,
-    );
   }
 
   @override
-  bool shouldRepaint(covariant _StonePainter oldDelegate) =>
-      oldDelegate.color != color ||
-      oldDelegate.glow != glow ||
-      oldDelegate.milestone != milestone;
+  bool shouldRepaint(_PathPainter old) =>
+      old.reached != reached || old.centers != centers;
+}
+
+class _MilestoneSheet extends StatefulWidget {
+  const _MilestoneSheet({
+    required this.number,
+    required this.milestone,
+    required this.state,
+    required this.onComplete,
+  });
+
+  final int number;
+  final Milestone milestone;
+  final _NodeState state;
+  final Future<void> Function() onComplete;
+
+  @override
+  State<_MilestoneSheet> createState() => _MilestoneSheetState();
+}
+
+class _MilestoneSheetState extends State<_MilestoneSheet> {
+  late final List<bool> _checked = List.filled(
+    widget.milestone.tasks.length,
+    widget.state == _NodeState.completed,
+  );
+  bool _busy = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final milestone = widget.milestone;
+    final state = widget.state;
+    final enabled = state == _NodeState.current && !_busy;
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+        child: GlassCard(
+          padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'CHẶNG ${widget.number}',
+                  style: const TextStyle(
+                    color: SpaceTheme.glow,
+                    fontSize: 12,
+                    letterSpacing: 1,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  milestone.title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                for (var i = 0; i < milestone.tasks.length; i++)
+                  CheckboxListTile(
+                    value: _checked[i],
+                    contentPadding: EdgeInsets.zero,
+                    controlAffinity: ListTileControlAffinity.leading,
+                    dense: true,
+                    activeColor: _gold,
+                    checkColor: Colors.black,
+                    title: Text(
+                      milestone.tasks[i],
+                      style: const TextStyle(color: Colors.white, fontSize: 14),
+                    ),
+                    onChanged: state == _NodeState.completed
+                        ? null
+                        : (value) =>
+                              setState(() => _checked[i] = value ?? false),
+                  ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: Opacity(
+                    opacity: enabled || state == _NodeState.completed ? 1 : 0.5,
+                    child: GlassButton(
+                      onPressed: enabled
+                          ? () async {
+                              setState(() => _busy = true);
+                              await widget.onComplete();
+                            }
+                          : null,
+                      child: Center(
+                        child: Text(
+                          switch (state) {
+                            _NodeState.completed => 'Đã hoàn thành',
+                            _NodeState.locked =>
+                              'Hoàn thành chặng trước để mở khóa',
+                            _NodeState.current =>
+                              'Đánh dấu hoàn thành · +${milestone.xp} XP',
+                          },
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }

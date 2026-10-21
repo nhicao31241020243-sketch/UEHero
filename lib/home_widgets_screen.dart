@@ -1,12 +1,10 @@
 import 'dart:math' as math;
-import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:model_viewer_plus/model_viewer_plus.dart';
 
 import 'home_event_screen.dart';
 import 'models/character_data.dart';
-import 'screens/chatbot_screen.dart';
 import 'screens/calendar_screen.dart';
 import 'screens/career_map_screen.dart';
 import 'screens/cv_check_screen.dart';
@@ -19,8 +17,10 @@ import 'screens/second_hand_market_screen.dart';
 import 'screens/uehero_camera_screen.dart';
 import 'services/route_observer.dart';
 import 'services/points_manager.dart';
+import 'theme/space_theme.dart';
 import 'widgets/xp_float_overlay.dart';
 import 'widgets/space_glass_widgets.dart';
+import 'widgets/space_home_widgets.dart';
 
 class HomeWidgetsScreen extends StatefulWidget {
   const HomeWidgetsScreen({super.key});
@@ -31,63 +31,63 @@ class HomeWidgetsScreen extends StatefulWidget {
 
 class _HomeWidgetsScreenState extends State<HomeWidgetsScreen>
     with TickerProviderStateMixin, RouteAware {
-  static const _accentColor = Color(0xFFBFA8FF);
+  static const _accentColor = SpaceTheme.glow;
 
   static const _features = [
     _DashboardFeature(
       'Job Match',
       'Jobs that fit you',
       Color(0xFFB9A2FF),
-      [Color(0xFFEEE6FF), Color(0xFFA98DFF), Color(0xFF5033A8)],
-      'assets/images/planets/mercury.png',
+      [Color(0xFFEAE2FA), Color(0xFF9A8DC8), Color(0xFF3B3266)],
+      PlanetStyle.rocky,
       'mercury',
     ),
     _DashboardFeature(
       'Book Swap',
       'Books & study gear',
       Color(0xFFFFC18E),
-      [Color(0xFFFFE7C9), Color(0xFFFFB56F), Color(0xFFB35445)],
-      'assets/images/planets/venus.png',
+      [Color(0xFFFFE3B8), Color(0xFFE0A25B), Color(0xFF8A4B2E)],
+      PlanetStyle.bands,
       'venus',
     ),
     _DashboardFeature(
       'Study Buddy',
       'Ask, learn, practice',
       Color(0xFF8DD8D1),
-      [Color(0xFFB3F4DF), Color(0xFF55BFA6), Color(0xFF246E82)],
-      'assets/images/planets/earth.png',
+      [Color(0xFFBDEBFF), Color(0xFF3E8FD0), Color(0xFF123A73)],
+      PlanetStyle.rocky,
       'earth',
     ),
     _DashboardFeature(
       'Weekly Plan',
       'Your next steps',
       Color(0xFFFF9EBD),
-      [Color(0xFFFFC19E), Color(0xFFFF704E), Color(0xFF9B263D)],
-      'assets/images/planets/mars.png',
+      [Color(0xFFFFB894), Color(0xFFD8573A), Color(0xFF6A1F22)],
+      PlanetStyle.rocky,
       'mars',
     ),
     _DashboardFeature(
       'UEH Mentor',
       'Mentors for your goal',
       Color(0xFFFFD36E),
-      [Color(0xFFFFE8A1), Color(0xFFE6A83F), Color(0xFF8F4C2C)],
-      'assets/images/planets/jupiter.png',
+      [Color(0xFFFFE6B0), Color(0xFFD49A55), Color(0xFF7A4A2E)],
+      PlanetStyle.bands,
       'jupiter',
     ),
     _DashboardFeature(
       'Skill Drills',
       'Practice what you need',
       Color(0xFF9DBBFF),
-      [Color(0xFFFFE6A2), Color(0xFFCC9F55), Color(0xFF704A56)],
-      'assets/images/planets/saturn.png',
+      [Color(0xFFFFEFC2), Color(0xFFD9B26A), Color(0xFF6E4F6B)],
+      PlanetStyle.ringed,
       'saturn',
     ),
     _DashboardFeature(
       'CV Check',
       'Score & fix your CV',
       Color(0xFFB7E59B),
-      [Color(0xFFD8FFF4), Color(0xFF73D7CF), Color(0xFF287AA3)],
-      'assets/images/planets/uranus.png',
+      [Color(0xFFD9FFF8), Color(0xFF6FD3D0), Color(0xFF247C9B)],
+      PlanetStyle.ice,
       'uranus',
     ),
     _DashboardFeature(
@@ -95,7 +95,7 @@ class _HomeWidgetsScreenState extends State<HomeWidgetsScreen>
       'Sự kiện & workshop',
       Color(0xFFFFC76E),
       [Color(0xFFFFF0B5), Color(0xFFFF9F43), Color(0xFF8E3D73)],
-      'assets/images/planets/mercury.png',
+      PlanetStyle.ice,
       'events',
     ),
   ];
@@ -106,26 +106,15 @@ class _HomeWidgetsScreenState extends State<HomeWidgetsScreen>
   late final Animation<double> _ufoFloatOffset;
   final _xp = PointsManager.instance;
   final _xpOverlayKey = GlobalKey<XpFloatOverlayState>();
+  final _homeScroll = ScrollController();
   bool _routeSubscribed = false;
-  final _searchController = TextEditingController();
   int _selectedTab = 0;
   int? _selectedFeatureIndex;
-  String _searchQuery = '';
 
   CharacterData get _companion =>
       CharacterSelection.selected ?? characterData.first;
 
-  List<_DashboardFeature> get _visibleFeatures {
-    final query = _searchQuery.trim().toLowerCase();
-    if (query.isEmpty) return _features;
-    return _features
-        .where(
-          (feature) =>
-              feature.planet.toLowerCase().contains(query) ||
-              feature.label.toLowerCase().contains(query),
-        )
-        .toList(growable: false);
-  }
+  List<_DashboardFeature> get _visibleFeatures => _features;
 
   @override
   void initState() {
@@ -149,6 +138,14 @@ class _HomeWidgetsScreenState extends State<HomeWidgetsScreen>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    final reduce = MediaQuery.maybeDisableAnimationsOf(context) ?? false;
+    for (final controller in [_floatController, _planetController]) {
+      if (reduce) {
+        controller.stop();
+      } else if (!controller.isAnimating) {
+        controller.repeat(reverse: controller == _floatController);
+      }
+    }
     final route = ModalRoute.of(context);
     if (route != null && !_routeSubscribed) {
       ueHeroRouteObserver.subscribe(this, route);
@@ -170,7 +167,7 @@ class _HomeWidgetsScreenState extends State<HomeWidgetsScreen>
     ueHeroRouteObserver.unsubscribe(this);
     _floatController.dispose();
     _planetController.dispose();
-    _searchController.dispose();
+    _homeScroll.dispose();
     super.dispose();
   }
 
@@ -178,15 +175,6 @@ class _HomeWidgetsScreenState extends State<HomeWidgetsScreen>
     setState(() {
       _selectedFeatureIndex = index == _selectedFeatureIndex ? null : index;
     });
-  }
-
-  void _openChatbot() {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        settings: const RouteSettings(name: '/chatbot'),
-        builder: (_) => const ChatbotScreen(),
-      ),
-    );
   }
 
   void _openQuestionCamera() {
@@ -277,158 +265,63 @@ class _HomeWidgetsScreenState extends State<HomeWidgetsScreen>
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: IndexedStack(index: _selectedTab, children: tabs),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      floatingActionButton: Semantics(
-        button: true,
-        label: 'Mở UEH AI Assistant',
-        child: SizedBox(
-          width: 64,
-          height: 64,
-          child: Container(
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.white.withValues(alpha: 0.14),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.62)),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0x994B78FF),
-                  blurRadius: 22,
-                  spreadRadius: 2,
-                ),
-                BoxShadow(
-                  color: Color(0x666F45FF),
-                  blurRadius: 28,
-                  offset: Offset(0, 4),
-                ),
-              ],
-            ),
-            child: ClipOval(
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  customBorder: const CircleBorder(),
-                  onTap: _openChatbot,
-                  child: AnimatedBuilder(
-                    animation: _ufoFloatOffset,
-                    child: Image.asset(
-                      'assets/images/rocket-removebg-preview.png',
-                      width: 50,
-                      height: 50,
-                      fit: BoxFit.contain,
-                      filterQuality: FilterQuality.high,
-                      semanticLabel: 'Tên lửa UEH Hero',
-                    ),
-                    builder: (context, child) => Transform.translate(
-                      offset: Offset(0, _ufoFloatOffset.value),
-                      child: child,
-                    ),
-                  ),
-                ),
-              ),
-            ),
+      bottomNavigationBar: SpaceDock(
+        onCenterTap: _goHome,
+        center: AnimatedBuilder(
+          animation: _ufoFloatOffset,
+          child: Image.asset(
+            'assets/images/rocket-removebg-preview.png',
+            width: 48,
+            height: 48,
+            fit: BoxFit.contain,
+            filterQuality: FilterQuality.high,
+            semanticLabel: 'Tên lửa UEH Hero',
+          ),
+          builder: (context, child) => Transform.translate(
+            offset: Offset(0, _ufoFloatOffset.value),
+            child: child,
           ),
         ),
-      ),
-      bottomNavigationBar: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(10, 0, 10, 6),
-          child: BottomAppBar(
-            height: 72,
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 5),
-            color: Colors.transparent,
-            elevation: 0,
-            shape: const CircularNotchedRectangle(),
-            notchMargin: 7,
-            child: GlassBottomBar(
-              child: Row(
-                children: [
-                  Expanded(
-                    child: _buildNavButton(1, Icons.route_rounded, 'Career Map'),
-                  ),
-                  Expanded(
-                    child: _buildNavButton(
-                      2,
-                      Icons.record_voice_over_rounded,
-                      'Phỏng vấn',
-                    ),
-                  ),
-                  const SizedBox(width: 58),
-                  Expanded(
-                    child: _buildNavButton(
-                      3,
-                      Icons.calculate_rounded,
-                      'GPA Calc',
-                    ),
-                  ),
-                  Expanded(
-                    child: _buildNavButton(
-                      4,
-                      Icons.person_rounded,
-                      'Profile',
-                      onTap: _openProfile,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+        items: [
+          SpaceDockItem(
+            icon: Icons.route_rounded,
+            label: 'Career Map',
+            selected: _selectedTab == 1,
+            onTap: () => setState(() => _selectedTab = 1),
           ),
-        ),
+          SpaceDockItem(
+            icon: Icons.record_voice_over_outlined,
+            label: 'Phỏng vấn',
+            selected: _selectedTab == 2,
+            onTap: () => setState(() => _selectedTab = 2),
+          ),
+          SpaceDockItem(
+            icon: Icons.calculate_outlined,
+            label: 'GPA Calc',
+            selected: _selectedTab == 3,
+            onTap: () => setState(() => _selectedTab = 3),
+          ),
+          SpaceDockItem(
+            icon: Icons.person_outline_rounded,
+            label: 'Profile',
+            selected: _selectedTab == 4,
+            onTap: _openProfile,
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildNavButton(
-    int index,
-    IconData icon,
-    String label, {
-    VoidCallback? onTap,
-  }) {
-    final selected = _selectedTab == index;
-    final color = selected ? _accentColor : const Color(0xFF928DA0);
-    return Semantics(
-      button: true,
-      selected: selected,
-      label: label,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(18),
-        onTap: onTap ?? () => setState(() => _selectedTab = index),
-        child: SizedBox(
-          height: 54,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
-            margin: const EdgeInsets.symmetric(horizontal: 2),
-            decoration: BoxDecoration(
-              color: selected ? Colors.white.withValues(alpha: 0.14) : null,
-              borderRadius: BorderRadius.circular(22),
-              border: selected
-                  ? Border.all(color: Colors.white.withValues(alpha: 0.16))
-                  : null,
-            ),
-            child: Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(icon, color: color, size: 21),
-                  const SizedBox(height: 2),
-                  Text(
-                    label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: color,
-                      fontSize: 9,
-                      height: 1,
-                      fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
+  void _goHome() {
+    if (_selectedTab != 0) {
+      setState(() => _selectedTab = 0);
+    } else if (_homeScroll.hasClients) {
+      _homeScroll.animateTo(
+        0,
+        duration: const Duration(milliseconds: 350),
+        curve: Curves.easeOutCubic,
+      );
+    }
   }
 
   Widget _buildHomeTab() {
@@ -437,11 +330,17 @@ class _HomeWidgetsScreenState extends State<HomeWidgetsScreen>
     final features = _visibleFeatures;
 
     return CustomScrollView(
+      controller: _homeScroll,
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       slivers: [
         SliverToBoxAdapter(child: _buildGalaxyHeader(headerHeight)),
         SliverPadding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 7),
+          padding: EdgeInsets.fromLTRB(
+            16,
+            16,
+            16,
+            24 + MediaQuery.paddingOf(context).bottom,
+          ),
           sliver: SliverToBoxAdapter(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -454,14 +353,14 @@ class _HomeWidgetsScreenState extends State<HomeWidgetsScreen>
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 18,
-                          fontWeight: FontWeight.w800,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ),
                     Text(
                       '${features.length} hành tinh',
                       style: const TextStyle(
-                        color: Color(0xFFAAA5B8),
+                        color: SpaceTheme.textMuted,
                         fontSize: 11,
                       ),
                     ),
@@ -473,7 +372,7 @@ class _HomeWidgetsScreenState extends State<HomeWidgetsScreen>
                     padding: EdgeInsets.symmetric(vertical: 24),
                     child: Text(
                       'Không tìm thấy tính năng phù hợp.',
-                      style: TextStyle(color: Color(0xFFAAA5B8)),
+                      style: TextStyle(color: SpaceTheme.textMuted),
                     ),
                   )
                 else
@@ -545,32 +444,7 @@ class _HomeWidgetsScreenState extends State<HomeWidgetsScreen>
       child: Stack(
         fit: StackFit.expand,
         children: [
-          ClipPath(
-            clipper: _GalaxyWaveClipper(),
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                Image.asset(
-                  'assets/images/welcome_bg.jpg',
-                  fit: BoxFit.cover,
-                  alignment: Alignment.topCenter,
-                ),
-                const DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Color(0x660B0718),
-                        Color(0x33130D23),
-                        Color(0xCC100E19),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
+          const ConstellationDecor(),
           Positioned(
             top: topInset + 8,
             left: 20,
@@ -656,86 +530,9 @@ class _HomeWidgetsScreenState extends State<HomeWidgetsScreen>
             left: 16,
             right: 16,
             bottom: 25,
-            child: _buildSearchField(),
+            child: XpEnergyBar(onTap: () => setState(() => _selectedTab = 1)),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildSearchField() {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(17),
-      child: BackdropFilter(
-        filter: ui.ImageFilter.blur(sigmaX: 13, sigmaY: 13),
-        child: Container(
-          height: 51,
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.2),
-            borderRadius: BorderRadius.circular(17),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.32)),
-          ),
-          child: TextField(
-            controller: _searchController,
-            onChanged: (value) => setState(() {
-              _searchQuery = value;
-              if (value.isNotEmpty) _selectedFeatureIndex = null;
-            }),
-            style: const TextStyle(color: Colors.white, fontSize: 13),
-            textInputAction: TextInputAction.search,
-            onSubmitted: (value) => _openJobs(query: value),
-            decoration: InputDecoration(
-              hintText: 'Tìm vị trí, kỹ năng, công ty...',
-              hintStyle: const TextStyle(
-                color: Color(0xFFE1DFE8),
-                fontSize: 13,
-              ),
-              prefixIcon: const Icon(
-                Icons.search_rounded,
-                color: Colors.white,
-                size: 21,
-              ),
-              suffixIcon: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    tooltip: 'Tìm job sinh viên',
-                    onPressed: () => _openJobs(query: _searchQuery),
-                    icon: const Icon(
-                      Icons.work_outline_rounded,
-                      color: Colors.white,
-                      size: 19,
-                    ),
-                  ),
-                  if (_searchQuery.isEmpty)
-                    const Padding(
-                      padding: EdgeInsets.only(right: 12),
-                      child: Icon(
-                        Icons.tune_rounded,
-                        color: Colors.white,
-                        size: 19,
-                      ),
-                    )
-                  else
-                    IconButton(
-                      tooltip: 'Xóa tìm kiếm',
-                      onPressed: () {
-                        _searchController.clear();
-                        setState(() => _searchQuery = '');
-                      },
-                      icon: const Icon(
-                        Icons.close_rounded,
-                        color: Colors.white,
-                        size: 19,
-                      ),
-                    ),
-                ],
-              ),
-              border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(vertical: 15),
-            ),
-          ),
-        ),
       ),
     );
   }
@@ -847,75 +644,78 @@ class _PlanetButton extends StatelessWidget {
                   width: selected ? 1.5 : 1,
                 ),
               ),
-              child: GlassCard(
-                padding: EdgeInsets.zero,
-                borderRadius: 24,
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(8, 7, 8, 11),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Expanded(
-                        child: RepaintBoundary(
-                          child: AnimatedBuilder(
-                            animation: rotation,
-                            child: feature.actionKey == 'saturn'
-                                ? Hero(
-                                    tag: FlashcardHomeScreen.heroTag,
-                                    child: Image.asset(
-                                      feature.imagePath,
-                                      fit: BoxFit.contain,
-                                      filterQuality: FilterQuality.high,
+              child: PressScale(
+                child: GlassCard(
+                  padding: EdgeInsets.zero,
+                  borderRadius: SpaceTheme.cardRadius,
+                  tint: feature.gradientColors[1],
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(10, 8, 10, 12),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Expanded(
+                          child: RepaintBoundary(
+                            child: AnimatedBuilder(
+                              animation: rotation,
+                              child: feature.actionKey == 'saturn'
+                                  ? Hero(
+                                      tag: FlashcardHomeScreen.heroTag,
+                                      child: PlanetOrb(
+                                        colors: feature.gradientColors,
+                                        style: feature.style,
+                                        seed: feature.planet.length,
+                                      ),
+                                    )
+                                  : PlanetOrb(
+                                      colors: feature.gradientColors,
+                                      style: feature.style,
+                                      seed: feature.planet.length,
                                     ),
-                                  )
-                                : Image.asset(
-                                    feature.imagePath,
-                                    fit: BoxFit.contain,
-                                    filterQuality: FilterQuality.high,
-                                  ),
-                            builder: (context, child) {
-                              final angle =
-                                  rotation.value * 2 * math.pi + phase;
-                              return Transform.translate(
-                                offset: Offset(0, math.sin(angle * 2) * 3),
-                                child: Transform.scale(
-                                  scale: 1.04,
-                                  child: Transform.rotate(
-                                    angle: angle,
-                                    child: child,
-                                  ),
-                                ),
-                              );
-                            },
+                              builder: (context, child) {
+                                final reduce =
+                                    MediaQuery.maybeDisableAnimationsOf(
+                                      context,
+                                    ) ??
+                                    false;
+                                if (reduce) return child!;
+                                final angle =
+                                    rotation.value * 2 * math.pi + phase;
+                                return Transform.translate(
+                                  offset: Offset(0, math.sin(angle) * 3),
+                                  child: child,
+                                );
+                              },
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 5),
-                      Text(
-                        feature.planet,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: selected ? feature.color : Colors.white,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w800,
+                        const SizedBox(height: 4),
+                        Text(
+                          feature.planet,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: selected ? feature.color : Colors.white,
+                            fontSize: 17,
+                            height: 1.2,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        feature.label,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          color: Color(0xFFE0E9FA),
-                          fontSize: 10,
-                          height: 1.15,
-                          fontWeight: FontWeight.w600,
+                        const SizedBox(height: 2),
+                        Text(
+                          feature.label,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: SpaceTheme.textMuted,
+                            fontSize: 12,
+                            height: 1.2,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -927,35 +727,13 @@ class _PlanetButton extends StatelessWidget {
   }
 }
 
-class _GalaxyWaveClipper extends CustomClipper<Path> {
-  @override
-  Path getClip(Size size) {
-    final path = Path()
-      ..lineTo(0, size.height - 28)
-      ..cubicTo(
-        size.width * 0.22,
-        size.height + 5,
-        size.width * 0.72,
-        size.height - 58,
-        size.width,
-        size.height - 18,
-      )
-      ..lineTo(size.width, 0)
-      ..close();
-    return path;
-  }
-
-  @override
-  bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
-}
-
 class _DashboardFeature {
   const _DashboardFeature(
     this.planet,
     this.label,
     this.color,
     this.gradientColors,
-    this.imagePath,
+    this.style,
     this.actionKey,
   );
 
@@ -963,6 +741,6 @@ class _DashboardFeature {
   final String label;
   final Color color;
   final List<Color> gradientColors;
-  final String imagePath;
+  final PlanetStyle style;
   final String actionKey;
 }
