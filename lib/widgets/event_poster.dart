@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 import '../services/event_image_resolver.dart';
+import 'event_image_placeholder.dart';
 
 class EventPoster extends StatefulWidget {
   const EventPoster({
@@ -12,6 +13,8 @@ class EventPoster extends StatefulWidget {
     this.borderRadius = const BorderRadius.all(Radius.circular(14)),
     this.placeholderIcon = Icons.image_outlined,
     this.fallbackColors = const [Color(0xFF392B55), Color(0xFF1F2937)],
+    this.eventType = 'Sự kiện',
+    this.organizer,
   });
 
   final String? imagePath;
@@ -20,25 +23,20 @@ class EventPoster extends StatefulWidget {
   final BorderRadius borderRadius;
   final IconData placeholderIcon;
   final List<Color> fallbackColors;
+  final String eventType;
+  final String? organizer;
 
   @override
   State<EventPoster> createState() => _EventPosterState();
 }
 
-class _EventPosterState extends State<EventPoster>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _shimmerController;
+class _EventPosterState extends State<EventPoster> {
   String? _resolvedUrl;
   int _resolveGeneration = 0;
-  bool _resolving = true;
 
   @override
   void initState() {
     super.initState();
-    _shimmerController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1500),
-    )..repeat();
     _resolveImage();
   }
 
@@ -46,23 +44,17 @@ class _EventPosterState extends State<EventPoster>
   void didUpdateWidget(covariant EventPoster oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.imageUrl != widget.imageUrl ||
-        oldWidget.sourceUrl != widget.sourceUrl) {
+        oldWidget.sourceUrl != widget.sourceUrl ||
+        oldWidget.eventType != widget.eventType ||
+        oldWidget.organizer != widget.organizer) {
       _resolveImage();
     }
   }
 
-  @override
-  void dispose() {
-    _shimmerController.dispose();
-    super.dispose();
-  }
-
   Future<void> _resolveImage() async {
     final generation = ++_resolveGeneration;
-    _shimmerController.repeat();
     setState(() {
       _resolvedUrl = null;
-      _resolving = true;
     });
     final imageUrl = await EventImageResolver.instance.resolve(
       imageUrl: widget.imageUrl,
@@ -71,44 +63,26 @@ class _EventPosterState extends State<EventPoster>
     if (!mounted || generation != _resolveGeneration) return;
     setState(() {
       _resolvedUrl = imageUrl;
-      _resolving = false;
     });
-    if (imageUrl == null) _shimmerController.stop();
   }
 
   @override
   Widget build(BuildContext context) {
     final imagePath = widget.imagePath;
-    final child = _resolvedUrl != null
+    final url = _resolvedUrl;
+    final hasAsset = imagePath != null && imagePath.isNotEmpty;
+    final child = url != null
         ? CachedNetworkImage(
-            imageUrl: _resolvedUrl!,
+            key: ValueKey(url),
+            imageUrl: url,
             fit: BoxFit.cover,
             width: double.infinity,
             height: double.infinity,
-            placeholder: (_, _) => _shimmer(),
-            imageBuilder: (context, imageProvider) {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (mounted && _shimmerController.isAnimating) {
-                  _shimmerController.stop();
-                }
-              });
-              return Image(
-                image: imageProvider,
-                fit: BoxFit.cover,
-                width: double.infinity,
-                height: double.infinity,
-              );
-            },
-            errorWidget: (_, _, _) {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (mounted && _shimmerController.isAnimating) {
-                  _shimmerController.stop();
-                }
-              });
-              return _fallback();
-            },
+            fadeInDuration: const Duration(milliseconds: 320),
+            placeholder: (_, _) => _fallback(),
+            errorWidget: (_, _, _) => _fallback(),
           )
-        : imagePath != null && imagePath.isNotEmpty
+        : hasAsset
         ? Image.asset(
             imagePath,
             fit: BoxFit.cover,
@@ -116,41 +90,44 @@ class _EventPosterState extends State<EventPoster>
             height: double.infinity,
             errorBuilder: (_, _, _) => _fallback(),
           )
-        : _resolving
-        ? _shimmer()
         : _fallback();
-    return ClipRRect(borderRadius: widget.borderRadius, child: child);
+    return ClipRRect(
+      borderRadius: widget.borderRadius,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 280),
+            switchInCurve: Curves.easeOut,
+            switchOutCurve: Curves.easeIn,
+            child: KeyedSubtree(
+              key: ValueKey<Object?>(
+                url ?? (hasAsset ? imagePath : 'fallback'),
+              ),
+              child: child,
+            ),
+          ),
+          const IgnorePointer(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.center,
+                  end: Alignment.bottomCenter,
+                  colors: [Colors.transparent, Color(0xE6000716)],
+                  stops: [0.34, 1],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
-  Widget _shimmer() => AnimatedBuilder(
-    animation: _shimmerController,
-    builder: (context, _) {
-      final shift = -1.5 + _shimmerController.value * 3;
-      return DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment(shift, -1),
-            end: Alignment(shift + 1.5, 1),
-            colors: const [
-              Color(0xFF201B2B),
-              Color(0xFF383047),
-              Color(0xFF201B2B),
-            ],
-          ),
-        ),
-      );
-    },
-  );
-
-  Widget _fallback() => Container(
-    decoration: BoxDecoration(
-      gradient: LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: widget.fallbackColors,
-      ),
-    ),
-    alignment: Alignment.center,
-    child: Icon(widget.placeholderIcon, color: Colors.white54, size: 32),
+  Widget _fallback() => EventImagePlaceholder(
+    icon: widget.placeholderIcon,
+    colors: widget.fallbackColors,
+    eventType: widget.eventType,
+    organizer: widget.organizer,
   );
 }

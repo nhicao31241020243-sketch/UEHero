@@ -22,10 +22,7 @@ abstract interface class EventUserRepository {
 }
 
 class FirestoreEventUserRepository implements EventUserRepository {
-  FirestoreEventUserRepository({
-    required this._firestore,
-    required this._uid,
-  });
+  FirestoreEventUserRepository({required this._firestore, required this._uid});
 
   final FirebaseFirestore _firestore;
   final String _uid;

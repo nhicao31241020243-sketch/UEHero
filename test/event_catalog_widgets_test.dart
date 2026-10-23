@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:uehero/models/event_item.dart';
 import 'package:uehero/widgets/event_catalog_widgets.dart';
+import 'package:uehero/widgets/event_image_placeholder.dart';
 
 void main() {
   testWidgets('event list and poster cards fit a 360px viewport', (
@@ -54,4 +55,46 @@ void main() {
     expect(find.textContaining('Lollypop Designathon'), findsWidgets);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets(
+    'hero fits a narrow viewport and missing art uses shared design',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      const event = EventItem(
+        id: 'hero-demo',
+        title: 'Hackathon tiêu đề dài cần tự xuống dòng gọn gàng',
+        organizer: 'Orbit Student Lab',
+        type: 'Hackathon',
+        registrationDeadline: null,
+        eventStart: null,
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: SizedBox(
+              height: 404,
+              child: EventHero(
+                event: event,
+                saved: false,
+                onOpen: () {},
+                onShare: () {},
+                onToggleSaved: () {},
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Xem chi tiết'), findsOneWidget);
+      expect(find.byTooltip('Chia sẻ'), findsOneWidget);
+      expect(find.byType(EventImagePlaceholder), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
 }

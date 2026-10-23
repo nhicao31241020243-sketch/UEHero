@@ -7,19 +7,18 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import 'event_detail_screen.dart';
 import 'models/event_item.dart';
-import 'screens/career_goal_screen.dart';
+import 'services/career_board_service.dart';
 import 'services/event_notification_service.dart';
 import 'services/event_repository.dart';
 import 'services/event_user_repository.dart';
 import 'services/firebase_bootstrap.dart';
 import 'services/points_manager.dart';
 import 'widgets/event_catalog_widgets.dart';
-import 'widgets/event_poster.dart';
 import 'models/xp_entry.dart';
 
 class HomeEventScreen extends StatefulWidget {
@@ -42,14 +41,6 @@ class HomeEventScreen extends StatefulWidget {
 
 class _HomeEventScreenState extends State<HomeEventScreen> {
   static const _muted = Color(0xFFB7B2C7);
-  static const _categories = <(String, IconData)>[
-    ('Cuộc thi', Icons.emoji_events_outlined),
-    ('Hackathon', Icons.terminal_rounded),
-    ('Hội chợ việc làm', Icons.work_outline_rounded),
-    ('Workshop', Icons.handyman_outlined),
-    ('Case Competition', Icons.business_center_outlined),
-    ('Datathon', Icons.query_stats_rounded),
-  ];
 
   EventRepository? _repository;
   EventUserRepository? _userRepository;
@@ -68,14 +59,6 @@ class _HomeEventScreenState extends State<HomeEventScreen> {
   EventSearchFilters _filters = const EventSearchFilters();
   late final PageController _heroController;
   int _heroIndex = 0;
-  String? _group;
-  static const _groups = <String>[
-    'Data Analyst',
-    'Business Analyst',
-    'Front End',
-    'AI/Hackathon',
-    'Lập trình thi đấu',
-  ];
   Timer? _heroTimer;
 
   @override
@@ -84,6 +67,7 @@ class _HomeEventScreenState extends State<HomeEventScreen> {
     _selectedTab = widget.initialTab.clamp(0, 3);
     _filters = widget.initialFilters;
     _heroController = PageController(viewportFraction: 0.92);
+    unawaited(CareerBoardService.instance.initialize());
     _loadCareerProfile();
     _connect();
   }
@@ -233,7 +217,7 @@ class _HomeEventScreenState extends State<HomeEventScreen> {
     String? career,
     required EventSort sort,
   }) => EventCatalog.filterAndSort(
-    _scope,
+    _events,
     now: DateTime.now(),
     filters: EventSearchFilters(
       type: type,
@@ -244,16 +228,10 @@ class _HomeEventScreenState extends State<HomeEventScreen> {
     matchPercent: _matchPercent,
   );
 
-  List<EventItem> get _scope => _group == null
-      ? _events
-      : _events
-            .where((event) => event.relatedCareers.contains(_group))
-            .toList(growable: false);
-
   List<EventItem> get _heroEvents {
     final now = DateTime.now();
     final open =
-        _scope
+        _events
             .where(
               (event) => event.statusAt(now) == EventStatus.registrationOpen,
             )
@@ -264,7 +242,7 @@ class _HomeEventScreenState extends State<HomeEventScreen> {
             if (deadline != 0) return deadline;
             return _matchPercent(b).compareTo(_matchPercent(a));
           });
-    final upcoming = _scope
+    final upcoming = _events
         .where((event) => event.statusAt(now) == EventStatus.closedUpcoming)
         .toList();
     final source = open.isNotEmpty ? open : upcoming;
@@ -334,6 +312,7 @@ class _HomeEventScreenState extends State<HomeEventScreen> {
   Future<PlanAddResult> _createPlanEntry(EventItem event) async {
     final result = await _userRepository!.addToPlan(event.id);
     if (result.added) {
+      unawaited(CareerBoardService.instance.reportEventPlanned(event.id));
       PointsManager.instance.joinEvent(event);
       if (result.shouldAwardXp) {
         await PointsManager.instance.addXP(
@@ -473,11 +452,14 @@ class _HomeEventScreenState extends State<HomeEventScreen> {
     );
   }
 
-  Future<void> _openSource(EventItem event) async {
-    final uri = Uri.tryParse(event.sourceUrl ?? '');
-    if (uri == null ||
-        !await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-      _showMessage('Không mở được liên kết nguồn.');
+  Future<void> _shareEvent(EventItem event) async {
+    final url = event.officialUrl ?? event.sourceUrl;
+    try {
+      await SharePlus.instance.share(
+        ShareParams(text: url == null ? event.title : '${event.title}\n$url'),
+      );
+    } on PlatformException {
+      _showMessage('Không thể chia sẻ sự kiện lúc này.');
     }
   }
 
@@ -518,96 +500,10 @@ class _HomeEventScreenState extends State<HomeEventScreen> {
                 ),
               ),
       ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _selectedTab,
-        onDestinationSelected: _selectTab,
-        backgroundColor: const Color(0xF20D1020),
-        indicatorColor: const Color(0xFF59468A),
-        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home_rounded),
-            label: 'Trang chủ',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.search_rounded),
-            label: 'Khám phá',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.event_note_outlined),
-            label: 'Kế hoạch',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.favorite_border_rounded),
-            selectedIcon: Icon(Icons.favorite_rounded),
-            label: 'Đã lưu',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.work_history_outlined),
-            label: 'Hồ sơ nghề',
-          ),
-        ],
-      ),
     );
   }
 
-  void _selectTab(int index) {
-    if (index == 4) {
-      Navigator.of(context).push(
-        MaterialPageRoute<void>(
-          builder: (_) => const CareerGoalScreen(skipIfSavedUser: false),
-        ),
-      );
-      return;
-    }
-    setState(() => _selectedTab = index);
-  }
-
-  Widget _loadingState() => ListView(
-    padding: const EdgeInsets.fromLTRB(20, 18, 20, 40),
-    children: [
-      const Text(
-        'Khám phá cơ hội nghề nghiệp',
-        style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900),
-      ),
-      const SizedBox(height: 18),
-      Container(
-        height: 270,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(24),
-          gradient: const LinearGradient(
-            colors: [Color(0xFF2C2941), Color(0xFF151B2A)],
-          ),
-        ),
-      ),
-      const SizedBox(height: 24),
-      const Text('Đang tải sự kiện…', style: TextStyle(color: _muted)),
-      const SizedBox(height: 12),
-      SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        physics: const NeverScrollableScrollPhysics(),
-        child: Row(
-          children: List.generate(
-            3,
-            (_) => Container(
-              width: 142,
-              height: 210,
-              margin: const EdgeInsets.only(right: 12),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(18),
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF29263A), Color(0xFF171925)],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-      const SizedBox(height: 24),
-      const Center(child: CircularProgressIndicator()),
-    ],
-  );
+  Widget _loadingState() => const EventHomeSkeleton();
 
   Widget _errorState() {
     final isSetupIssue =
@@ -670,16 +566,45 @@ class _HomeEventScreenState extends State<HomeEventScreen> {
               b.registrationDeadline ?? DateTime(9999),
             ),
           );
-    final previous = _scope.where((event) {
+    final previous = _events.where((event) {
       final status = event.statusAt(now);
       return status == EventStatus.ended ||
           (status == EventStatus.newSeasonUnknown &&
               event.previousSeason != null);
     }).toList();
+    final expiring = closing
+        .where((event) {
+          final days = event.daysUntilDeadline(now);
+          return days != null && days <= 3;
+        })
+        .toList(growable: false);
+    final hackathons = _events
+        .where((event) => event.type.toLowerCase().contains('hackathon'))
+        .toList(growable: false);
+    final competitions = _events
+        .where((event) {
+          final type = event.type.toLowerCase();
+          return type.contains('cuộc thi') ||
+              type.contains('competition') ||
+              type.contains('contest') ||
+              type.contains('datathon');
+        })
+        .toList(growable: false);
+    final workshops = _events
+        .where((event) => event.type.toLowerCase().contains('workshop'))
+        .toList(growable: false);
+    final careerFairs = _events
+        .where((event) {
+          final type = event.type.toLowerCase();
+          return type.contains('hội chợ') ||
+              type.contains('career fair') ||
+              type.contains('job fair');
+        })
+        .toList(growable: false);
 
     return ListView(
       key: const PageStorageKey<String>('events-home'),
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
       children: [
         Row(
           children: [
@@ -712,73 +637,23 @@ class _HomeEventScreenState extends State<HomeEventScreen> {
             ),
           ],
         ),
-        const SizedBox(height: 16),
-        _searchBar(
-          hint: 'Tìm cuộc thi, workshop, kỹ năng…',
-          onTap: () => _goToExplore(),
-        ),
         const SizedBox(height: 14),
-        SizedBox(
-          height: 38,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            itemCount: _groups.length + 1,
-            separatorBuilder: (_, _) => const SizedBox(width: 8),
-            itemBuilder: (context, index) {
-              final label = index == 0 ? 'Tất cả' : _groups[index - 1];
-              final value = index == 0 ? null : label;
-              return ChoiceChip(
-                label: Text(label),
-                selected: _group == value,
-                onSelected: (_) {
-                  if (_heroController.hasClients) _heroController.jumpToPage(0);
-                  setState(() {
-                    _group = value;
-                    _heroIndex = 0;
-                  });
-                },
-                selectedColor: const Color(0xFF7B5CC7),
-                backgroundColor: const Color(0xB5232031),
-                labelStyle: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                ),
-                side: BorderSide(color: Colors.white.withValues(alpha: 0.14)),
-              );
-            },
-          ),
-        ),
-        const SizedBox(height: 14),
-        SizedBox(
-          height: 100,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            itemCount: _categories.length,
-            separatorBuilder: (_, _) => const SizedBox(width: 4),
-            itemBuilder: (context, index) {
-              final category = _categories[index];
-              return EventCategoryIcon(
-                label: category.$1,
-                icon: category.$2,
-                selected: false,
-                onTap: () =>
-                    _goToExplore(EventSearchFilters(type: category.$1)),
-              );
-            },
-          ),
-        ),
-        const SizedBox(height: 10),
         if (featured.isNotEmpty) ...[
           SizedBox(
-            height: 346,
+            height: 404,
             child: PageView.builder(
               controller: _heroController,
               itemCount: featured.length,
               onPageChanged: (index) => setState(() => _heroIndex = index),
               itemBuilder: (context, index) => Padding(
                 padding: const EdgeInsets.only(right: 10),
-                child: _heroCard(featured[index]),
+                child: EventHero(
+                  event: featured[index],
+                  saved: _savedIds.contains(featured[index].id),
+                  onOpen: () => _openEvent(featured[index]),
+                  onShare: () => _shareEvent(featured[index]),
+                  onToggleSaved: () => _toggleSaved(featured[index]),
+                ),
               ),
             ),
           ),
@@ -802,8 +677,13 @@ class _HomeEventScreenState extends State<HomeEventScreen> {
             ),
           ),
         ],
-        const SizedBox(height: 14),
-        _posterSection(
+        const SizedBox(height: 20),
+        _searchBar(
+          hint: 'Tìm cuộc thi, workshop, kỹ năng…',
+          onTap: () => _goToExplore(),
+        ),
+        const SizedBox(height: 8),
+        _eventSection(
           'Đang mở đăng ký',
           closing,
           filters: const EventSearchFilters(
@@ -811,7 +691,15 @@ class _HomeEventScreenState extends State<HomeEventScreen> {
             sort: EventSort.deadline,
           ),
         ),
-        _posterSection(
+        _eventSection(
+          'Sắp hết hạn',
+          expiring,
+          filters: const EventSearchFilters(
+            status: EventStatus.registrationOpen,
+            sort: EventSort.deadline,
+          ),
+        ),
+        _eventSection(
           'Sắp diễn ra',
           opened,
           filters: const EventSearchFilters(
@@ -819,41 +707,42 @@ class _HomeEventScreenState extends State<HomeEventScreen> {
             sort: EventSort.deadline,
           ),
         ),
-        _posterSection(
+        _eventSection(
           'Phù hợp với bạn',
           matched,
           filters: const EventSearchFilters(sort: EventSort.match),
         ),
         if (planned.isNotEmpty)
-          _posterSection(
+          _eventSection(
             'Đang theo dõi',
             planned,
             filters: const EventSearchFilters(),
           ),
-        _posterSection(
+        _eventSection(
           'Đã kết thúc và mùa tới',
           previous,
           filters: const EventSearchFilters(status: EventStatus.ended),
         ),
-        if (_careerGoal != null) ...[
-          const SizedBox(height: 18),
-          const EventSectionTitle(title: 'Khám phá theo nghề'),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              for (final career in _careerTags)
-                ActionChip(
-                  label: Text(career),
-                  avatar: const Icon(Icons.work_outline, size: 16),
-                  onPressed: () =>
-                      _goToExplore(EventSearchFilters(career: career)),
-                  backgroundColor: const Color(0xAA242236),
-                ),
-            ],
-          ),
-        ],
+        _eventSection(
+          'Hackathon nổi bật',
+          hackathons,
+          filters: const EventSearchFilters(type: 'Hackathon'),
+        ),
+        _eventSection(
+          'Cuộc thi',
+          competitions,
+          filters: const EventSearchFilters(type: 'Cuộc thi'),
+        ),
+        _eventSection(
+          'Workshop',
+          workshops,
+          filters: const EventSearchFilters(type: 'Workshop'),
+        ),
+        _eventSection(
+          'Hội chợ việc làm',
+          careerFairs,
+          filters: const EventSearchFilters(type: 'Hội chợ việc làm'),
+        ),
         if (_events.isEmpty)
           const EventEmptyState(
             title: 'Chưa có sự kiện nào',
@@ -863,198 +752,20 @@ class _HomeEventScreenState extends State<HomeEventScreen> {
     );
   }
 
-  List<String> get _careerTags {
-    final tags = _events
-        .expand((event) => event.relatedCareers)
-        .toSet()
-        .toList();
-    tags.sort();
-    return tags.take(12).toList();
-  }
-
-  Widget _heroCard(EventItem event) => ClipRRect(
-    borderRadius: BorderRadius.circular(24),
-    child: Stack(
-      fit: StackFit.expand,
-      children: [
-        EventPoster(
-          imageUrl: event.posterUrl,
-          borderRadius: BorderRadius.zero,
-          placeholderIcon: eventTypeIcon(event.type),
-          fallbackColors: eventTypeColors(event.type),
-        ),
-        const DecoratedBox(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Color(0x14080B16), Color(0xF0080B17)],
-              stops: [0.2, 1],
-            ),
-          ),
-        ),
-        Positioned(
-          left: 16,
-          top: 16,
-          child: _heroBadge(eventStatusLabel(event, DateTime.now())),
-        ),
-        Positioned(
-          right: 8,
-          top: 8,
-          child: IconButton(
-            tooltip: _savedIds.contains(event.id) ? 'Bỏ lưu' : 'Lưu sự kiện',
-            onPressed: () => _toggleSaved(event),
-            icon: Icon(
-              _savedIds.contains(event.id)
-                  ? Icons.favorite_rounded
-                  : Icons.favorite_border_rounded,
-              color: _savedIds.contains(event.id)
-                  ? const Color(0xFFFF8AA0)
-                  : Colors.white,
-            ),
-          ),
-        ),
-        Positioned(
-          left: 18,
-          right: 18,
-          bottom: 18,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                event.title,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 23,
-                  height: 1.1,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-              const SizedBox(height: 5),
-              Text(
-                event.organizer,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(color: Colors.white70, fontSize: 12),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                event.registrationDeadline == null
-                    ? eventDateLabel(event.eventStart)
-                    : 'Hạn đăng ký ${eventDateLabel(event.registrationDeadline)} · ${eventStatusLabel(event, DateTime.now())}',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: Color(0xFFFFD166),
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: FilledButton(
-                      onPressed: () => _openEvent(event),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: const Color(0xFFBFA8FF),
-                        foregroundColor: const Color(0xFF171323),
-                        padding: const EdgeInsets.symmetric(vertical: 11),
-                      ),
-                      child: const Text('Xem chi tiết'),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  if (event.sourceUrl != null)
-                    OutlinedButton(
-                      onPressed: () => _openSource(event),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.white,
-                        side: const BorderSide(color: Colors.white54),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 13,
-                          vertical: 11,
-                        ),
-                      ),
-                      child: const Icon(Icons.open_in_new_rounded, size: 19),
-                    ),
-                  if (event.sourceUrl != null) const SizedBox(width: 8),
-                  OutlinedButton(
-                    onPressed: () => _toggleSaved(event),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.white,
-                      side: const BorderSide(color: Colors.white54),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 13,
-                        vertical: 11,
-                      ),
-                    ),
-                    child: Icon(
-                      _savedIds.contains(event.id)
-                          ? Icons.favorite
-                          : Icons.favorite_border,
-                      size: 19,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ],
-    ),
-  );
-
-  Widget _heroBadge(String label) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-    decoration: BoxDecoration(
-      color: const Color(0xB2121321),
-      borderRadius: BorderRadius.circular(18),
-      border: Border.all(color: Colors.white24),
-    ),
-    child: Text(
-      label,
-      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800),
-    ),
-  );
-
-  Widget _posterSection(
+  Widget _eventSection(
     String title,
     List<EventItem> events, {
     required EventSearchFilters filters,
   }) {
     if (events.isEmpty) return const SizedBox.shrink();
-    return Padding(
-      padding: const EdgeInsets.only(top: 18),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          EventSectionTitle(
-            title: title,
-            onSeeAll: () => _goToExplore(filters),
-          ),
-          const SizedBox(height: 10),
-          SizedBox(
-            height: 226,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: events.length,
-              separatorBuilder: (_, _) => const SizedBox(width: 12),
-              itemBuilder: (context, index) {
-                final event = events[index];
-                return EventPosterCard(
-                  event: event,
-                  onTap: () => _openEvent(event),
-                  onSave: () => _toggleSaved(event),
-                  saved: _savedIds.contains(event.id),
-                  matchPercent: _matchPercent(event),
-                );
-              },
-            ),
-          ),
-        ],
-      ),
+    return EventSection(
+      title: title,
+      events: events,
+      matchPercent: _matchPercent,
+      isSaved: (event) => _savedIds.contains(event.id),
+      onSeeAll: () => _goToExplore(filters),
+      onOpen: _openEvent,
+      onSave: _toggleSaved,
     );
   }
 

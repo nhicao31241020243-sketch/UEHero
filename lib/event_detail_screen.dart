@@ -145,9 +145,12 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                 children: [
                   EventPoster(
                     imageUrl: event.posterUrl,
+                    sourceUrl: event.sourceUrl,
                     borderRadius: BorderRadius.zero,
                     placeholderIcon: eventTypeIcon(event.type),
                     fallbackColors: eventTypeColors(event.type),
+                    eventType: event.type,
+                    organizer: event.organizer,
                   ),
                   const DecoratedBox(
                     decoration: BoxDecoration(
