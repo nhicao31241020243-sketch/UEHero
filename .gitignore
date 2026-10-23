@@ -1,6 +1,7 @@
 # Miscellaneous
 *.class
 *.lock
+!pubspec.lock
 *.log
 *.pyc
 *.swp
@@ -35,6 +36,7 @@ analysis_benchmark.json
 **/doc/api/
 .dart_tool/
 *.iml
+.idea/
 .env
 .env.*
 **/google-services.json
