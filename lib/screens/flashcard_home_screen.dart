@@ -5,9 +5,11 @@ import '../data/flashcard_seed.dart';
 import '../models/flashcard_deck.dart';
 import '../services/flashcard_service.dart';
 import '../services/goal_progress_service.dart';
-import '../widgets/deck_tile.dart';
+import '../widgets/category_deck_card.dart';
+import '../widgets/continue_learning_card.dart';
+import '../widgets/deck_progress_card.dart';
 import 'flashcard_study_screen.dart';
-import 'career_map_screen.dart';
+import 'career_board_screen.dart';
 
 class FlashcardHomeScreen extends StatefulWidget {
   const FlashcardHomeScreen({super.key});
@@ -35,6 +37,7 @@ class _FlashcardHomeScreenState extends State<FlashcardHomeScreen> {
   bool _loading = true;
   Object? _loadError;
   int _tabIndex = 0;
+  bool _searchOpen = false;
 
   @override
   void initState() {
@@ -371,6 +374,23 @@ class _FlashcardHomeScreenState extends State<FlashcardHomeScreen> {
     setState(() => _levelFilter = level);
   }
 
+  void _toggleSearch() {
+    setState(() {
+      _searchOpen = !_searchOpen;
+      if (!_searchOpen) {
+        _query = '';
+        _searchController.clear();
+      }
+    });
+  }
+
+  void _showAllDecks() {
+    setState(() {
+      _groupFilter = null;
+      _levelFilter = null;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -413,37 +433,26 @@ class _FlashcardHomeScreenState extends State<FlashcardHomeScreen> {
     slivers: [
       SliverToBoxAdapter(child: _header()),
       SliverPadding(
-        padding: const EdgeInsets.fromLTRB(18, 15, 18, 0),
-        sliver: SliverToBoxAdapter(child: _summaryCards()),
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+        sliver: SliverToBoxAdapter(child: _continueCard()),
       ),
       SliverPadding(
-        padding: const EdgeInsets.fromLTRB(18, 10, 18, 0),
-        sliver: SliverToBoxAdapter(child: _aiCreationNotice()),
-      ),
-      SliverPadding(
-        padding: const EdgeInsets.fromLTRB(18, 10, 18, 0),
-        sliver: SliverToBoxAdapter(child: _todayReviewBanner()),
-      ),
-      SliverPadding(
-        padding: const EdgeInsets.fromLTRB(18, 10, 18, 0),
-        sliver: SliverToBoxAdapter(child: _goalBanner()),
-      ),
-      SliverPadding(
-        padding: const EdgeInsets.fromLTRB(18, 14, 18, 0),
+        padding: const EdgeInsets.fromLTRB(0, 16, 0, 0),
         sliver: SliverToBoxAdapter(child: _filters()),
       ),
       if (_inProgressDecks.isNotEmpty) ...[
         SliverPadding(
-          padding: const EdgeInsets.fromLTRB(18, 20, 18, 8),
+          padding: const EdgeInsets.fromLTRB(20, 24, 20, 12),
           sliver: SliverToBoxAdapter(child: _sectionTitle('Đang học')),
         ),
-        _deckGrid(_inProgressDecks),
+        SliverToBoxAdapter(child: _inProgressList()),
       ],
       SliverPadding(
-        padding: const EdgeInsets.fromLTRB(18, 20, 18, 8),
+        padding: const EdgeInsets.fromLTRB(20, 24, 20, 12),
         sliver: SliverToBoxAdapter(
           child: _sectionTitle(
-            _inProgressDecks.isEmpty ? 'Thư viện gói kỹ năng' : 'Khám phá thêm',
+            _inProgressDecks.isEmpty ? 'Danh mục' : 'Khám phá thêm',
+            onSeeAll: _showAllDecks,
           ),
         ),
       ),
@@ -459,15 +468,15 @@ class _FlashcardHomeScreenState extends State<FlashcardHomeScreen> {
         )
       else
         _deckGrid(_otherDecks),
-      const SliverToBoxAdapter(child: SizedBox(height: 28)),
+      const SliverToBoxAdapter(child: SizedBox(height: 104)),
     ],
   );
 
   Widget _header() => Container(
     padding: EdgeInsets.fromLTRB(
-      18,
+      20,
       MediaQuery.paddingOf(context).top + 6,
-      18,
+      20,
       20,
     ),
     decoration: const BoxDecoration(
@@ -489,92 +498,132 @@ class _FlashcardHomeScreenState extends State<FlashcardHomeScreen> {
               icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
             ),
             const Spacer(),
+            IconButton(
+              tooltip: _searchOpen ? 'Đóng tìm kiếm' : 'Tìm kiếm',
+              onPressed: _toggleSearch,
+              icon: Icon(
+                _searchOpen ? Icons.close_rounded : Icons.search_rounded,
+                color: Colors.white,
+              ),
+            ),
+            IconButton(
+              tooltip: 'Lọc mức độ',
+              onPressed: _showLevelSheet,
+              icon: Icon(
+                Icons.tune_rounded,
+                color: _levelFilter == null
+                    ? Colors.white
+                    : FlashcardHomeScreen.teal,
+              ),
+            ),
+            IconButton(
+              tooltip: 'Yêu thích',
+              onPressed: _showFavorites,
+              icon: const Icon(
+                Icons.star_rounded,
+                color: FlashcardHomeScreen.lime,
+              ),
+            ),
+            IconButton(
+              tooltip: 'Bộ mới',
+              onPressed: _createDeck,
+              icon: const Icon(
+                Icons.add_rounded,
+                color: FlashcardHomeScreen.teal,
+              ),
+            ),
+          ],
+        ),
+        Row(
+          children: [
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Thẻ kỹ năng nghề',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: FlashcardHomeScreen.text,
+                      fontSize: 26,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                  SizedBox(height: 3),
+                  Text(
+                    'Chọn gói kỹ năng để luyện',
+                    style: TextStyle(
+                      color: FlashcardHomeScreen.muted,
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
+              ),
+            ),
             Hero(
               tag: FlashcardHomeScreen.heroTag,
               child: Image.asset(
                 'assets/images/planets/saturn.png',
-                width: 63,
-                height: 47,
+                width: 56,
+                height: 42,
                 fit: BoxFit.contain,
               ),
             ),
           ],
         ),
-        const SizedBox(height: 3),
-        const Text(
-          'Thẻ kỹ năng nghề',
-          style: TextStyle(
-            color: FlashcardHomeScreen.text,
-            fontSize: 27,
-            fontWeight: FontWeight.w900,
-            letterSpacing: -0.5,
-          ),
-        ),
-        const SizedBox(height: 3),
-        const Text(
-          'Chọn gói kỹ năng để luyện',
-          style: TextStyle(color: FlashcardHomeScreen.muted, fontSize: 13),
-        ),
-        const SizedBox(height: 17),
-        TextField(
-          controller: _searchController,
-          onChanged: (value) => setState(() => _query = value),
-          style: const TextStyle(color: Colors.white, fontSize: 13),
-          decoration: InputDecoration(
-            hintText: 'Tìm gói kỹ năng...',
-            hintStyle: const TextStyle(color: FlashcardHomeScreen.muted),
-            prefixIcon: const Icon(
-              Icons.search_rounded,
-              color: FlashcardHomeScreen.teal,
-            ),
-            filled: true,
-            fillColor: Colors.white.withValues(alpha: 0.055),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(17),
-              borderSide: BorderSide(
-                color: Colors.white.withValues(alpha: 0.09),
-              ),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(17),
-              borderSide: BorderSide(
-                color: Colors.white.withValues(alpha: 0.09),
-              ),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(17),
-              borderSide: const BorderSide(color: FlashcardHomeScreen.teal),
-            ),
-          ),
-        ),
+        if (_searchOpen) ...[const SizedBox(height: 14), _searchField()],
       ],
     ),
   );
 
-  Widget _summaryCards() => Row(
-    children: [
-      Expanded(
-        child: _SummaryCard(
-          icon: Icons.star_rounded,
-          title: 'Yêu thích',
-          subtitle: '${_service.favoriteCards.length} thẻ',
-          accent: FlashcardHomeScreen.lime,
-          onTap: _showFavorites,
-        ),
+  Widget _searchField() => TextField(
+    controller: _searchController,
+    autofocus: true,
+    onChanged: (value) => setState(() => _query = value),
+    style: const TextStyle(color: Colors.white, fontSize: 13),
+    decoration: InputDecoration(
+      hintText: 'Tìm gói kỹ năng...',
+      hintStyle: const TextStyle(color: FlashcardHomeScreen.muted),
+      prefixIcon: const Icon(
+        Icons.search_rounded,
+        color: FlashcardHomeScreen.teal,
       ),
-      const SizedBox(width: 11),
-      Expanded(
-        child: _SummaryCard(
-          icon: Icons.add_rounded,
-          title: 'Bộ mới',
-          subtitle: 'Tạo gói riêng',
-          accent: FlashcardHomeScreen.teal,
-          onTap: _createDeck,
-        ),
+      filled: true,
+      fillColor: Colors.white.withValues(alpha: 0.055),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(17),
+        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.09)),
       ),
-    ],
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(17),
+        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.09)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(17),
+        borderSide: const BorderSide(color: FlashcardHomeScreen.teal),
+      ),
+    ),
   );
 
+  Widget _continueCard() {
+    final goal = _goalProgress.selectedGoal;
+    return ContinueLearningCard(
+      dueCount: _service.dueCards.length,
+      streak: _service.streak,
+      xpToday: _goalProgress.flashcardXpToday(),
+      xpGoal: 100,
+      goalName: goal.name,
+      goalProgress: _goalProgress.totalProgress(goal),
+      onContinue: _openTodayReview,
+      onJourney: () => Navigator.of(context).push(
+        MaterialPageRoute<void>(builder: (_) => const CareerBoardScreen()),
+      ),
+    );
+  }
+
+  /* Ẩn tạm card "Tạo thẻ bằng AI · Sắp có" (giữ lại để bật lại sau).
   Widget _aiCreationNotice() => Tooltip(
     message: 'Tạo thẻ AI sẽ khả dụng khi app kết nối dịch vụ AI.',
     child: OutlinedButton.icon(
@@ -592,143 +641,24 @@ class _FlashcardHomeScreenState extends State<FlashcardHomeScreen> {
       ),
     ),
   );
+  */
 
-  Widget _todayReviewBanner() => Material(
-    color: const Color(0xFF1C282A),
-    borderRadius: BorderRadius.circular(17),
-    child: InkWell(
-      onTap: _openTodayReview,
-      borderRadius: BorderRadius.circular(17),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(17),
-          border: Border.all(
-            color: FlashcardHomeScreen.teal.withValues(alpha: 0.2),
+  Widget _filters() => SingleChildScrollView(
+    scrollDirection: Axis.horizontal,
+    padding: const EdgeInsets.symmetric(horizontal: 20),
+    child: Row(
+      children: [
+        _filterChip('Tất cả', _groupFilter == null, () => _selectGroup(null)),
+        for (final group in FlashcardGroup.values)
+          _filterChip(
+            group.label,
+            _groupFilter == group,
+            () => _selectGroup(group),
           ),
-        ),
-        child: Row(
-          children: [
-            const Icon(Icons.bolt_rounded, color: FlashcardHomeScreen.lime),
-            const SizedBox(width: 9),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Ôn hôm nay: ${_service.dueCards.length} thẻ',
-                    style: const TextStyle(
-                      color: FlashcardHomeScreen.text,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 12,
-                    ),
-                  ),
-                  Text(
-                    'XP flashcard hôm nay: ${_goalProgress.flashcardXpToday()}/100',
-                    style: const TextStyle(
-                      color: FlashcardHomeScreen.muted,
-                      fontSize: 10,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Text(
-              '${_service.streak} ngày streak',
-              style: const TextStyle(
-                color: FlashcardHomeScreen.teal,
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(width: 3),
-            const Icon(
-              Icons.chevron_right_rounded,
-              color: FlashcardHomeScreen.muted,
-            ),
-          ],
-        ),
-      ),
+        if (_levelFilter != null)
+          _filterChip(_levelFilter!.label, true, () => _selectLevel(null)),
+      ],
     ),
-  );
-
-  Widget _goalBanner() {
-    final goal = _goalProgress.selectedGoal;
-    final percent = (_goalProgress.totalProgress(goal) * 100).round();
-    return InkWell(
-      borderRadius: BorderRadius.circular(16),
-      onTap: () => Navigator.of(
-        context,
-      ).push(MaterialPageRoute<void>(builder: (_) => const CareerMapScreen())),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-        decoration: BoxDecoration(
-          color: const Color(0xFF30234A),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.purpleAccent.withValues(alpha: 0.3)),
-        ),
-        child: Row(
-          children: [
-            const Icon(Icons.route_rounded, color: Colors.purpleAccent),
-            const SizedBox(width: 9),
-            Expanded(
-              child: Text(
-                'Hành trình ${goal.name} · $percent%',
-                style: const TextStyle(
-                  color: FlashcardHomeScreen.text,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 12,
-                ),
-              ),
-            ),
-            const Icon(Icons.chevron_right_rounded, color: Colors.white54),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _filters() => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: [
-            _filterChip(
-              'Tất cả',
-              _groupFilter == null,
-              () => _selectGroup(null),
-            ),
-            for (final group in FlashcardGroup.values)
-              _filterChip(
-                group.label,
-                _groupFilter == group,
-                () => _selectGroup(group),
-              ),
-          ],
-        ),
-      ),
-      const SizedBox(height: 8),
-      SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: [
-            _filterChip(
-              'Mọi mức',
-              _levelFilter == null,
-              () => _selectLevel(null),
-            ),
-            for (final level in FlashcardLevel.values)
-              _filterChip(
-                level.label,
-                _levelFilter == level,
-                () => _selectLevel(level),
-              ),
-          ],
-        ),
-      ),
-    ],
   );
 
   Widget _filterChip(String label, bool selected, VoidCallback onTap) {
@@ -757,7 +687,7 @@ class _FlashcardHomeScreenState extends State<FlashcardHomeScreen> {
     );
   }
 
-  Widget _sectionTitle(String title) => Row(
+  Widget _sectionTitle(String title, {VoidCallback? onSeeAll}) => Row(
     children: [
       Expanded(
         child: Text(
@@ -769,11 +699,100 @@ class _FlashcardHomeScreenState extends State<FlashcardHomeScreen> {
           ),
         ),
       ),
-      Text(
-        '${_filteredDecks.length} gói',
-        style: const TextStyle(color: FlashcardHomeScreen.muted, fontSize: 11),
-      ),
+      if (onSeeAll == null)
+        Text(
+          '${_filteredDecks.length} gói',
+          style: const TextStyle(
+            color: FlashcardHomeScreen.muted,
+            fontSize: 11,
+          ),
+        )
+      else
+        TextButton(
+          onPressed: onSeeAll,
+          style: TextButton.styleFrom(
+            foregroundColor: FlashcardHomeScreen.teal,
+          ),
+          child: const Text('Xem tất cả'),
+        ),
     ],
+  );
+
+  Widget _inProgressList() => SizedBox(
+    height: 220,
+    child: ListView.separated(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      itemCount: _inProgressDecks.length,
+      separatorBuilder: (context, index) => const SizedBox(width: 12),
+      itemBuilder: (context, index) {
+        final deck = _inProgressDecks[index];
+        return _deckEntry(
+          deck,
+          SizedBox(
+            width: MediaQuery.sizeOf(context).width * 0.78,
+            child: DeckProgressCard(
+              deck: deck,
+              mastered: _service.masteredCount(deck),
+              progress: _service.masteryProgress(deck),
+              onTap: () => _openStudy(deck),
+              onEdit: () => _editDeck(deck),
+              onDelete: () => _deleteDeck(deck),
+              onReset: () => _resetDeck(deck),
+            ),
+          ),
+        );
+      },
+    ),
+  );
+
+  Widget _deckEntry(FlashcardDeck deck, Widget card) => KeyedSubtree(
+    key: ValueKey('flashcard-deck-${deck.id}'),
+    child: KeyedSubtree(
+      key: _deckActionKeys.putIfAbsent(deck.id, GlobalKey.new),
+      child: card,
+    ),
+  );
+
+  Future<void> _showLevelSheet() => showModalBottomSheet<void>(
+    context: context,
+    backgroundColor: FlashcardHomeScreen.surface,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+    ),
+    builder: (sheetContext) => SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 18, 20, 22),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Mức độ',
+              style: TextStyle(
+                color: FlashcardHomeScreen.text,
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              children: [
+                _filterChip('Mọi mức', _levelFilter == null, () {
+                  _selectLevel(null);
+                  Navigator.pop(sheetContext);
+                }),
+                for (final level in FlashcardLevel.values)
+                  _filterChip(level.label, _levelFilter == level, () {
+                    _selectLevel(level);
+                    Navigator.pop(sheetContext);
+                  }),
+              ],
+            ),
+          ],
+        ),
+      ),
+    ),
   );
 
   Widget _deckGrid(List<FlashcardDeck> decks) {
@@ -781,67 +800,28 @@ class _FlashcardHomeScreenState extends State<FlashcardHomeScreen> {
       return const SliverToBoxAdapter(child: SizedBox.shrink());
     }
     return SliverPadding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 20),
       sliver: SliverGrid.builder(
         itemCount: decks.length,
-        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-          maxCrossAxisExtent: 280,
-          mainAxisExtent: 272,
-          crossAxisSpacing: 10,
-          mainAxisSpacing: 10,
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          crossAxisSpacing: 14,
+          mainAxisSpacing: 14,
+          childAspectRatio: 0.78,
         ),
         itemBuilder: (context, index) {
           final deck = decks[index];
-          final inGoal = _goalProgress.selectedGoal.deckIds.contains(deck.id);
-          return Stack(
-            children: [
-              DeckTile(
-                deck: deck,
-                mastered: _service.masteredCount(deck),
-                progress: _service.masteryProgress(deck),
-                isInProgress: _service.masteredCount(deck) > 0,
-                onTap: () => _openStudy(deck),
-                onEdit: () => _editDeck(deck),
-                onDelete: () => _deleteDeck(deck),
-                onReset: () => _resetDeck(deck),
-              ),
-              if (inGoal)
-                Positioned(
-                  top: 10,
-                  left: 10,
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF452348),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 7, vertical: 4),
-                      child: Text(
-                        'Thuộc lộ trình',
-                        style: TextStyle(
-                          color: Colors.white70,
-                          fontSize: 9,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              Positioned(
-                top: 0,
-                left: 0,
-                width: 64,
-                height: 64,
-                child: KeyedSubtree(
-                  key: ValueKey('flashcard-deck-${deck.id}'),
-                  child: GestureDetector(
-                    key: _deckActionKeys.putIfAbsent(deck.id, GlobalKey.new),
-                    behavior: HitTestBehavior.opaque,
-                    onTap: () => _openStudy(deck),
-                  ),
-                ),
-              ),
-            ],
+          return _deckEntry(
+            deck,
+            CategoryDeckCard(
+              deck: deck,
+              progress: _service.masteryProgress(deck),
+              inGoal: _goalProgress.selectedGoal.deckIds.contains(deck.id),
+              onTap: () => _openStudy(deck),
+              onEdit: () => _editDeck(deck),
+              onDelete: () => _deleteDeck(deck),
+              onReset: () => _resetDeck(deck),
+            ),
           );
         },
       ),
@@ -850,10 +830,10 @@ class _FlashcardHomeScreenState extends State<FlashcardHomeScreen> {
 
   Widget _bottomBar() => SafeArea(
     top: false,
-    minimum: const EdgeInsets.fromLTRB(15, 8, 15, 10),
+    minimum: const EdgeInsets.fromLTRB(15, 6, 15, 8),
     child: Container(
-      height: 58,
-      padding: const EdgeInsets.all(5),
+      height: 50,
+      padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
         color: const Color(0xFF1D1C27),
         borderRadius: BorderRadius.circular(22),
@@ -912,7 +892,7 @@ class _FlashcardHomeScreenState extends State<FlashcardHomeScreen> {
           children: [
             Icon(
               icon,
-              size: 17,
+              size: 16,
               color: active
                   ? FlashcardHomeScreen.background
                   : FlashcardHomeScreen.muted,
@@ -973,69 +953,6 @@ class _FlashcardHomeScreenState extends State<FlashcardHomeScreen> {
     onChanged: (selected) {
       if (selected != null) onChanged(selected);
     },
-  );
-}
-
-class _SummaryCard extends StatelessWidget {
-  const _SummaryCard({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.accent,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final Color accent;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) => Material(
-    color: FlashcardHomeScreen.surface,
-    borderRadius: BorderRadius.circular(19),
-    child: InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(19),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 12),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(19),
-          border: Border.all(color: accent.withValues(alpha: 0.19)),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, color: accent, size: 22),
-            const SizedBox(width: 9),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      color: FlashcardHomeScreen.text,
-                      fontWeight: FontWeight.w800,
-                      fontSize: 12,
-                    ),
-                  ),
-                  Text(
-                    subtitle,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: FlashcardHomeScreen.muted,
-                      fontSize: 10,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    ),
   );
 }
 

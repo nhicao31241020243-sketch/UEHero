@@ -7,7 +7,7 @@ import 'package:uehero/screens/flashcard_home_screen.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  for (final width in [320.0, 600.0]) {
+  for (final width in [320.0, 360.0, 600.0]) {
     testWidgets(
       'study route returns to the intact library at ${width.toInt()}px',
       (tester) async {

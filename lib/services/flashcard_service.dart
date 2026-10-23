@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -6,6 +7,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../data/flashcard_seed.dart';
 import '../models/flashcard.dart';
 import '../models/flashcard_deck.dart';
+import '../models/notebook_activity.dart';
+import 'activity_log_service.dart';
 
 class FlashcardService extends ChangeNotifier {
   FlashcardService._();
@@ -93,9 +96,7 @@ class FlashcardService extends ChangeNotifier {
         }
         final source = data['source']?.toString();
         final createdAt = data['createdAt']?.toString() ?? '';
-        final id = base64Url.encode(
-          utf8.encode('$index|$createdAt|$question'),
-        );
+        final id = base64Url.encode(utf8.encode('$index|$createdAt|$question'));
         cards.add(
           Flashcard(
             id: 'legacy-$id',
@@ -194,13 +195,10 @@ class FlashcardService extends ChangeNotifier {
 
   void _mergePracticeCards(List<Flashcard> cards) {
     _hiddenDeckIds.remove(practiceDeckId);
-    final deckIndex = _decks.indexWhere(
-      (deck) => deck.id == practiceDeckId,
-    );
+    final deckIndex = _decks.indexWhere((deck) => deck.id == practiceDeckId);
     final existingDeck = deckIndex < 0 ? null : _decks[deckIndex];
     final existingIds = {
-      for (final card in existingDeck?.cards ?? const <Flashcard>[])
-        card.id,
+      for (final card in existingDeck?.cards ?? const <Flashcard>[]) card.id,
     };
     final additions = cards
         .where((card) => existingIds.add(card.id))
@@ -285,6 +283,13 @@ class FlashcardService extends ChangeNotifier {
     if (known) _totalCorrect++;
     _recordStudyDay(now);
     await _persistAndNotify();
+    unawaited(
+      ActivityLogService.instance.record(
+        feature: NotebookFeature.skillDrills,
+        type: known ? 'review-known' : 'review-again',
+        timestamp: now,
+      ),
+    );
     return reviewed;
   }
 
