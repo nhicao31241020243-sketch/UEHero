@@ -123,9 +123,6 @@ class JobFilterState {
     sort: sort ?? this.sort,
   );
 
-  JobFilterState clearFilters() => JobFilterState(
-    query: query,
-    location: 'Toàn quốc',
-    sort: sort,
-  );
+  JobFilterState clearFilters() =>
+      JobFilterState(query: query, location: 'Toàn quốc', sort: sort);
 }

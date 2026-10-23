@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -5,6 +7,9 @@ import 'package:url_launcher/url_launcher.dart';
 import '../data/job_demo_data.dart';
 import '../models/character_data.dart';
 import '../models/student_job.dart';
+import '../services/career_board_service.dart';
+import '../models/notebook_activity.dart';
+import '../services/activity_log_service.dart';
 import '../services/job_match_service.dart';
 import '../services/job_repository.dart';
 import '../services/mascot_selection_store.dart';
@@ -57,6 +62,7 @@ class _JobScreenState extends State<JobScreen> with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
     _searchController = TextEditingController(text: widget.initialQuery);
     _filter = JobFilterState(query: widget.initialQuery);
+    unawaited(CareerBoardService.instance.reportJobMatchViewed());
     _load();
   }
 
@@ -78,6 +84,7 @@ class _JobScreenState extends State<JobScreen> with WidgetsBindingObserver {
   Future<void> _load({bool refresh = false}) async {
     if (refresh) setState(() => _refreshing = true);
     await PointsManager.instance.initialize();
+    await CareerBoardService.instance.initialize();
     await _repository.initialize();
     final jobs = refresh
         ? await _repository.refresh()
@@ -87,6 +94,14 @@ class _JobScreenState extends State<JobScreen> with WidgetsBindingObserver {
       preferences: preferences,
     )).primary;
     if (!mounted) return;
+    if (!refresh) {
+      unawaited(
+        ActivityLogService.instance.record(
+          feature: NotebookFeature.jobMatch,
+          type: 'job-match-opened',
+        ),
+      );
+    }
     final goalTitle =
         widget.initialCareerGoal ?? preferences.getString('career_goal');
     setState(() {
@@ -98,6 +113,48 @@ class _JobScreenState extends State<JobScreen> with WidgetsBindingObserver {
       _refreshing = false;
     });
   }
+
+  Widget _readinessStrip() => ListenableBuilder(
+    listenable: CareerBoardService.instance,
+    builder: (context, _) {
+      final readiness = CareerBoardService.instance.readinessFor(
+        _goalTitle ?? '',
+      );
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+        child: Row(
+          children: [
+            const Icon(
+              Icons.rocket_launch_rounded,
+              size: 16,
+              color: Colors.white70,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(6),
+                child: LinearProgressIndicator(
+                  value: readiness,
+                  minHeight: 6,
+                  backgroundColor: Colors.white12,
+                  valueColor: const AlwaysStoppedAnimation(Color(0xFFFFB454)),
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Text(
+              'Sẵn sàng ${(readiness * 100).round()}%',
+              style: const TextStyle(
+                color: Colors.white70,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      );
+    },
+  );
 
   List<StudentJob> get _suggestions {
     final fieldId = fieldIdForGoal(_goalTitle);
@@ -372,6 +429,7 @@ class _JobScreenState extends State<JobScreen> with WidgetsBindingObserver {
                         onFilter: _showFilters,
                       ),
                     ),
+                    _readinessStrip(),
                     SizedBox(
                       height: 43,
                       child: ListView(

@@ -30,7 +30,11 @@ class JobSearchHeader extends StatelessWidget {
           ),
           child: Row(
             children: [
-              const Icon(Icons.search_rounded, color: Color(0xFFAAA5B8), size: 21),
+              const Icon(
+                Icons.search_rounded,
+                color: Color(0xFFAAA5B8),
+                size: 21,
+              ),
               const SizedBox(width: 9),
               Expanded(
                 child: TextField(
@@ -40,7 +44,10 @@ class JobSearchHeader extends StatelessWidget {
                   textInputAction: TextInputAction.search,
                   decoration: const InputDecoration(
                     hintText: 'Tìm vị trí, công ty, kỹ năng',
-                    hintStyle: TextStyle(color: Color(0xFFAAA5B8), fontSize: 12),
+                    hintStyle: TextStyle(
+                      color: Color(0xFFAAA5B8),
+                      fontSize: 12,
+                    ),
                     border: InputBorder.none,
                     isDense: true,
                   ),
@@ -53,8 +60,15 @@ class JobSearchHeader extends StatelessWidget {
                     controller.clear();
                     onChanged('');
                   },
-                  constraints: const BoxConstraints(minWidth: 40, minHeight: 44),
-                  icon: const Icon(Icons.close_rounded, color: Color(0xFFAAA5B8), size: 18),
+                  constraints: const BoxConstraints(
+                    minWidth: 40,
+                    minHeight: 44,
+                  ),
+                  icon: const Icon(
+                    Icons.close_rounded,
+                    color: Color(0xFFAAA5B8),
+                    size: 18,
+                  ),
                 ),
             ],
           ),

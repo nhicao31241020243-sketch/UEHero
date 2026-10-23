@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../data/job_demo_data.dart';
 import '../models/student_job.dart';
 import '../services/job_match_service.dart';
+import 'match_bar.dart';
 import 'space_glass_widgets.dart';
 
 class JobCard extends StatelessWidget {
@@ -154,30 +155,7 @@ class JobCard extends StatelessWidget {
                     style: TextStyle(color: _muted, fontSize: 11),
                   )
                 else ...[
-                  Row(
-                    children: [
-                      Expanded(
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(99),
-                          child: LinearProgressIndicator(
-                            value: percent / 100,
-                            minHeight: 5,
-                            backgroundColor: Colors.white12,
-                            valueColor: AlwaysStoppedAnimation(color),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 9),
-                      Text(
-                        '${matchService.matchLabel(percent)} · ${percent.round()}%',
-                        style: TextStyle(
-                          color: color,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ],
-                  ),
+                  JobMatchEnergyBar(percent: percent, color: color),
                   if (missing.isNotEmpty) ...[
                     const SizedBox(height: 6),
                     Text(

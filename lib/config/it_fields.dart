@@ -49,10 +49,10 @@ const _goalFieldAliases = <String, String>{
 };
 
 String? fieldIdForGoal(String? goalId) {
-  final normalized = goalId
-      ?.trim()
-      .toLowerCase()
-      .replaceAll(RegExp(r'[\s/-]+'), '_');
+  final normalized = goalId?.trim().toLowerCase().replaceAll(
+    RegExp(r'[\s/-]+'),
+    '_',
+  );
   if (normalized == null || normalized.isEmpty) return null;
   final direct = _goalFieldAliases[normalized];
   if (direct != null) return direct;

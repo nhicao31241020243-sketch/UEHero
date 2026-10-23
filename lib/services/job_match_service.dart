@@ -4,8 +4,7 @@ import '../config/flashcard_skill_map.dart';
 
 class JobMatchService {
   JobMatchService({int Function(String?)? levelForSkill})
-    : _levelForSkill =
-          levelForSkill ?? PointsManager.instance.level;
+    : _levelForSkill = levelForSkill ?? PointsManager.instance.level;
 
   final int Function(String?) _levelForSkill;
 
@@ -18,8 +17,7 @@ class JobMatchService {
     if (job.requiredSkills.isEmpty) return null;
     final total = job.requiredSkills.fold<double>(0, (sum, required) {
       final level = skillLevel(required);
-      return sum +
-          (level / required.requiredLevel).clamp(0.0, 1.0).toDouble();
+      return sum + (level / required.requiredLevel).clamp(0.0, 1.0).toDouble();
     });
     return total / job.requiredSkills.length * 100;
   }
@@ -65,8 +63,7 @@ List<StudentJob> filterAndSortJobs(
     if (state.jobTypes.isNotEmpty && !state.jobTypes.contains(job.jobType)) {
       return false;
     }
-    if (state.workModes.isNotEmpty &&
-        !state.workModes.contains(job.workMode)) {
+    if (state.workModes.isNotEmpty && !state.workModes.contains(job.workMode)) {
       return false;
     }
     if (state.fieldId != null && state.fieldId != job.fieldId) return false;
@@ -96,9 +93,13 @@ List<StudentJob> filterAndSortJobs(
         return secondMatch.compareTo(firstMatch);
       });
     case 'salary':
-      filtered.sort((first, second) => second.salaryMin.compareTo(first.salaryMin));
+      filtered.sort(
+        (first, second) => second.salaryMin.compareTo(first.salaryMin),
+      );
     default:
-      filtered.sort((first, second) => second.postedAt.compareTo(first.postedAt));
+      filtered.sort(
+        (first, second) => second.postedAt.compareTo(first.postedAt),
+      );
   }
   return filtered;
 }

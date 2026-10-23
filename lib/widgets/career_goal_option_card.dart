@@ -39,11 +39,7 @@ class CareerGoalOptionCard extends StatelessWidget {
           ),
           child: Row(
             children: [
-              Icon(
-                goal.icon,
-                color: selected ? _cyan : _accent,
-                size: 22,
-              ),
+              Icon(goal.icon, color: selected ? _cyan : _accent, size: 22),
               const SizedBox(width: 13),
               Expanded(
                 child: Text(

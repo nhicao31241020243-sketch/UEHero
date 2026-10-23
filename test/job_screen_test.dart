@@ -9,9 +9,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUp(() {
-    SharedPreferences.setMockInitialValues({
-      'career_goal': 'Business Analyst',
-    });
+    SharedPreferences.setMockInitialValues({'career_goal': 'Business Analyst'});
     JobRepository.instance.resetForTesting();
     PointsManager.instance.resetForTesting();
   });

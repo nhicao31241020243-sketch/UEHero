@@ -17,13 +17,15 @@ StudentJob _job({
   title: 'Lập trình viên',
   company: 'Công ty Mẫu',
   fieldId: fieldId,
-  requiredSkills: skills ?? const [
-    JobSkillRequirement(
-      skillKey: 'skill-sql',
-      label: 'SQL',
-      requiredLevel: 5,
-    ),
-  ],
+  requiredSkills:
+      skills ??
+      const [
+        JobSkillRequirement(
+          skillKey: 'skill-sql',
+          label: 'SQL',
+          requiredLevel: 5,
+        ),
+      ],
   salaryLabel: '$salary triệu/tháng',
   salaryMin: salary,
   location: location,
@@ -66,21 +68,43 @@ void main() {
 
     test('returns up to three least-proficient missing skills', () {
       final service = JobMatchService(
-        levelForSkill: (skill) => {
-          'sql': 0,
-          'excel': 1,
-          'python': 2,
-          'power_bi': 3,
-          'jira_confluence': 4,
-        }[skill] ?? 0,
+        levelForSkill: (skill) =>
+            {
+              'sql': 0,
+              'excel': 1,
+              'python': 2,
+              'power_bi': 3,
+              'jira_confluence': 4,
+            }[skill] ??
+            0,
       );
       final job = _job(
         skills: const [
-          JobSkillRequirement(skillKey: 'skill-sql', label: 'SQL', requiredLevel: 5),
-          JobSkillRequirement(skillKey: 'skill-excel', label: 'Excel', requiredLevel: 5),
-          JobSkillRequirement(skillKey: 'skill-python-data', label: 'Python', requiredLevel: 5),
-          JobSkillRequirement(skillKey: 'skill-power-bi', label: 'Power BI', requiredLevel: 5),
-          JobSkillRequirement(skillKey: 'skill-jira-confluence', label: 'Jira', requiredLevel: 5),
+          JobSkillRequirement(
+            skillKey: 'skill-sql',
+            label: 'SQL',
+            requiredLevel: 5,
+          ),
+          JobSkillRequirement(
+            skillKey: 'skill-excel',
+            label: 'Excel',
+            requiredLevel: 5,
+          ),
+          JobSkillRequirement(
+            skillKey: 'skill-python-data',
+            label: 'Python',
+            requiredLevel: 5,
+          ),
+          JobSkillRequirement(
+            skillKey: 'skill-power-bi',
+            label: 'Power BI',
+            requiredLevel: 5,
+          ),
+          JobSkillRequirement(
+            skillKey: 'skill-jira-confluence',
+            label: 'Jira',
+            requiredLevel: 5,
+          ),
         ],
       );
 
@@ -115,7 +139,11 @@ void main() {
         hoursAgo: 7,
       ),
     ];
-    final match = {'older-hcm': 50.0, 'new-hanoi': 90.0, 'mid-hcm-parttime': 30.0};
+    final match = {
+      'older-hcm': 50.0,
+      'new-hanoi': 90.0,
+      'mid-hcm-parttime': 30.0,
+    };
 
     test('filters by chip, field, location and search text', () {
       final filtered = filterAndSortJobs(
@@ -156,25 +184,32 @@ void main() {
     });
 
     test('ships 24 demo jobs across at least twelve fields', () {
-      expect(jobDemoData, hasLength(24));
-      expect(jobDemoData.map((job) => job.fieldId).toSet(), hasLength(12));
+      expect(jobDemoData, hasLength(91));
+      expect(jobDemoData.map((job) => job.fieldId).toSet(), hasLength(15));
       expect(jobDemoData.every((job) => job.isDemo), isTrue);
-      expect(jobDemoData.every((job) => job.requiredSkills.every((skill) => {
-        'skill-sql',
-        'skill-power-bi',
-        'skill-excel',
-        'skill-python-data',
-        'skill-jira-confluence',
-        'skill-figma-wireframe',
-        'skill-requirements',
-        'skill-process-modeling',
-        'skill-business-frameworks',
-        'skill-agile-scrum',
-        'skill-stakeholder-communication',
-        'skill-interview',
-        'skill-cv-email',
-        'skill-english-jd',
-      }.contains(skill.skillKey))), isTrue);
+      expect(
+        jobDemoData.every(
+          (job) => job.requiredSkills.every(
+            (skill) => {
+              'skill-sql',
+              'skill-power-bi',
+              'skill-excel',
+              'skill-python-data',
+              'skill-jira-confluence',
+              'skill-figma-wireframe',
+              'skill-requirements',
+              'skill-process-modeling',
+              'skill-business-frameworks',
+              'skill-agile-scrum',
+              'skill-stakeholder-communication',
+              'skill-interview',
+              'skill-cv-email',
+              'skill-english-jd',
+            }.contains(skill.skillKey),
+          ),
+        ),
+        isTrue,
+      );
     });
   });
 }

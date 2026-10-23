@@ -50,108 +50,116 @@ class _JobFilterSheetState extends State<JobFilterSheet> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-        Row(
-          children: [
-            const Expanded(
-              child: Text(
-                'Bộ lọc công việc',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 19),
-              ),
-            ),
-            TextButton(
-              onPressed: _clear,
-              child: const Text('Xóa lọc', style: TextStyle(color: _accent)),
-            ),
-          ],
-        ),
-        const SizedBox(height: 10),
-        _sectionTitle('Loại việc'),
-        Wrap(
-          spacing: 8,
-          children: [
-            for (final type in JobType.values)
-              FilterChip(
-                label: Text(type.label),
-                selected: _types.contains(type),
-                onSelected: (selected) => setState(
-                  () => selected ? _types.add(type) : _types.remove(type),
+          Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  'Bộ lọc công việc',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 19,
+                  ),
                 ),
               ),
-          ],
-        ),
-        const SizedBox(height: 14),
-        _sectionTitle('Hình thức làm việc'),
-        Wrap(
-          spacing: 8,
-          children: [
-            for (final mode in JobWorkMode.values)
-              FilterChip(
-                label: Text(mode.label),
-                selected: _modes.contains(mode),
-                onSelected: (selected) => setState(
-                  () => selected ? _modes.add(mode) : _modes.remove(mode),
-                ),
-              ),
-          ],
-        ),
-        const SizedBox(height: 14),
-        _sectionTitle('Ngành IT'),
-        DropdownButtonFormField<String>(
-          initialValue: _fieldId,
-          dropdownColor: const Color(0xFF302A3B),
-          decoration: _decoration(),
-          style: const TextStyle(color: Colors.white),
-          items: [
-            const DropdownMenuItem(value: '', child: Text('Tất cả ngành')),
-            for (final field in jobFields)
-              DropdownMenuItem(value: field.id, child: Text(field.label)),
-          ],
-          onChanged: (value) => setState(() => _fieldId = value ?? ''),
-        ),
-        const SizedBox(height: 14),
-        _sectionTitle('Địa điểm'),
-        DropdownButtonFormField<String>(
-          initialValue: _location,
-          dropdownColor: const Color(0xFF302A3B),
-          decoration: _decoration(),
-          style: const TextStyle(color: Colors.white),
-          items: const [
-            DropdownMenuItem(value: 'TP. Hồ Chí Minh', child: Text('TP. Hồ Chí Minh')),
-            DropdownMenuItem(value: 'Hà Nội', child: Text('Hà Nội')),
-            DropdownMenuItem(value: 'Đà Nẵng', child: Text('Đà Nẵng')),
-            DropdownMenuItem(value: 'Toàn quốc', child: Text('Toàn quốc')),
-            DropdownMenuItem(value: 'Remote', child: Text('Remote')),
-          ],
-          onChanged: (value) => setState(() => _location = value ?? 'Toàn quốc'),
-        ),
-        const SizedBox(height: 18),
-        Row(
-          children: [
-            Expanded(
-              child: OutlinedButton(
+              TextButton(
                 onPressed: _clear,
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.white,
-                  minimumSize: const Size.fromHeight(48),
-                ),
-                child: const Text('Xóa lọc'),
+                child: const Text('Xóa lọc', style: TextStyle(color: _accent)),
               ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              flex: 2,
-              child: FilledButton(
-                onPressed: _apply,
-                style: FilledButton.styleFrom(
-                  backgroundColor: _accent,
-                  foregroundColor: const Color(0xFF171321),
-                  minimumSize: const Size.fromHeight(48),
+            ],
+          ),
+          const SizedBox(height: 10),
+          _sectionTitle('Loại việc'),
+          Wrap(
+            spacing: 8,
+            children: [
+              for (final type in JobType.values)
+                FilterChip(
+                  label: Text(type.label),
+                  selected: _types.contains(type),
+                  onSelected: (selected) => setState(
+                    () => selected ? _types.add(type) : _types.remove(type),
+                  ),
                 ),
-                child: const Text('Áp dụng'),
+            ],
+          ),
+          const SizedBox(height: 14),
+          _sectionTitle('Hình thức làm việc'),
+          Wrap(
+            spacing: 8,
+            children: [
+              for (final mode in JobWorkMode.values)
+                FilterChip(
+                  label: Text(mode.label),
+                  selected: _modes.contains(mode),
+                  onSelected: (selected) => setState(
+                    () => selected ? _modes.add(mode) : _modes.remove(mode),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          _sectionTitle('Ngành IT'),
+          DropdownButtonFormField<String>(
+            initialValue: _fieldId,
+            dropdownColor: const Color(0xFF302A3B),
+            decoration: _decoration(),
+            style: const TextStyle(color: Colors.white),
+            items: [
+              const DropdownMenuItem(value: '', child: Text('Tất cả ngành')),
+              for (final field in jobFields)
+                DropdownMenuItem(value: field.id, child: Text(field.label)),
+            ],
+            onChanged: (value) => setState(() => _fieldId = value ?? ''),
+          ),
+          const SizedBox(height: 14),
+          _sectionTitle('Địa điểm'),
+          DropdownButtonFormField<String>(
+            initialValue: _location,
+            dropdownColor: const Color(0xFF302A3B),
+            decoration: _decoration(),
+            style: const TextStyle(color: Colors.white),
+            items: const [
+              DropdownMenuItem(
+                value: 'TP. Hồ Chí Minh',
+                child: Text('TP. Hồ Chí Minh'),
               ),
-            ),
-          ],
-        ),
+              DropdownMenuItem(value: 'Hà Nội', child: Text('Hà Nội')),
+              DropdownMenuItem(value: 'Đà Nẵng', child: Text('Đà Nẵng')),
+              DropdownMenuItem(value: 'Toàn quốc', child: Text('Toàn quốc')),
+              DropdownMenuItem(value: 'Remote', child: Text('Remote')),
+            ],
+            onChanged: (value) =>
+                setState(() => _location = value ?? 'Toàn quốc'),
+          ),
+          const SizedBox(height: 18),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: _clear,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size.fromHeight(48),
+                  ),
+                  child: const Text('Xóa lọc'),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                flex: 2,
+                child: FilledButton(
+                  onPressed: _apply,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: _accent,
+                    foregroundColor: const Color(0xFF171321),
+                    minimumSize: const Size.fromHeight(48),
+                  ),
+                  child: const Text('Áp dụng'),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     ),
@@ -161,7 +169,11 @@ class _JobFilterSheetState extends State<JobFilterSheet> {
     padding: const EdgeInsets.only(bottom: 7),
     child: Text(
       text,
-      style: const TextStyle(color: Color(0xFFAAA5B8), fontSize: 12, fontWeight: FontWeight.w700),
+      style: const TextStyle(
+        color: Color(0xFFAAA5B8),
+        fontSize: 12,
+        fontWeight: FontWeight.w700,
+      ),
     ),
   );
 

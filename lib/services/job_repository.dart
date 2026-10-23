@@ -89,10 +89,7 @@ class JobRepository {
     await _persist();
   }
 
-  Future<void> setStatus(
-    String jobId,
-    JobApplicationStatus status,
-  ) async {
+  Future<void> setStatus(String jobId, JobApplicationStatus status) async {
     await initialize();
     _statuses[jobId] = status;
     await _persist();

@@ -35,7 +35,7 @@ void main() {
     );
     await tester.tap(find.text('Xóa lọc').first);
     await tester.pumpAndSettle();
-    expect(find.text('24 việc phù hợp'), findsOneWidget);
+    expect(find.text('${jobDemoData.length} việc phù hợp'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -56,7 +56,7 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
-    expect(find.text('24 việc phù hợp'), findsOneWidget);
+    expect(find.text('${jobDemoData.length} việc phù hợp'), findsOneWidget);
 
     await tester.tap(find.text('Đã lưu'));
     await tester.pumpAndSettle();
@@ -68,7 +68,7 @@ void main() {
 
     await tester.tap(find.text('Đã ứng tuyển'));
     await tester.pumpAndSettle();
-    expect(find.text('24 việc phù hợp'), findsOneWidget);
+    expect(find.text('${jobDemoData.length} việc phù hợp'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }

@@ -67,7 +67,9 @@ class _JobDetailScreenState extends State<JobDetailScreen>
       final saved = await _repository.toggleSaved(widget.job.id);
       if (!mounted) return;
       setState(() => _saved = saved);
-      _message(saved ? 'Đã lưu job · XP thưởng mỗi job một lần' : 'Đã bỏ lưu job');
+      _message(
+        saved ? 'Đã lưu job · XP thưởng mỗi job một lần' : 'Đã bỏ lưu job',
+      );
     } on Exception catch (error) {
       if (mounted) _message('Không thể lưu job: $error');
     }
@@ -118,7 +120,10 @@ class _JobDetailScreenState extends State<JobDetailScreen>
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: _surface,
-        title: const Text('Bạn đã nộp chưa?', style: TextStyle(color: Colors.white)),
+        title: const Text(
+          'Bạn đã nộp chưa?',
+          style: TextStyle(color: Colors.white),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -198,14 +203,27 @@ class _JobDetailScreenState extends State<JobDetailScreen>
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(job.company, style: const TextStyle(color: _muted, fontSize: 12)),
+                        Text(
+                          job.company,
+                          style: const TextStyle(color: _muted, fontSize: 12),
+                        ),
                         const SizedBox(height: 4),
                         Text(
                           job.title,
-                          style: const TextStyle(color: Colors.white, fontSize: 19, fontWeight: FontWeight.w900),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 19,
+                            fontWeight: FontWeight.w900,
+                          ),
                         ),
                         const SizedBox(height: 5),
-                        Text(job.salaryLabel, style: const TextStyle(color: Color(0xFF70D8F2), fontWeight: FontWeight.w800)),
+                        Text(
+                          job.salaryLabel,
+                          style: const TextStyle(
+                            color: Color(0xFF70D8F2),
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -229,7 +247,10 @@ class _JobDetailScreenState extends State<JobDetailScreen>
             _DetailPanel(
               title: 'Độ khớp với kỹ năng',
               child: percent == null
-                  ? const Text('Chưa đủ dữ liệu để tính độ khớp', style: TextStyle(color: _muted))
+                  ? const Text(
+                      'Chưa đủ dữ liệu để tính độ khớp',
+                      style: TextStyle(color: _muted),
+                    )
                   : Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -238,10 +259,20 @@ class _JobDetailScreenState extends State<JobDetailScreen>
                             Expanded(
                               child: Text(
                                 _matchService.matchLabel(percent)!,
-                                style: TextStyle(color: _matchColor(percent), fontWeight: FontWeight.w800),
+                                style: TextStyle(
+                                  color: _matchColor(percent),
+                                  fontWeight: FontWeight.w800,
+                                ),
                               ),
                             ),
-                            Text('${percent.round()}%', style: TextStyle(color: _matchColor(percent), fontWeight: FontWeight.w900, fontSize: 20)),
+                            Text(
+                              '${percent.round()}%',
+                              style: TextStyle(
+                                color: _matchColor(percent),
+                                fontWeight: FontWeight.w900,
+                                fontSize: 20,
+                              ),
+                            ),
                           ],
                         ),
                         const SizedBox(height: 9),
@@ -251,12 +282,16 @@ class _JobDetailScreenState extends State<JobDetailScreen>
                             value: percent / 100,
                             minHeight: 7,
                             backgroundColor: Colors.white12,
-                            valueColor: AlwaysStoppedAnimation(_matchColor(percent)),
+                            valueColor: AlwaysStoppedAnimation(
+                              _matchColor(percent),
+                            ),
                           ),
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          missing.isEmpty ? 'Đáp ứng đủ kỹ năng trong dữ liệu mẫu.' : 'Nên bổ sung: ${missing.join(', ')}',
+                          missing.isEmpty
+                              ? 'Đáp ứng đủ kỹ năng trong dữ liệu mẫu.'
+                              : 'Nên bổ sung: ${missing.join(', ')}',
                           style: const TextStyle(color: _muted, fontSize: 12),
                         ),
                       ],
@@ -265,7 +300,10 @@ class _JobDetailScreenState extends State<JobDetailScreen>
             const SizedBox(height: 11),
             _DetailPanel(
               title: 'Mô tả công việc',
-              child: Text(job.description, style: const TextStyle(color: Color(0xFFD8D3E2), height: 1.55)),
+              child: Text(
+                job.description,
+                style: const TextStyle(color: Color(0xFFD8D3E2), height: 1.55),
+              ),
             ),
             const SizedBox(height: 11),
             _DetailPanel(
@@ -304,7 +342,9 @@ class _JobDetailScreenState extends State<JobDetailScreen>
             const SizedBox(height: 9),
             OutlinedButton.icon(
               onPressed: _toggleSaved,
-              icon: Icon(_saved ? Icons.bookmark_rounded : Icons.bookmark_border_rounded),
+              icon: Icon(
+                _saved ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
+              ),
               label: Text(_saved ? 'Đã lưu job' : 'Lưu job'),
               style: _secondaryButton(),
             ),
@@ -368,7 +408,14 @@ class _DetailPanel extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (title != null) ...[
-          Text(title!, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 14)),
+          Text(
+            title!,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w800,
+              fontSize: 14,
+            ),
+          ),
           const SizedBox(height: 11),
         ],
         child,
@@ -388,10 +435,22 @@ class _CompanyAvatar extends StatelessWidget {
     height: 54,
     alignment: Alignment.center,
     decoration: BoxDecoration(
-      color: HSLColor.fromAHSL(1, (job.id.hashCode.abs() % 360).toDouble(), .42, .31).toColor(),
+      color: HSLColor.fromAHSL(
+        1,
+        (job.id.hashCode.abs() % 360).toDouble(),
+        .42,
+        .31,
+      ).toColor(),
       borderRadius: BorderRadius.circular(16),
     ),
-    child: Text(job.logoLetter, style: const TextStyle(color: Colors.white, fontSize: 21, fontWeight: FontWeight.w900)),
+    child: Text(
+      job.logoLetter,
+      style: const TextStyle(
+        color: Colors.white,
+        fontSize: 21,
+        fontWeight: FontWeight.w900,
+      ),
+    ),
   );
 }
 
@@ -403,8 +462,14 @@ class _InfoPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-    decoration: BoxDecoration(color: Colors.white.withValues(alpha: .07), borderRadius: BorderRadius.circular(99)),
-    child: Text(label, style: const TextStyle(color: Color(0xFFD8D3E2), fontSize: 11)),
+    decoration: BoxDecoration(
+      color: Colors.white.withValues(alpha: .07),
+      borderRadius: BorderRadius.circular(99),
+    ),
+    child: Text(
+      label,
+      style: const TextStyle(color: Color(0xFFD8D3E2), fontSize: 11),
+    ),
   );
 }
 
@@ -421,12 +486,29 @@ class _SkillRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 7),
       child: Row(
         children: [
-          Icon(achieved ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded, color: achieved ? const Color(0xFF73D6A0) : const Color(0xFFAAA5B8), size: 19),
+          Icon(
+            achieved
+                ? Icons.check_circle_rounded
+                : Icons.radio_button_unchecked_rounded,
+            color: achieved ? const Color(0xFF73D6A0) : const Color(0xFFAAA5B8),
+            size: 19,
+          ),
           const SizedBox(width: 9),
-          Expanded(child: Text(requirement.label, style: const TextStyle(color: Colors.white, fontSize: 12))),
+          Expanded(
+            child: Text(
+              requirement.label,
+              style: const TextStyle(color: Colors.white, fontSize: 12),
+            ),
+          ),
           Text(
             '$currentLevel/${requirement.requiredLevel}',
-            style: TextStyle(color: achieved ? const Color(0xFF73D6A0) : const Color(0xFFFFCF68), fontSize: 11, fontWeight: FontWeight.w800),
+            style: TextStyle(
+              color: achieved
+                  ? const Color(0xFF73D6A0)
+                  : const Color(0xFFFFCF68),
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+            ),
           ),
         ],
       ),

@@ -1,4 +1,5 @@
 import '../models/student_job.dart';
+import 'job_demo_data_extra.dart';
 
 class JobField {
   const JobField(this.id, this.label);
@@ -20,6 +21,9 @@ const jobFields = <JobField>[
   JobField('database-engineering', 'Database Engineering'),
   JobField('game-development', 'Game Development'),
   JobField('blockchain-web3', 'Blockchain & Web3'),
+  JobField('marketing', 'Marketing'),
+  JobField('finance', 'Tài chính - Kế toán'),
+  JobField('human-resources', 'Nhân sự'),
 ];
 
 String jobFieldLabel(String fieldId) => jobFields
@@ -63,7 +67,10 @@ String? fieldIdForGoal(String? goal) {
   return null;
 }
 
-final jobDemoData = List<StudentJob>.unmodifiable(_buildDemoJobs());
+final jobDemoData = List<StudentJob>.unmodifiable([
+  ..._buildDemoJobs(),
+  ...buildExtraDemoJobs(),
+]);
 
 List<StudentJob> _buildDemoJobs() {
   final now = DateTime.now();
@@ -97,19 +104,19 @@ List<StudentJob> _buildDemoJobs() {
   );
 
   JobSkillRequirement skill(String key, String label, int level) =>
-      JobSkillRequirement(
-        skillKey: key,
-        label: label,
-        requiredLevel: level,
-      );
+      JobSkillRequirement(skillKey: key, label: label, requiredLevel: level);
 
   return [
     job(
       id: 'ba-intern-nova',
       title: 'Business Analyst Intern',
-      company: 'Mầm Mực Data',
+      company: 'Nova Analytics',
       fieldId: 'business-analysis',
-      skills: [skill('skill-sql', 'SQL', 5), skill('skill-excel', 'Excel', 5), skill('skill-power-bi', 'Power BI', 4)],
+      skills: [
+        skill('skill-sql', 'SQL', 5),
+        skill('skill-excel', 'Excel', 5),
+        skill('skill-power-bi', 'Power BI', 4),
+      ],
       salary: '5–8 triệu/tháng',
       salaryMin: 5,
       location: 'TP. Hồ Chí Minh',
@@ -120,10 +127,14 @@ List<StudentJob> _buildDemoJobs() {
     ),
     job(
       id: 'data-intern-lumen',
-      title: 'Thực tập sinh Phân tích dữ liệu',
-      company: 'Rêu Metrics',
+      title: 'Data Analyst Intern',
+      company: 'Lumen Digital',
       fieldId: 'data-analytics',
-      skills: [skill('skill-sql', 'SQL', 5), skill('skill-excel', 'Excel', 5), skill('skill-power-bi', 'Power BI', 4)],
+      skills: [
+        skill('skill-sql', 'SQL', 5),
+        skill('skill-excel', 'Excel', 5),
+        skill('skill-power-bi', 'Power BI', 4),
+      ],
       salary: '5–8 triệu/tháng',
       salaryMin: 5,
       location: 'TP. Hồ Chí Minh',
@@ -135,9 +146,13 @@ List<StudentJob> _buildDemoJobs() {
     job(
       id: 'frontend-parttime-orbit',
       title: 'Frontend Developer',
-      company: 'Tia Chớp Code',
+      company: 'Orbit Studio',
       fieldId: 'software-engineering',
-      skills: [skill('skill-figma-wireframe', 'Figma & Wireframe', 4), skill('skill-jira-confluence', 'Jira & Confluence', 3), skill('skill-agile-scrum', 'Agile & Scrum', 3)],
+      skills: [
+        skill('skill-figma-wireframe', 'Figma & Wireframe', 4),
+        skill('skill-jira-confluence', 'Jira & Confluence', 3),
+        skill('skill-agile-scrum', 'Agile & Scrum', 3),
+      ],
       salary: '45–65 nghìn/giờ',
       salaryMin: 7,
       location: 'TP. Hồ Chí Minh',
@@ -148,10 +163,14 @@ List<StudentJob> _buildDemoJobs() {
     ),
     job(
       id: 'marketing-fresher-mint',
-      title: 'Thực tập sinh Thiết kế UX/UI',
-      company: 'Nắng Pixel',
+      title: 'UX/UI Design Intern',
+      company: 'Mint Creative',
       fieldId: 'ux-ui-design',
-      skills: [skill('skill-figma-wireframe', 'Figma & Wireframe', 5), skill('skill-requirements', 'Phân tích yêu cầu', 3), skill('skill-stakeholder-communication', 'Giao tiếp liên phòng ban', 3)],
+      skills: [
+        skill('skill-figma-wireframe', 'Figma & Wireframe', 5),
+        skill('skill-requirements', 'Phân tích yêu cầu', 3),
+        skill('skill-stakeholder-communication', 'Giao tiếp liên phòng ban', 3),
+      ],
       salary: '4–7 triệu/tháng',
       salaryMin: 4,
       location: 'Đà Nẵng',
@@ -162,10 +181,14 @@ List<StudentJob> _buildDemoJobs() {
     ),
     job(
       id: 'ecommerce-intern-peak',
-      title: 'Kỹ sư Cloud tập sự',
-      company: 'Đám Mây Xanh',
+      title: 'Cloud Engineer Intern',
+      company: 'Peak Cloud',
       fieldId: 'cloud-devops',
-      skills: [skill('skill-python-data', 'Python', 4), skill('skill-jira-confluence', 'Jira & Confluence', 3), skill('skill-english-jd', 'Tiếng Anh chuyên ngành', 3)],
+      skills: [
+        skill('skill-python-data', 'Python', 4),
+        skill('skill-jira-confluence', 'Jira & Confluence', 3),
+        skill('skill-english-jd', 'Tiếng Anh chuyên ngành', 3),
+      ],
       salary: '11–16 triệu/tháng',
       salaryMin: 11,
       location: 'TP. Hồ Chí Minh',
@@ -177,9 +200,13 @@ List<StudentJob> _buildDemoJobs() {
     job(
       id: 'product-intern-spark',
       title: 'Associate Product Intern',
-      company: 'Mầm Ươm Product',
+      company: 'Spark Labs',
       fieldId: 'product-management',
-      skills: [skill('skill-agile-scrum', 'Agile & Scrum', 4), skill('skill-requirements', 'Phân tích yêu cầu', 4), skill('skill-stakeholder-communication', 'Giao tiếp liên phòng ban', 4)],
+      skills: [
+        skill('skill-agile-scrum', 'Agile & Scrum', 4),
+        skill('skill-requirements', 'Phân tích yêu cầu', 4),
+        skill('skill-stakeholder-communication', 'Giao tiếp liên phòng ban', 4),
+      ],
       salary: '5–8 triệu/tháng',
       salaryMin: 5,
       location: 'TP. Hồ Chí Minh',
@@ -190,10 +217,14 @@ List<StudentJob> _buildDemoJobs() {
     ),
     job(
       id: 'demo-07',
-      title: 'Thực tập sinh An ninh ứng dụng',
-      company: 'Kén Mã An Toàn',
+      title: 'Application Security Intern',
+      company: 'Shield Works',
       fieldId: 'cybersecurity',
-      skills: [skill('skill-python-data', 'Python', 4), skill('skill-sql', 'SQL', 3), skill('skill-english-jd', 'Tiếng Anh chuyên ngành', 4)],
+      skills: [
+        skill('skill-python-data', 'Python', 4),
+        skill('skill-sql', 'SQL', 3),
+        skill('skill-english-jd', 'Tiếng Anh chuyên ngành', 4),
+      ],
       salary: '5–9 triệu/tháng',
       salaryMin: 5,
       location: 'Hà Nội',
@@ -204,10 +235,14 @@ List<StudentJob> _buildDemoJobs() {
     ),
     job(
       id: 'demo-08',
-      title: 'Kỹ sư dữ liệu Junior',
-      company: 'Hạt Dữ Liệu',
+      title: 'Junior Data Engineer',
+      company: 'Delta Data',
       fieldId: 'database-engineering',
-      skills: [skill('skill-sql', 'SQL', 6), skill('skill-python-data', 'Python', 5), skill('skill-excel', 'Excel', 3)],
+      skills: [
+        skill('skill-sql', 'SQL', 6),
+        skill('skill-python-data', 'Python', 5),
+        skill('skill-excel', 'Excel', 3),
+      ],
       salary: '14–20 triệu/tháng',
       salaryMin: 14,
       location: 'Đà Nẵng',
@@ -218,10 +253,14 @@ List<StudentJob> _buildDemoJobs() {
     ),
     job(
       id: 'demo-09',
-      title: 'Thực tập sinh AI ứng dụng',
-      company: 'Mầm Máy Học',
+      title: 'Applied AI Intern',
+      company: 'Neuron Labs',
       fieldId: 'ai-machine-learning',
-      skills: [skill('skill-python-data', 'Python', 6), skill('skill-sql', 'SQL', 3), skill('skill-english-jd', 'Tiếng Anh chuyên ngành', 4)],
+      skills: [
+        skill('skill-python-data', 'Python', 6),
+        skill('skill-sql', 'SQL', 3),
+        skill('skill-english-jd', 'Tiếng Anh chuyên ngành', 4),
+      ],
       salary: '6–10 triệu/tháng',
       salaryMin: 6,
       location: 'TP. Hồ Chí Minh',
@@ -232,10 +271,14 @@ List<StudentJob> _buildDemoJobs() {
     ),
     job(
       id: 'demo-10',
-      title: 'Trợ lý Quản lý sản phẩm',
-      company: 'Hồ Quang Sản Phẩm',
+      title: 'Assistant Product Manager',
+      company: 'Prism Product',
       fieldId: 'product-management',
-      skills: [skill('skill-agile-scrum', 'Agile & Scrum', 5), skill('skill-stakeholder-communication', 'Giao tiếp liên phòng ban', 5), skill('skill-business-frameworks', 'Khung tư duy kinh doanh', 4)],
+      skills: [
+        skill('skill-agile-scrum', 'Agile & Scrum', 5),
+        skill('skill-stakeholder-communication', 'Giao tiếp liên phòng ban', 5),
+        skill('skill-business-frameworks', 'Khung tư duy kinh doanh', 4),
+      ],
       salary: '10–15 triệu/tháng',
       salaryMin: 10,
       location: 'Hà Nội',
@@ -246,10 +289,14 @@ List<StudentJob> _buildDemoJobs() {
     ),
     job(
       id: 'demo-11',
-      title: 'Lập trình viên Game 2D',
-      company: 'Cá Bay Interactive',
+      title: '2D Game Developer',
+      company: 'Skyfin Interactive',
       fieldId: 'game-development',
-      skills: [skill('skill-python-data', 'Python', 4), skill('skill-figma-wireframe', 'Figma & Wireframe', 3), skill('skill-agile-scrum', 'Agile & Scrum', 2)],
+      skills: [
+        skill('skill-python-data', 'Python', 4),
+        skill('skill-figma-wireframe', 'Figma & Wireframe', 3),
+        skill('skill-agile-scrum', 'Agile & Scrum', 2),
+      ],
       salary: '12–18 triệu/tháng',
       salaryMin: 12,
       location: 'Đà Nẵng',
@@ -260,10 +307,14 @@ List<StudentJob> _buildDemoJobs() {
     ),
     job(
       id: 'demo-12',
-      title: 'Thực tập sinh Blockchain',
-      company: 'Sóng Khối Labs',
+      title: 'Blockchain Intern',
+      company: 'Blockwave Labs',
       fieldId: 'blockchain-web3',
-      skills: [skill('skill-python-data', 'Python', 4), skill('skill-sql', 'SQL', 3), skill('skill-english-jd', 'Tiếng Anh chuyên ngành', 4)],
+      skills: [
+        skill('skill-python-data', 'Python', 4),
+        skill('skill-sql', 'SQL', 3),
+        skill('skill-english-jd', 'Tiếng Anh chuyên ngành', 4),
+      ],
       salary: '5–8 triệu/tháng',
       salaryMin: 5,
       location: 'TP. Hồ Chí Minh',
@@ -274,10 +325,14 @@ List<StudentJob> _buildDemoJobs() {
     ),
     job(
       id: 'demo-13',
-      title: 'Kỹ sư Backend',
-      company: 'Mực Tím Systems',
+      title: 'Backend Engineer',
+      company: 'Violet Systems',
       fieldId: 'software-engineering',
-      skills: [skill('skill-python-data', 'Python', 6), skill('skill-sql', 'SQL', 6), skill('skill-jira-confluence', 'Jira & Confluence', 3)],
+      skills: [
+        skill('skill-python-data', 'Python', 6),
+        skill('skill-sql', 'SQL', 6),
+        skill('skill-jira-confluence', 'Jira & Confluence', 3),
+      ],
       salary: '16–24 triệu/tháng',
       salaryMin: 16,
       location: 'Hà Nội',
@@ -288,10 +343,14 @@ List<StudentJob> _buildDemoJobs() {
     ),
     job(
       id: 'demo-14',
-      title: 'Cộng tác viên trực quan dữ liệu',
-      company: 'Cánh Diều BI',
+      title: 'Data Visualization Collaborator',
+      company: 'Kite BI',
       fieldId: 'data-analytics',
-      skills: [skill('skill-power-bi', 'Power BI', 5), skill('skill-excel', 'Excel', 6), skill('skill-sql', 'SQL', 4)],
+      skills: [
+        skill('skill-power-bi', 'Power BI', 5),
+        skill('skill-excel', 'Excel', 6),
+        skill('skill-sql', 'SQL', 4),
+      ],
       salary: '50–70 nghìn/giờ',
       salaryMin: 8,
       location: 'Đà Nẵng',
@@ -302,10 +361,14 @@ List<StudentJob> _buildDemoJobs() {
     ),
     job(
       id: 'demo-15',
-      title: 'Chuyên viên kiểm thử tự động',
-      company: 'Bậc Thang QA',
+      title: 'Test Automation Specialist',
+      company: 'Stepwise QA',
       fieldId: 'quality-assurance',
-      skills: [skill('skill-python-data', 'Python', 5), skill('skill-jira-confluence', 'Jira & Confluence', 4), skill('skill-agile-scrum', 'Agile & Scrum', 4)],
+      skills: [
+        skill('skill-python-data', 'Python', 5),
+        skill('skill-jira-confluence', 'Jira & Confluence', 4),
+        skill('skill-agile-scrum', 'Agile & Scrum', 4),
+      ],
       salary: '13–19 triệu/tháng',
       salaryMin: 13,
       location: 'TP. Hồ Chí Minh',
@@ -316,10 +379,14 @@ List<StudentJob> _buildDemoJobs() {
     ),
     job(
       id: 'demo-16',
-      title: 'Thực tập sinh Thiết kế sản phẩm số',
-      company: 'Màu Mơ Studio',
+      title: 'Digital Product Design Intern',
+      company: 'Apricot Studio',
       fieldId: 'ux-ui-design',
-      skills: [skill('skill-figma-wireframe', 'Figma & Wireframe', 5), skill('skill-business-frameworks', 'Khung tư duy kinh doanh', 2), skill('skill-stakeholder-communication', 'Giao tiếp liên phòng ban', 3)],
+      skills: [
+        skill('skill-figma-wireframe', 'Figma & Wireframe', 5),
+        skill('skill-business-frameworks', 'Khung tư duy kinh doanh', 2),
+        skill('skill-stakeholder-communication', 'Giao tiếp liên phòng ban', 3),
+      ],
       salary: '4–7 triệu/tháng',
       salaryMin: 4,
       location: 'TP. Hồ Chí Minh',
@@ -330,10 +397,14 @@ List<StudentJob> _buildDemoJobs() {
     ),
     job(
       id: 'demo-17',
-      title: 'Kỹ sư vận hành nền tảng',
-      company: 'Trạm Mây Nhỏ',
+      title: 'Platform Operations Engineer',
+      company: 'Nimbus Station',
       fieldId: 'cloud-devops',
-      skills: [skill('skill-python-data', 'Python', 5), skill('skill-jira-confluence', 'Jira & Confluence', 4), skill('skill-english-jd', 'Tiếng Anh chuyên ngành', 3)],
+      skills: [
+        skill('skill-python-data', 'Python', 5),
+        skill('skill-jira-confluence', 'Jira & Confluence', 4),
+        skill('skill-english-jd', 'Tiếng Anh chuyên ngành', 3),
+      ],
       salary: '15–22 triệu/tháng',
       salaryMin: 15,
       location: 'Hà Nội',
@@ -344,10 +415,14 @@ List<StudentJob> _buildDemoJobs() {
     ),
     job(
       id: 'demo-18',
-      title: 'Thực tập sinh Phân tích nghiệp vụ',
-      company: 'Mạch Nối Số',
+      title: 'Business Analysis Intern',
+      company: 'Linkwork Digital',
       fieldId: 'business-analysis',
-      skills: [skill('skill-requirements', 'Phân tích yêu cầu', 4), skill('skill-process-modeling', 'Mô hình hóa quy trình', 4), skill('skill-excel', 'Excel', 3)],
+      skills: [
+        skill('skill-requirements', 'Phân tích yêu cầu', 4),
+        skill('skill-process-modeling', 'Mô hình hóa quy trình', 4),
+        skill('skill-excel', 'Excel', 3),
+      ],
       salary: '5–8 triệu/tháng',
       salaryMin: 5,
       location: 'Hà Nội',
@@ -358,10 +433,14 @@ List<StudentJob> _buildDemoJobs() {
     ),
     job(
       id: 'demo-19',
-      title: 'Kỹ sư cơ sở dữ liệu Junior',
-      company: 'Vỏ Sò Data',
+      title: 'Junior Database Engineer',
+      company: 'Shell Data',
       fieldId: 'database-engineering',
-      skills: [skill('skill-sql', 'SQL', 6), skill('skill-excel', 'Excel', 3), skill('skill-python-data', 'Python', 4)],
+      skills: [
+        skill('skill-sql', 'SQL', 6),
+        skill('skill-excel', 'Excel', 3),
+        skill('skill-python-data', 'Python', 4),
+      ],
       salary: '13–19 triệu/tháng',
       salaryMin: 13,
       location: 'TP. Hồ Chí Minh',
@@ -372,10 +451,14 @@ List<StudentJob> _buildDemoJobs() {
     ),
     job(
       id: 'demo-20',
-      title: 'Trợ lý nghiên cứu Machine Learning',
-      company: 'Cú Đêm AI',
+      title: 'Machine Learning Research Assistant',
+      company: 'Night Owl AI',
       fieldId: 'ai-machine-learning',
-      skills: [skill('skill-python-data', 'Python', 6), skill('skill-sql', 'SQL', 3), skill('skill-english-jd', 'Tiếng Anh chuyên ngành', 5)],
+      skills: [
+        skill('skill-python-data', 'Python', 6),
+        skill('skill-sql', 'SQL', 3),
+        skill('skill-english-jd', 'Tiếng Anh chuyên ngành', 5),
+      ],
       salary: '7–11 triệu/tháng',
       salaryMin: 7,
       location: 'Đà Nẵng',
@@ -386,10 +469,14 @@ List<StudentJob> _buildDemoJobs() {
     ),
     job(
       id: 'demo-21',
-      title: 'Điều phối sản phẩm số',
-      company: 'Mầm Ươm Product',
+      title: 'Digital Product Coordinator',
+      company: 'Sprout Product',
       fieldId: 'product-management',
-      skills: [skill('skill-agile-scrum', 'Agile & Scrum', 4), skill('skill-stakeholder-communication', 'Giao tiếp liên phòng ban', 5), skill('skill-requirements', 'Phân tích yêu cầu', 4)],
+      skills: [
+        skill('skill-agile-scrum', 'Agile & Scrum', 4),
+        skill('skill-stakeholder-communication', 'Giao tiếp liên phòng ban', 5),
+        skill('skill-requirements', 'Phân tích yêu cầu', 4),
+      ],
       salary: '12–17 triệu/tháng',
       salaryMin: 12,
       location: 'TP. Hồ Chí Minh',
@@ -400,10 +487,14 @@ List<StudentJob> _buildDemoJobs() {
     ),
     job(
       id: 'demo-22',
-      title: 'Thực tập sinh phát triển Game',
-      company: 'Đom Đóm Play',
+      title: 'Game Development Intern',
+      company: 'Firefly Play',
       fieldId: 'game-development',
-      skills: [skill('skill-python-data', 'Python', 3), skill('skill-figma-wireframe', 'Figma & Wireframe', 3), skill('skill-agile-scrum', 'Agile & Scrum', 2)],
+      skills: [
+        skill('skill-python-data', 'Python', 3),
+        skill('skill-figma-wireframe', 'Figma & Wireframe', 3),
+        skill('skill-agile-scrum', 'Agile & Scrum', 2),
+      ],
       salary: '4–7 triệu/tháng',
       salaryMin: 4,
       location: 'Hà Nội',
@@ -414,10 +505,14 @@ List<StudentJob> _buildDemoJobs() {
     ),
     job(
       id: 'demo-23',
-      title: 'Cộng tác viên kiểm thử sản phẩm',
-      company: 'Ốc Sên Testlab',
+      title: 'Product Testing Collaborator',
+      company: 'Snail Testlab',
       fieldId: 'quality-assurance',
-      skills: [skill('skill-jira-confluence', 'Jira & Confluence', 3), skill('skill-requirements', 'Phân tích yêu cầu', 3), skill('skill-stakeholder-communication', 'Giao tiếp liên phòng ban', 3)],
+      skills: [
+        skill('skill-jira-confluence', 'Jira & Confluence', 3),
+        skill('skill-requirements', 'Phân tích yêu cầu', 3),
+        skill('skill-stakeholder-communication', 'Giao tiếp liên phòng ban', 3),
+      ],
       salary: '40–60 nghìn/giờ',
       salaryMin: 6,
       location: 'Đà Nẵng',
@@ -428,10 +523,14 @@ List<StudentJob> _buildDemoJobs() {
     ),
     job(
       id: 'demo-24',
-      title: 'Thực tập sinh ứng dụng Web3',
-      company: 'Lục Bình Chain',
+      title: 'Web3 Application Intern',
+      company: 'Lotus Chain',
       fieldId: 'blockchain-web3',
-      skills: [skill('skill-python-data', 'Python', 4), skill('skill-english-jd', 'Tiếng Anh chuyên ngành', 4), skill('skill-sql', 'SQL', 3)],
+      skills: [
+        skill('skill-python-data', 'Python', 4),
+        skill('skill-english-jd', 'Tiếng Anh chuyên ngành', 4),
+        skill('skill-sql', 'SQL', 3),
+      ],
       salary: '5–9 triệu/tháng',
       salaryMin: 5,
       location: 'Hà Nội',
