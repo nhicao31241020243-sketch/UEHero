@@ -108,7 +108,8 @@ class _CharacterCarouselPage extends StatelessWidget {
                     flex: 55,
                     child: LayoutBuilder(
                       builder: (context, viewerConstraints) {
-                        final widthBasedSize = viewerConstraints.maxWidth * 0.78;
+                        final widthBasedSize =
+                            viewerConstraints.maxWidth * 0.78;
                         final heightBasedSize =
                             viewerConstraints.maxHeight * 0.78;
                         final orbSize = widthBasedSize < heightBasedSize
