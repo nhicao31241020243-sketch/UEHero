@@ -100,10 +100,12 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
     // Send only conversation turns (not notices) to preserve chat context.
     final history = _messages
         .where((message) => !message.isNotice)
-        .map((message) => {
-              'role': message.fromAssistant ? 'assistant' : 'user',
-              'content': message.text,
-            })
+        .map(
+          (message) => {
+            'role': message.fromAssistant ? 'assistant' : 'user',
+            'content': message.text,
+          },
+        )
         .toList()
         .reversed
         .take(10)
@@ -123,21 +125,31 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
         appContext: _contextData?.summary ?? '',
       );
       if (!mounted) return;
-      setState(() => _messages.add(
-        _ChatMessage(text: answer, fromAssistant: true),
-      ));
+      setState(
+        () => _messages.add(_ChatMessage(text: answer, fromAssistant: true)),
+      );
     } on AiChatException catch (error) {
       if (!mounted) return;
-      setState(() => _messages.add(
-        _ChatMessage(text: error.message, fromAssistant: true, isNotice: true),
-      ));
+      setState(
+        () => _messages.add(
+          _ChatMessage(
+            text: error.message,
+            fromAssistant: true,
+            isNotice: true,
+          ),
+        ),
+      );
     } catch (_) {
       if (!mounted) return;
-      setState(() => _messages.add(const _ChatMessage(
-        text: 'Không thể nhận phản hồi AI. Kiểm tra backend và thử lại.',
-        fromAssistant: true,
-        isNotice: true,
-      )));
+      setState(
+        () => _messages.add(
+          const _ChatMessage(
+            text: 'Không thể nhận phản hồi AI. Kiểm tra backend và thử lại.',
+            fromAssistant: true,
+            isNotice: true,
+          ),
+        ),
+      );
     } finally {
       if (mounted) {
         setState(() => _isSending = false);
@@ -335,38 +347,42 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
     child: ListView(
       scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-      children: [
-        'Có sự kiện nghề nghiệp nào phù hợp?',
-        'Luyện phỏng vấn Business Analyst intern',
-        'CV thực tập nên viết thế nào?',
-        'Hôm nay có gì?',
-        'Còn bao nhiêu thẻ chưa học?',
-        'Cuộc thi sắp hết hạn?',
-        'Nên làm gì trước?',
-      ].map((question) {
-        final isLocalQuestion = const {
-          'Hôm nay có gì?',
-          'Còn bao nhiêu thẻ chưa học?',
-          'Cuộc thi sắp hết hạn?',
-          'Nên làm gì trước?',
-        }.contains(question);
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: ActionChip(
-            backgroundColor: const Color(0xFF29233A),
-            side: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
-            label: Text(
-              question,
-              style: const TextStyle(color: Color(0xFFE9E2FF), fontSize: 12),
-            ),
-            onPressed: _loading || _isSending
-                ? null
-                : () => isLocalQuestion
-                    ? _answerQuickQuestion(question)
-                    : _askSuggestion(question),
-          ),
-        );
-      }).toList(),
+      children:
+          [
+            'Có sự kiện nghề nghiệp nào phù hợp?',
+            'Luyện phỏng vấn Business Analyst intern',
+            'CV thực tập nên viết thế nào?',
+            'Hôm nay có gì?',
+            'Còn bao nhiêu thẻ chưa học?',
+            'Cuộc thi sắp hết hạn?',
+            'Nên làm gì trước?',
+          ].map((question) {
+            final isLocalQuestion = const {
+              'Hôm nay có gì?',
+              'Còn bao nhiêu thẻ chưa học?',
+              'Cuộc thi sắp hết hạn?',
+              'Nên làm gì trước?',
+            }.contains(question);
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: ActionChip(
+                backgroundColor: const Color(0xFF29233A),
+                side: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+                label: Text(
+                  question,
+                  style: const TextStyle(
+                    color: Color(0xFFE9E2FF),
+                    fontSize: 12,
+                  ),
+                ),
+                onPressed: _loading || _isSending
+                    ? null
+                    : () => isLocalQuestion
+                          ? _answerQuickQuestion(question)
+                          : _askSuggestion(question),
+              ),
+            );
+          }).toList(),
     ),
   );
 

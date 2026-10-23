@@ -17,11 +17,7 @@ class InterviewQuestion {
     );
   }
 
-  Map<String, dynamic> toJson() => {
-    'q': text,
-    'hint': hint,
-    'skill': skill,
-  };
+  Map<String, dynamic> toJson() => {'q': text, 'hint': hint, 'skill': skill};
 }
 
 class InterviewSession {

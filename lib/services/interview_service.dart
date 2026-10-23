@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 
@@ -6,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/interview_models.dart';
 import '../models/xp_entry.dart';
+import 'career_board_service.dart';
 import 'points_manager.dart';
 
 class InterviewService {
@@ -215,8 +217,8 @@ class InterviewService {
       historyKey,
       jsonEncode(current.take(20).map((entry) => entry.toJson()).toList()),
     );
-    // TODO(career-map): connect this key to the milestone-completion store.
     await preferences.setBool(interviewDoneKey, true);
+    unawaited(CareerBoardService.instance.reportInterviewCompleted());
     await PointsManager.instance.addXP(
       thanh: XpBar.hoSo,
       luong: completed.overall >= 70 ? 70 : 60,

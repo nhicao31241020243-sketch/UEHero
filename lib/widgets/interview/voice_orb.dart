@@ -3,11 +3,7 @@ import 'package:flutter/material.dart';
 enum VoiceOrbState { idle, listening, thinking, error }
 
 class VoiceOrb extends StatefulWidget {
-  const VoiceOrb({
-    required this.state,
-    this.onRetry,
-    super.key,
-  });
+  const VoiceOrb({required this.state, this.onRetry, super.key});
 
   final VoiceOrbState state;
   final VoidCallback? onRetry;
@@ -83,10 +79,11 @@ class _VoiceOrbState extends State<VoiceOrb>
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: (error
-                                ? const Color(0xFFFFA878)
-                                : const Color(0xFF70D8F2))
-                            .withValues(alpha: 0.35),
+                        color:
+                            (error
+                                    ? const Color(0xFFFFA878)
+                                    : const Color(0xFF70D8F2))
+                                .withValues(alpha: 0.35),
                         blurRadius: 24,
                         spreadRadius: 2,
                       ),

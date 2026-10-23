@@ -49,16 +49,21 @@ class AiChatService {
 
     Map<String, dynamic> json;
     try {
-      json = jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
+      json =
+          jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
     } on FormatException {
       throw const AiChatException('Backend trả về dữ liệu không hợp lệ.');
     } on TypeError {
-      throw const AiChatException('Backend trả về dữ liệu không đúng định dạng.');
+      throw const AiChatException(
+        'Backend trả về dữ liệu không đúng định dạng.',
+      );
     }
     if (response.statusCode != 200) {
       final detail = json['detail'];
       throw AiChatException(
-        detail is String ? detail : 'Backend báo lỗi HTTP ${response.statusCode}.',
+        detail is String
+            ? detail
+            : 'Backend báo lỗi HTTP ${response.statusCode}.',
       );
     }
     final reply = json['reply'];

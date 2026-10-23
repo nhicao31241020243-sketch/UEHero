@@ -1,9 +1,12 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/app_task.dart';
+import '../models/notebook_activity.dart';
 import '../models/xp_entry.dart';
+import 'activity_log_service.dart';
 import 'points_manager.dart';
 
 class TaskRepository {
@@ -12,6 +15,11 @@ class TaskRepository {
   static final instance = TaskRepository._();
   static const _tasksKey = 'shared_tasks_v1';
   static const _legacyCalendarMigrationKey = 'weekly_plan_legacy_seed_migrated';
+
+  final _completedController = StreamController<String>.broadcast();
+
+  /// Phát id của nhiệm vụ vừa chuyển sang trạng thái hoàn thành.
+  Stream<String> get onTaskCompleted => _completedController.stream;
 
   List<AppTask> _tasks = const [];
   final Set<String> _deletedTaskIds = {};
@@ -53,7 +61,9 @@ class TaskRepository {
   List<AppTask> todayPriorities({DateTime? date, int limit = 3}) {
     final today = _dateOnly(date ?? DateTime.now());
     final candidates = _tasks.where((task) {
-      if (task.trangThai != TaskStatus.pending || task.han == null) return false;
+      if (task.trangThai != TaskStatus.pending || task.han == null) {
+        return false;
+      }
       final due = _dateOnly(task.han!);
       return !due.isAfter(today);
     }).toList()..sort(_compareTasks);
@@ -84,10 +94,22 @@ class TaskRepository {
     final completed = task.copyWith(trangThai: TaskStatus.completed);
     final nextTasks = List<AppTask>.from(_tasks)..[index] = completed;
     await _save(nextTasks, preferences: preferences);
+    if (!_completedController.isClosed) {
+      _completedController.add(taskId);
+    }
+    unawaited(
+      ActivityLogService.instance.record(
+        feature: NotebookFeature.weeklyPlan,
+        type: 'task-completed',
+      ),
+    );
     return added;
   }
 
-  Future<AppTask?> delete(String taskId, {SharedPreferences? preferences}) async {
+  Future<AppTask?> delete(
+    String taskId, {
+    SharedPreferences? preferences,
+  }) async {
     await initialize(preferences: preferences);
     final index = _tasks.indexWhere((task) => task.id == taskId);
     if (index < 0) return null;
@@ -176,11 +198,15 @@ class TaskRepository {
 
   Future<bool> seedDemoIfEmpty({SharedPreferences? preferences}) async {
     await initialize(preferences: preferences);
-    if (_tasks.isNotEmpty || _deletedTaskIds.isNotEmpty || !_storageWasMissing) {
+    if (_tasks.isNotEmpty ||
+        _deletedTaskIds.isNotEmpty ||
+        !_storageWasMissing) {
       return false;
     }
     await PointsManager.instance.initialize(preferences: preferences);
-    if (PointsManager.instance.entries.any((entry) => entry.nguon != 'initial')) {
+    if (PointsManager.instance.entries.any(
+      (entry) => entry.nguon != 'initial',
+    )) {
       return false;
     }
 
@@ -210,7 +236,9 @@ class TaskRepository {
         AppTask(
           id: 'demo-streak-$day',
           nguon: 'demo',
-          noiDung: day == 0 ? 'Hoàn thành mục tiêu hôm nay' : 'Mục tiêu ngày ${day.abs()}',
+          noiDung: day == 0
+              ? 'Hoàn thành mục tiêu hôm nay'
+              : 'Mục tiêu ngày ${day.abs()}',
           han: today.add(Duration(days: day, hours: 9)),
           trangThai: TaskStatus.completed,
           coGio: true,
@@ -337,7 +365,8 @@ class TaskRepository {
     _tasks = List.unmodifiable(tasks);
   }
 
-  DateTime _dateOnly(DateTime date) => DateTime(date.year, date.month, date.day);
+  DateTime _dateOnly(DateTime date) =>
+      DateTime(date.year, date.month, date.day);
 
   int _compareTasks(AppTask first, AppTask second) {
     final firstDue = first.han ?? DateTime(9999);

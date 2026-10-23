@@ -15,12 +15,14 @@ import '../models/xp_entry.dart';
 import '../services/cv_analyzer.dart';
 import '../services/cv_document_reader.dart';
 import '../services/cv_score_store.dart';
+import '../services/gpa_repository.dart';
 import '../services/flashcard_service.dart';
 import '../services/goal_progress_service.dart';
 import '../services/points_manager.dart';
 import '../services/mascot_selection_store.dart';
 import '../widgets/match_bar.dart';
-import 'career_map_screen.dart';
+import 'career_board_screen.dart';
+import '../services/career_board_service.dart';
 import 'flashcard_home_screen.dart';
 import 'job_screen.dart';
 
@@ -172,7 +174,24 @@ class _CvCheckScreenState extends State<CvCheckScreen> {
       _showMessage('CV cần có ít nhất 200 ký tự để kiểm tra.');
       return;
     }
-    _cvController.text = normalizedText;
+    var analysisText = normalizedText;
+    try {
+      await GpaRepository.instance.load();
+      final gpa = GpaRepository.instance.gpaForCv;
+      if (gpa != null &&
+          !RegExp(
+            r'\bGPA\b.*\d',
+            caseSensitive: false,
+          ).hasMatch(analysisText)) {
+        analysisText =
+            '$analysisText\nHỌC VẤN\nGPA tích lũy: ${gpa.toStringAsFixed(2)} / 4.00';
+        _showMessage('Đã điền GPA từ Flight Log theo quyền bạn đã cho phép.');
+      }
+    } on FormatException catch (error) {
+      _showMessage('Bỏ qua GPA vì Flight Log không hợp lệ: $error');
+    }
+    if (!mounted) return;
+    _cvController.text = analysisText;
     setState(() {
       _readingCv = false;
       _checking = true;
@@ -191,7 +210,11 @@ class _CvCheckScreenState extends State<CvCheckScreen> {
     if (!mounted) return;
 
     final previousIssues = _analysis?.issues ?? const <CvIssue>[];
-    final result = _analyzer.analyze(text: text, career: _career, job: _job);
+    final result = _analyzer.analyze(
+      text: analysisText,
+      career: _career,
+      job: _job,
+    );
     final preferences = await SharedPreferences.getInstance();
     final scoreRecord = await _scoreStore.record(
       score: result.score,
@@ -199,6 +222,7 @@ class _CvCheckScreenState extends State<CvCheckScreen> {
       target: _job?.label ?? _career.title,
     );
     final previousBest = scoreRecord.previousBest;
+    unawaited(CareerBoardService.instance.sync());
     final xpAmount = cvCheckXp(
       score: result.score,
       previousBest: previousBest,
@@ -404,7 +428,7 @@ class _CvCheckScreenState extends State<CvCheckScreen> {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
         settings: const RouteSettings(name: '/career-map'),
-        builder: (_) => const CareerMapScreen(),
+        builder: (_) => const CareerBoardScreen(),
       ),
     );
   }
