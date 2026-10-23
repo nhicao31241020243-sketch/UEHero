@@ -16,14 +16,18 @@ class MentorProfileScreen extends StatefulWidget {
 
 class _MentorProfileScreenState extends State<MentorProfileScreen> {
   Mentor get mentor => widget.mentor;
-
+  DateTime? _pickedSlot;
   static const _surface = Color(0xFF211D2B);
   static const _accent = Color(0xFFBFA8FF);
 
   Future<void> _openBookingForm() async {
     final slots = List<DateTime>.of(mentor.availableSlots)..sort();
     final formKey = GlobalKey<FormState>();
-    var selectedSlot = slots.isEmpty ? null : slots.first;
+    var selectedSlot = slots.isEmpty
+        ? null
+        : (_pickedSlot != null && slots.contains(_pickedSlot)
+              ? _pickedSlot
+              : slots.first);
     var selectedPurpose = 'cv';
     var question = '';
 
@@ -234,6 +238,32 @@ class _MentorProfileScreenState extends State<MentorProfileScreen> {
               textAlign: TextAlign.center,
               style: const TextStyle(color: Color(0xFFBDB7C9), fontSize: 12),
             ),
+            if (mentor.rating != null) ...[
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(
+                    Icons.star_rounded,
+                    color: Color(0xFFFFC857),
+                    size: 18,
+                  ),
+                  const SizedBox(width: 4),
+                  Flexible(
+                    child: Text(
+                      '${mentor.rating!.toStringAsFixed(1)} · ${mentor.sessionsCount} buổi đã mentor',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Color(0xFFE7E0FA),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
             const SizedBox(height: 18),
             _SectionCard(
               title: 'Ngành chuyên môn',
@@ -277,23 +307,84 @@ class _MentorProfileScreenState extends State<MentorProfileScreen> {
                       'Chưa có lịch trống được cập nhật.',
                       style: TextStyle(color: Color(0xFFBDB7C9)),
                     )
-                  : Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                  : Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
                       children: [
                         for (final slot in slots)
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 7),
-                            child: Text(
-                              _formatSlot(slot),
-                              style: const TextStyle(
-                                color: Color(0xFFCEC9D7),
-                                fontSize: 13,
-                              ),
+                          ChoiceChip(
+                            label: Text(_formatSlot(slot)),
+                            selected: _pickedSlot == slot,
+                            onSelected: (value) => setState(
+                              () => _pickedSlot = value ? slot : null,
                             ),
+                            labelStyle: const TextStyle(
+                              color: Color(0xFFD8CDF8),
+                              fontSize: 12,
+                            ),
+                            backgroundColor: const Color(0xFF363044),
+                            selectedColor: const Color(0xFF5A4486),
+                            side: BorderSide.none,
+                            showCheckmark: false,
                           ),
                       ],
                     ),
             ),
+            if (mentor.reviews.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              _SectionCard(
+                title: 'Đánh giá từ sinh viên',
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    for (final review in mentor.reviews)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    review.author,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+                                const Icon(
+                                  Icons.star_rounded,
+                                  color: Color(0xFFFFC857),
+                                  size: 15,
+                                ),
+                                Text(
+                                  ' ${review.rating}',
+                                  style: const TextStyle(
+                                    color: Color(0xFFE7E0FA),
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              review.comment,
+                              style: const TextStyle(
+                                color: Color(0xFFCEC9D7),
+                                fontSize: 13,
+                                height: 1.45,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
             const SizedBox(height: 12),
             const _SectionCard(
               title: 'Gặp mentor để làm gì?',

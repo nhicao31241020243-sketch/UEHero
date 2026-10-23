@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../models/mentor_model.dart';
@@ -15,7 +16,9 @@ const mentorAvatarPalettes = <List<Color>>[
 
 String mentorInitial(String name) {
   final trimmed = name.trim();
-  return trimmed.isEmpty ? '?' : String.fromCharCode(trimmed.runes.first).toUpperCase();
+  return trimmed.isEmpty
+      ? '?'
+      : String.fromCharCode(trimmed.runes.first).toUpperCase();
 }
 
 int mentorPaletteIndex(String id) {
@@ -27,11 +30,7 @@ int mentorPaletteIndex(String id) {
 }
 
 class MentorAvatar extends StatelessWidget {
-  const MentorAvatar({
-    required this.mentor,
-    this.size = 54,
-    super.key,
-  });
+  const MentorAvatar({required this.mentor, this.size = 54, super.key});
 
   final Mentor mentor;
   final double size;
@@ -40,6 +39,7 @@ class MentorAvatar extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = mentorAvatarPalettes[mentorPaletteIndex(mentor.id)];
     final asset = mentor.avatarAsset;
+    final url = mentor.avatarUrl;
 
     Widget initials() => DecoratedBox(
       decoration: BoxDecoration(
@@ -65,10 +65,23 @@ class MentorAvatar extends StatelessWidget {
     return SizedBox.square(
       dimension: size,
       child: ClipOval(
-        child: asset == null
+        child: url != null && url.isNotEmpty
+            ? CachedNetworkImage(
+                imageUrl: url,
+                fit: BoxFit.cover,
+                width: size,
+                height: size,
+                // Pass a smaller decode size so list thumbnails stay cheap.
+                memCacheWidth: (size * 3).round(),
+                fadeInDuration: const Duration(milliseconds: 160),
+                placeholder: (context, _) => initials(),
+                errorWidget: (context, _, _) => initials(),
+              )
+            : asset == null
             ? initials()
             : Image.asset(
                 asset,
+                alignment: Alignment.topCenter,
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) => initials(),
               ),

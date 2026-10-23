@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uehero/config/it_fields.dart';
 import 'package:uehero/data/mentor_demo_data.dart';
+import 'package:uehero/data/mentor_seed_data.dart';
 import 'package:uehero/models/mentor_model.dart';
 import 'package:uehero/screens/mentor_screen.dart';
 import 'package:uehero/services/mentor_filter.dart';
@@ -36,17 +37,13 @@ void main() {
       now: DateTime(2026, 10, 14, 12),
     );
 
-    test('provides 16 demo mentors covering every IT field', () {
-      expect(mentors, hasLength(16));
+    test('provides 63 demo mentors covering every IT field', () {
+      expect(mentors, hasLength(63));
+      expect(mentors.map((mentor) => mentor.id).toSet(), hasLength(63));
       expect(mentors.every((mentor) => mentor.isDemo), isTrue);
       final covered = mentors.expand((mentor) => mentor.fieldIds).toSet();
       expect(covered, containsAll(itFields.map((field) => field.id)));
-      for (final fieldId in [
-        'frontend',
-        'backend',
-        'mobile',
-        'data_analyst',
-      ]) {
+      for (final fieldId in ['frontend', 'backend', 'mobile', 'data_analyst']) {
         expect(
           mentors.where((mentor) => mentor.fieldIds.contains(fieldId)).length,
           greaterThanOrEqualTo(2),
@@ -56,10 +53,123 @@ void main() {
         mentors.every((mentor) => mentor.bio.split('. ').length >= 2),
         isTrue,
       );
+      expect(mentors.map((mentor) => mentor.bio).toSet(), hasLength(63));
       expect(
-        mentors.every((mentor) => mentor.topics.length == 3),
+        mentors.every(
+          (mentor) =>
+              mentor.topics.length >= 2 &&
+              mentor.yearsExperience >= 1 &&
+              mentor.yearsExperience <= 12,
+        ),
         isTrue,
       );
+    });
+
+    test('uses local portrait assets whose gender matches the name', () {
+      final seedFemale = {
+        for (final row in mentorSeedRows) row.id: row.female,
+      };
+      final pattern = RegExp(
+        r'^assets/mentors/mentor_([fm])(0[1-9]|1[0-5])\.jpg$',
+      );
+      for (final mentor in mentors) {
+        final match = pattern.firstMatch(mentor.avatarAsset ?? '');
+        expect(match, isNotNull, reason: mentor.id);
+        final female =
+            seedFemale[mentor.id] ?? originalMentorFemale[mentor.id] ?? false;
+        expect(match![1], female ? 'f' : 'm', reason: mentor.id);
+        expect(mentor.avatarUrl, isNull, reason: mentor.id);
+      }
+      for (var i = 1; i < mentors.length; i++) {
+        expect(
+          mentors[i].avatarAsset,
+          isNot(mentors[i - 1].avatarAsset),
+          reason: 'adjacent mentors share a portrait at index $i',
+        );
+      }
+      expect(
+        mentors
+            .map((mentor) => mentor.rating)
+            .every((rating) => rating! >= 4.0 && rating <= 5.0),
+        isTrue,
+      );
+      expect(mentors.every((mentor) => mentor.sessionsCount > 0), isTrue);
+      expect(mentors.every((mentor) => mentor.reviews.isNotEmpty), isTrue);
+    });
+
+    test('mentor names are unique full Vietnamese names', () {
+      expect(mentors.map((mentor) => mentor.name).toSet(), hasLength(63));
+      for (final mentor in mentors) {
+        expect(mentor.name.trim().split(' ').length, greaterThanOrEqualTo(3));
+      }
+    });
+
+    test('experience matches the title level and session count', () {
+      final mismatches = <String>[];
+      for (final mentor in mentors) {
+        final title = mentor.title.toLowerCase();
+        final years = mentor.yearsExperience;
+        final String level;
+        final (int, int) range;
+        if (RegExp(r'intern|junior|associate').hasMatch(title)) {
+          level = 'junior';
+          range = (1, 2);
+        } else if (RegExp(r'lead|manager|head|director').hasMatch(title)) {
+          level = 'lead';
+          range = (8, 14);
+        } else if (title.contains('senior')) {
+          level = 'senior';
+          range = (6, 9);
+        } else {
+          level = 'mid';
+          range = (3, 5);
+        }
+        if (years < range.$1 || years > range.$2) {
+          mismatches.add('${mentor.id}: "${mentor.title}" ($level) $years y');
+        }
+        if (years <= 2) {
+          final sessions = mentor.sessionsCount;
+          if (sessions < 10 || sessions > 60) {
+            mismatches.add('${mentor.id}: $sessions sessions at $years y');
+          }
+        } else if (years >= 6) {
+          final sessions = mentor.sessionsCount;
+          if (sessions < 50 || sessions > 300) {
+            mismatches.add('${mentor.id}: $sessions sessions at $years y');
+          }
+        }
+      }
+      if (mismatches.isNotEmpty) fail(mismatches.join('\n'));
+    });
+
+
+    test('some mentors have no free slots', () {
+      expect(mentors.any((mentor) => mentor.availableSlots.isEmpty), isTrue);
+      expect(mentors.any((mentor) => mentor.availableSlots.isNotEmpty), isTrue);
+    });
+
+    test('sorts by rating and earliest slot', () {
+      final byRating = filterAndSortMentors(
+        mentors: mentors,
+        sort: MentorSort.rating,
+      );
+      for (var i = 1; i < byRating.length; i++) {
+        expect(
+          byRating[i - 1].rating,
+          greaterThanOrEqualTo(byRating[i].rating!),
+        );
+      }
+      final soonest = filterAndSortMentors(
+        mentors: mentors,
+        sort: MentorSort.soonest,
+      );
+      expect(soonest.first.availableSlots, isNotEmpty);
+      expect(soonest.last.availableSlots, isEmpty);
+      final favorites = filterAndSortMentors(
+        mentors: mentors,
+        onlyIds: {mentors[3].id},
+      );
+      expect(favorites.single.id, mentors[3].id);
     });
 
     test('filters by goal and ranks goal matches first', () {
@@ -81,9 +191,15 @@ void main() {
         targetFieldId: 'data_analyst',
         onlyAvailable: true,
       );
-      expect(result, hasLength(1));
-      expect(result.single.fieldIds, contains('data_analyst'));
-      expect(result.single.availableSlots, isNotEmpty);
+      expect(result, isNotEmpty);
+      expect(
+        result.every((mentor) => mentor.fieldIds.contains('data_analyst')),
+        isTrue,
+      );
+      expect(
+        result.every((mentor) => mentor.availableSlots.isNotEmpty),
+        isTrue,
+      );
     });
 
     test('filters by industry and text in topic/title/industry', () {
@@ -116,7 +232,10 @@ void main() {
         mentors: mentors,
         onlyAvailable: true,
       );
-      expect(withSlots.every((mentor) => mentor.availableSlots.isNotEmpty), isTrue);
+      expect(
+        withSlots.every((mentor) => mentor.availableSlots.isNotEmpty),
+        isTrue,
+      );
       expect(withSlots.length, lessThan(mentors.length));
     });
   });
@@ -153,11 +272,11 @@ void main() {
 
       if (size.width == 320) {
         await tester.scrollUntilVisible(
-          find.text('Mai Chi Đặng'),
+          find.text('Đặng Mai Chi'),
           250,
           scrollable: find.byType(Scrollable).last,
         );
-        await tester.tap(find.text('Mai Chi Đặng'));
+        await tester.tap(find.text('Đặng Mai Chi'));
         await tester.pumpAndSettle();
         expect(find.text('Hồ sơ mentor'), findsOneWidget);
         expect(tester.takeException(), isNull);

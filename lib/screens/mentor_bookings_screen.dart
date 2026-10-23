@@ -6,6 +6,7 @@ import '../config/demo_config.dart';
 import '../data/mentor_demo_data.dart';
 import '../models/mentor_booking.dart';
 import '../models/mentor_model.dart';
+import '../services/career_board_service.dart';
 import '../services/mentor_booking_service.dart';
 
 class MentorBookingsScreen extends StatefulWidget {
@@ -72,6 +73,7 @@ class _MentorBookingsScreenState extends State<MentorBookingsScreen> {
   Future<void> _completeDemo(MentorBooking booking) async {
     try {
       await _service.markCompleted(booking.id);
+      unawaited(CareerBoardService.instance.sync());
       if (!mounted) return;
       final actionItems = await showModalBottomSheet<List<String>>(
         context: context,

@@ -7,6 +7,7 @@ import '../config/it_fields.dart';
 import '../data/mentor_demo_data.dart';
 import '../models/mentor_model.dart';
 import '../services/mentor_booking_service.dart';
+import '../services/mentor_favorites.dart';
 import '../services/mentor_filter.dart';
 import '../widgets/mentor_avatar.dart';
 import 'mentor_bookings_screen.dart';
@@ -33,6 +34,9 @@ class _MentorScreenState extends State<MentorScreen> {
   String? _goalFieldId;
   String? _selectedFieldId;
   bool _onlyAvailable = false;
+  bool _onlyFavorites = false;
+  MentorSort _sort = MentorSort.goal;
+  Set<String> _favorites = {};
   bool _loadingGoal = true;
   bool _goalUnavailable = false;
   String? _bookingLoadError;
@@ -43,7 +47,20 @@ class _MentorScreenState extends State<MentorScreen> {
     _mentors = MentorRepository.getMentors();
     _bookingService.addListener(_bookingsChanged);
     _loadGoal();
+    unawaited(_loadFavorites());
     unawaited(_initializeBookings());
+  }
+
+  Future<void> _loadFavorites() async {
+    final favorites = await MentorFavorites.load();
+    if (mounted) setState(() => _favorites = favorites);
+  }
+
+  void _toggleFavorite(Mentor mentor) {
+    final next = {..._favorites};
+    if (!next.remove(mentor.id)) next.add(mentor.id);
+    setState(() => _favorites = next);
+    unawaited(MentorFavorites.save(next));
   }
 
   Future<void> _initializeBookings() async {
@@ -70,7 +87,7 @@ class _MentorScreenState extends State<MentorScreen> {
     setState(() {
       _goalId = goalId;
       _goalFieldId = fieldId;
-      _selectedFieldId = hasMatchingMentor ? _goalFilter : null;
+      _selectedFieldId = null;
       _goalUnavailable = !hasMatchingMentor;
       _loadingGoal = false;
     });
@@ -82,6 +99,8 @@ class _MentorScreenState extends State<MentorScreen> {
     fieldId: _selectedFieldId,
     targetFieldId: _goalFieldId,
     onlyAvailable: _onlyAvailable,
+    onlyIds: _onlyFavorites ? _favorites : null,
+    sort: _sort,
   );
 
   @override
@@ -208,7 +227,10 @@ class _MentorScreenState extends State<MentorScreen> {
                           mentor: mentors[index],
                           isGoalMatch:
                               _goalFieldId != null &&
+                              _selectedFieldId != _goalFilter &&
                               mentors[index].fieldIds.contains(_goalFieldId),
+                          isFavorite: _favorites.contains(mentors[index].id),
+                          onFavorite: () => _toggleFavorite(mentors[index]),
                           onTap: () => _openProfile(mentors[index]),
                         ),
                       ),
@@ -384,22 +406,70 @@ class _MentorScreenState extends State<MentorScreen> {
       ),
       Padding(
         padding: const EdgeInsets.fromLTRB(18, 2, 18, 4),
-        child: Row(
+        child: Wrap(
+          alignment: WrapAlignment.end,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 4,
+          runSpacing: 2,
           children: [
             if (_goalFieldId != null)
-              Expanded(
-                child: Text(
-                  'Mục tiêu: ${itFieldName(_goalFieldId!) ?? _goalFieldId}',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Color(0xFFAAA5B8),
-                    fontSize: 11,
+              Text(
+                'Mục tiêu: ${itFieldName(_goalFieldId!) ?? _goalFieldId}',
+                style: const TextStyle(color: Color(0xFFAAA5B8), fontSize: 11),
+              ),
+            PopupMenuButton<MentorSort>(
+              tooltip: 'Sắp xếp',
+              initialValue: _sort,
+              color: const Color(0xFF2A2438),
+              onSelected: (value) => setState(() => _sort = value),
+              itemBuilder: (context) => [
+                for (final sort in MentorSort.values)
+                  PopupMenuItem(
+                    value: sort,
+                    child: Text(
+                      sort.label,
+                      style: const TextStyle(color: Colors.white),
+                    ),
                   ),
+              ],
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.sort_rounded,
+                      size: 16,
+                      color: Color(0xFFD8CDF8),
+                    ),
+                    const SizedBox(width: 3),
+                    Text(
+                      _sort.label,
+                      style: const TextStyle(
+                        color: Color(0xFFD8CDF8),
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
                 ),
-              )
-            else
-              const Spacer(),
+              ),
+            ),
+            FilterChip(
+              label: const Text('Yêu thích'),
+              selected: _onlyFavorites,
+              onSelected: (value) => setState(() => _onlyFavorites = value),
+              avatar: const Icon(Icons.favorite_rounded, size: 16),
+              labelStyle: const TextStyle(
+                color: Color(0xFFD8CDF8),
+                fontSize: 11,
+              ),
+              backgroundColor: _surfaceColor,
+              selectedColor: const Color(0xFF4D3B70),
+              side: BorderSide.none,
+              visualDensity: VisualDensity.compact,
+              showCheckmark: false,
+            ),
+            const SizedBox(width: 4),
             FilterChip(
               label: const Text('Còn lịch trống'),
               selected: _onlyAvailable,
@@ -494,11 +564,15 @@ class _MentorCard extends StatelessWidget {
   const _MentorCard({
     required this.mentor,
     required this.isGoalMatch,
+    required this.isFavorite,
+    required this.onFavorite,
     required this.onTap,
   });
 
   final Mentor mentor;
   final bool isGoalMatch;
+  final bool isFavorite;
+  final VoidCallback onFavorite;
   final VoidCallback onTap;
 
   @override
@@ -573,12 +647,52 @@ class _MentorCard extends StatelessWidget {
                             fontSize: 11,
                           ),
                         ),
+                        if (mentor.rating != null) ...[
+                          const SizedBox(height: 5),
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.star_rounded,
+                                color: Color(0xFFFFC857),
+                                size: 15,
+                              ),
+                              const SizedBox(width: 3),
+                              Flexible(
+                                child: Text(
+                                  '${mentor.rating!.toStringAsFixed(1)} · ${mentor.sessionsCount} buổi',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    color: Color(0xFFE7E0FA),
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ],
                     ),
                   ),
-                  const Icon(
-                    Icons.chevron_right_rounded,
-                    color: Colors.white54,
+                  InkResponse(
+                    onTap: onFavorite,
+                    radius: 22,
+                    child: Padding(
+                      padding: const EdgeInsets.all(4),
+                      child: Icon(
+                        isFavorite
+                            ? Icons.favorite_rounded
+                            : Icons.favorite_border_rounded,
+                        color: isFavorite
+                            ? const Color(0xFFFF7A9A)
+                            : Colors.white54,
+                        size: 22,
+                        semanticLabel: isFavorite
+                            ? 'Bỏ yêu thích'
+                            : 'Yêu thích',
+                      ),
+                    ),
                   ),
                 ],
               ),
