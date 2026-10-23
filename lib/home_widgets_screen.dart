@@ -5,10 +5,12 @@ import 'package:model_viewer_plus/model_viewer_plus.dart';
 
 import 'home_event_screen.dart';
 import 'models/character_data.dart';
+import 'models/notebook_activity.dart';
 import 'screens/calendar_screen.dart';
-import 'screens/career_map_screen.dart';
+import 'screens/career_board_screen.dart';
 import 'screens/cv_check_screen.dart';
 import 'screens/flashcard_home_screen.dart';
+import 'screens/career_notebook_screen.dart';
 import 'screens/interview/interview_home_screen.dart';
 import 'screens/job_screen.dart';
 import 'screens/mentor_screen.dart';
@@ -17,6 +19,7 @@ import 'screens/second_hand_market_screen.dart';
 import 'screens/uehero_camera_screen.dart';
 import 'services/route_observer.dart';
 import 'services/points_manager.dart';
+import 'services/career_map_visibility.dart';
 import 'theme/space_theme.dart';
 import 'widgets/xp_float_overlay.dart';
 import 'widgets/space_glass_widgets.dart';
@@ -119,6 +122,7 @@ class _HomeWidgetsScreenState extends State<HomeWidgetsScreen>
   @override
   void initState() {
     super.initState();
+    CareerMapVisibility.isActive.value = false;
     _floatController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1900),
@@ -164,6 +168,7 @@ class _HomeWidgetsScreenState extends State<HomeWidgetsScreen>
 
   @override
   void dispose() {
+    CareerMapVisibility.isActive.value = false;
     ueHeroRouteObserver.unsubscribe(this);
     _floatController.dispose();
     _planetController.dispose();
@@ -175,6 +180,11 @@ class _HomeWidgetsScreenState extends State<HomeWidgetsScreen>
     setState(() {
       _selectedFeatureIndex = index == _selectedFeatureIndex ? null : index;
     });
+  }
+
+  void _selectTab(int index) {
+    setState(() => _selectedTab = index);
+    CareerMapVisibility.isActive.value = index == 1;
   }
 
   void _openQuestionCamera() {
@@ -224,6 +234,39 @@ class _HomeWidgetsScreenState extends State<HomeWidgetsScreen>
     );
   }
 
+  void _openNotebookAction(NotebookAction action) {
+    switch (action) {
+      case NotebookAction.cvCheck:
+        Navigator.of(
+          context,
+        ).push(MaterialPageRoute<void>(builder: (_) => const CvCheckScreen()));
+        break;
+      case NotebookAction.skillDrills:
+        _openFlashcards();
+        break;
+      case NotebookAction.interview:
+        Navigator.of(context).push(
+          MaterialPageRoute<void>(builder: (_) => const InterviewHomeScreen()),
+        );
+        break;
+      case NotebookAction.jobMatch:
+        _openJobs();
+        break;
+      case NotebookAction.mentor:
+        _openMentors();
+        break;
+      case NotebookAction.events:
+        _openEvents();
+        break;
+      case NotebookAction.studyBuddy:
+        _openQuestionCamera();
+        break;
+      case NotebookAction.weeklyPlan:
+        _openCalendar();
+        break;
+    }
+  }
+
   void _openJobs({String query = ''}) {
     Navigator.of(context).push(
       MaterialPageRoute<void>(builder: (_) => JobScreen(initialQuery: query)),
@@ -231,7 +274,7 @@ class _HomeWidgetsScreenState extends State<HomeWidgetsScreen>
   }
 
   Future<void> _openProfile() async {
-    setState(() => _selectedTab = 4);
+    _selectTab(4);
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
         settings: const RouteSettings(name: '/profile'),
@@ -239,7 +282,7 @@ class _HomeWidgetsScreenState extends State<HomeWidgetsScreen>
       ),
     );
     if (mounted) {
-      setState(() => _selectedTab = 0);
+      _selectTab(0);
     }
   }
 
@@ -247,13 +290,13 @@ class _HomeWidgetsScreenState extends State<HomeWidgetsScreen>
   Widget build(BuildContext context) {
     final tabs = [
       _buildHomeTab(),
-      CareerMapScreen(key: ValueKey(_companion.id), embedded: true),
-      const InterviewHomeScreen(),
-      _buildInfoTab(
-        icon: Icons.calculate_rounded,
-        title: 'Tính toán GPA',
-        description: 'Theo dõi kết quả học tập và mục tiêu GPA của bạn.',
+      CareerBoardScreen(
+        key: ValueKey(_companion.id),
+        embedded: true,
+        isActive: _selectedTab == 1,
       ),
+      const InterviewHomeScreen(),
+      CareerNotebookScreen(onOpenAction: _openNotebookAction),
       _buildInfoTab(
         icon: Icons.account_circle_rounded,
         title: 'Hồ sơ của bạn',
@@ -287,19 +330,19 @@ class _HomeWidgetsScreenState extends State<HomeWidgetsScreen>
             icon: Icons.route_rounded,
             label: 'Career Map',
             selected: _selectedTab == 1,
-            onTap: () => setState(() => _selectedTab = 1),
+            onTap: () => _selectTab(1),
           ),
           SpaceDockItem(
             icon: Icons.record_voice_over_outlined,
             label: 'Phỏng vấn',
             selected: _selectedTab == 2,
-            onTap: () => setState(() => _selectedTab = 2),
+            onTap: () => _selectTab(2),
           ),
           SpaceDockItem(
-            icon: Icons.calculate_outlined,
-            label: 'GPA Calc',
+            icon: Icons.menu_book_rounded,
+            label: 'Sổ tay',
             selected: _selectedTab == 3,
-            onTap: () => setState(() => _selectedTab = 3),
+            onTap: () => _selectTab(3),
           ),
           SpaceDockItem(
             icon: Icons.person_outline_rounded,
@@ -314,7 +357,7 @@ class _HomeWidgetsScreenState extends State<HomeWidgetsScreen>
 
   void _goHome() {
     if (_selectedTab != 0) {
-      setState(() => _selectedTab = 0);
+      _selectTab(0);
     } else if (_homeScroll.hasClients) {
       _homeScroll.animateTo(
         0,
@@ -530,7 +573,7 @@ class _HomeWidgetsScreenState extends State<HomeWidgetsScreen>
             left: 16,
             right: 16,
             bottom: 25,
-            child: XpEnergyBar(onTap: () => setState(() => _selectedTab = 1)),
+            child: XpEnergyBar(onTap: () => _selectTab(1)),
           ),
         ],
       ),
@@ -568,7 +611,7 @@ class _HomeWidgetsScreenState extends State<HomeWidgetsScreen>
               ),
               const SizedBox(height: 20),
               OutlinedButton.icon(
-                onPressed: () => setState(() => _selectedTab = 0),
+                onPressed: () => _selectTab(0),
                 icon: const Icon(Icons.home_rounded),
                 label: const Text('Về trang chủ'),
               ),

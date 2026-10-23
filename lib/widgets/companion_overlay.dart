@@ -10,6 +10,7 @@ import '../screens/mascot_hub_screen.dart';
 import '../services/app_navigation.dart';
 import '../services/companion_context_service.dart';
 import '../services/companion_settings_store.dart';
+import '../services/career_map_visibility.dart';
 import '../services/mascot_selection_store.dart';
 import '../services/route_observer.dart';
 
@@ -59,6 +60,7 @@ class _CompanionOverlayState extends State<CompanionOverlay>
       duration: const Duration(seconds: 7),
     )..addStatusListener(_onMovementStatus);
     companionRouteObserver.routeChanges.addListener(_onRouteChanged);
+    CareerMapVisibility.isActive.addListener(_onCareerMapVisibilityChanged);
     MascotSelectionStore.selectionChanges.addListener(_onSelectionChanged);
     CompanionSettingsStore.changes.addListener(_onSettingsChanged);
     _loadState();
@@ -117,6 +119,21 @@ class _CompanionOverlayState extends State<CompanionOverlay>
     });
     _syncMovement();
     _maybeShowReminder();
+  }
+
+  void _onCareerMapVisibilityChanged() {
+    if (!mounted) return;
+    _syncMovement();
+    if (CareerMapVisibility.isActive.value) {
+      _bubbleTimer?.cancel();
+      setState(() {
+        _bubbleText = null;
+        _bubblePrompt = null;
+      });
+    } else {
+      setState(() {});
+      _maybeShowReminder();
+    }
   }
 
   Future<void> _maybeShowReminder() async {
@@ -183,6 +200,7 @@ class _CompanionOverlayState extends State<CompanionOverlay>
     _movementTimer?.cancel();
     _movementController.dispose();
     companionRouteObserver.routeChanges.removeListener(_onRouteChanged);
+    CareerMapVisibility.isActive.removeListener(_onCareerMapVisibilityChanged);
     MascotSelectionStore.selectionChanges.removeListener(_onSelectionChanged);
     CompanionSettingsStore.changes.removeListener(_onSettingsChanged);
     super.dispose();
@@ -199,6 +217,7 @@ class _CompanionOverlayState extends State<CompanionOverlay>
         !_hiddenToday &&
         media.viewInsets.bottom <= 0 &&
         _appResumed &&
+        !CareerMapVisibility.isActive.value &&
         _routeCanShow(companionRouteObserver.routeChanges.value);
     _syncMovement(visible: visible);
     if (!visible) return const SizedBox.shrink();
@@ -215,6 +234,7 @@ class _CompanionOverlayState extends State<CompanionOverlay>
             _overlayEnabled &&
             !_hiddenToday &&
             _appResumed &&
+            !CareerMapVisibility.isActive.value &&
             _routeCanShow(currentRoute));
     final canMove = canShow && _autoMovementEnabled && !_dragging;
     if (_movementAllowed == canMove) return;
@@ -486,7 +506,7 @@ class _CompanionOverlayState extends State<CompanionOverlay>
           children: [
             IgnorePointer(
               child: ModelViewer(
-                key: ValueKey('companion-model-${companion.id}'),
+                key: ValueKey('companion-floating-model-${companion.id}'),
                 src: companion.modelPath,
                 alt: companion.name,
                 autoPlay: true,

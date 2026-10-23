@@ -27,9 +27,6 @@ void main() {
 
     expect(stoneIndexForPoints(0, steps), 0);
     expect(stoneIndexForPoints(50, steps), greaterThan(0));
-    expect(
-      stoneIndexForPoints(350, steps),
-      steps.length - 1,
-    );
+    expect(stoneIndexForPoints(350, steps), steps.length - 1);
   });
 }

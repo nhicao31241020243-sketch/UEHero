@@ -61,7 +61,5 @@ int stoneIndexForPoints(int points, List<StoneStep> steps) {
 
 double _sineWave(double value) {
   final segment = value % 1;
-  return segment < 0.5
-      ? (segment * 4) - 1
-      : 3 - (segment * 4);
+  return segment < 0.5 ? (segment * 4) - 1 : 3 - (segment * 4);
 }

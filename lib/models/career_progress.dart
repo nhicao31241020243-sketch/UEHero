@@ -31,12 +31,12 @@ class ProgressLedgerEntry {
   final Map<String, Object?> metadata;
 
   Map<String, Object?> toJson() => {
-        'eventType': eventType.name,
-        'points': points,
-        'timestamp': timestamp.toIso8601String(),
-        if (refId != null) 'refId': refId,
-        'metadata': metadata,
-      };
+    'eventType': eventType.name,
+    'points': points,
+    'timestamp': timestamp.toIso8601String(),
+    if (refId != null) 'refId': refId,
+    'metadata': metadata,
+  };
 
   factory ProgressLedgerEntry.fromJson(Map<String, dynamic> json) {
     final eventType = ProgressEventType.values.byName(
