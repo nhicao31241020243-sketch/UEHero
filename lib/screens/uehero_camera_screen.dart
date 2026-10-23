@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
@@ -13,6 +14,7 @@ import '../models/career_goal.dart';
 import '../models/character_data.dart';
 import '../models/flashcard.dart';
 import '../models/xp_entry.dart';
+import '../services/career_board_service.dart';
 import '../services/points_manager.dart';
 import '../services/mascot_selection_store.dart';
 import '../services/flashcard_service.dart';
@@ -556,7 +558,7 @@ class _UEHeroCameraScreenState extends State<UEHeroCameraScreen>
     await preferences.setString(_masteryKey, jsonEncode(mastery));
     await _awardDailyPracticePoints(now);
     if (widget.careerMapMilestoneId != null && count >= 3) {
-      // TODO(career-map): mark the supplied milestone complete after three practice questions.
+      unawaited(CareerBoardService.instance.reportStudyBuddyPhoto());
     }
   }
 
