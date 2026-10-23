@@ -1,15 +1,23 @@
+import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
+/// Book cover with a 2:3 ratio. Sources are tried in order: explicit
+/// [coverUrl], Open Library by ISBN or title, then a themed placeholder.
+/// Set [lookupOnline] to false (e.g. for online courses) to skip network
+/// lookups and show the placeholder directly.
 class BookCover extends StatefulWidget {
   const BookCover({
     required this.id,
     required this.title,
     required this.author,
     this.isbn = '',
+    this.coverUrl,
+    this.lookupOnline = true,
     super.key,
   });
 
@@ -17,6 +25,8 @@ class BookCover extends StatefulWidget {
   final String title;
   final String author;
   final String isbn;
+  final String? coverUrl;
+  final bool lookupOnline;
 
   @override
   State<BookCover> createState() => _BookCoverState();
@@ -25,92 +35,128 @@ class BookCover extends StatefulWidget {
 class _BookCoverState extends State<BookCover> {
   static const _cacheKey = 'resource_cover_cache';
   static const _accent = Color(0xFFBFA8FF);
+  static const _timeout = Duration(seconds: 4);
+  // Books Open Library could not match this session, so lookups are not repeated.
+  static final _openLibraryMisses = <String>{};
 
   String? _imageUrl;
   bool _showingFallback = false;
+  bool _resolving = false;
+  // -1 = not started; 0 explicit URL, 1 cache/ISBN, 2 Open Library search.
+  int _stage = -1;
+  bool _cached = false;
 
   @override
   void initState() {
     super.initState();
-    _resolveCover();
+    _advance(_stage);
   }
 
-  Future<void> _resolveCover() async {
+  @override
+  void didUpdateWidget(BookCover oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.id != widget.id ||
+        oldWidget.coverUrl != widget.coverUrl ||
+        oldWidget.isbn != widget.isbn ||
+        oldWidget.lookupOnline != widget.lookupOnline) {
+      _imageUrl = null;
+      _showingFallback = false;
+      _cached = false;
+      _stage = -1;
+      _advance(_stage);
+    }
+  }
+
+  /// Resolves the first usable URL after [from]; falls back to the placeholder.
+  Future<void> _advance(int from) async {
+    if (_resolving) return;
+    _resolving = true;
+    try {
+      final lastStage = widget.lookupOnline ? 2 : 0;
+      for (var stage = from + 1; stage <= lastStage; stage++) {
+        final url = await _urlFor(stage);
+        if (!mounted) return;
+        if (url != null && url.isNotEmpty && url != _imageUrl) {
+          setState(() {
+            _stage = stage;
+            _imageUrl = url;
+          });
+          return;
+        }
+      }
+      if (mounted) setState(() => _showingFallback = true);
+    } finally {
+      _resolving = false;
+    }
+  }
+
+  Future<String?> _urlFor(int stage) async {
+    try {
+      switch (stage) {
+        case 0:
+          final explicit = widget.coverUrl?.trim();
+          return explicit == null || explicit.isEmpty ? null : explicit;
+        case 1:
+          final preferences = await SharedPreferences.getInstance();
+          final cached = _readCache(
+            preferences.getString(_cacheKey),
+          )[widget.id];
+          if (cached != null && cached.isNotEmpty) return cached;
+          return widget.isbn.isEmpty
+              ? null
+              : 'https://covers.openlibrary.org/b/isbn/${Uri.encodeComponent(widget.isbn)}-M.jpg?default=false';
+        case 2:
+          if (_openLibraryMisses.contains(widget.id)) return null;
+          final found = await _openLibraryTitleCover();
+          if (found == null) _openLibraryMisses.add(widget.id);
+          return found;
+      }
+    } catch (_) {
+      return null;
+    }
+    return null;
+  }
+
+  Future<dynamic> _getJson(Uri uri) async {
+    final response = await http.get(uri).timeout(_timeout);
+    if (response.statusCode != 200) {
+      throw StateError('Open Library responded ${response.statusCode}');
+    }
+    return jsonDecode(utf8.decode(response.bodyBytes));
+  }
+
+  Future<String?> _openLibraryTitleCover() async {
+    final decoded = await _getJson(
+      Uri.https('openlibrary.org', '/search.json', {
+        'title': widget.title,
+        if (widget.author.isNotEmpty) 'author': widget.author,
+        'limit': '1',
+        'fields': 'cover_i',
+      }),
+    );
+    final docs = decoded is Map ? decoded['docs'] : null;
+    final first = docs is List && docs.isNotEmpty ? docs.first : null;
+    final coverId = first is Map ? first['cover_i'] : null;
+    return coverId is int
+        ? 'https://covers.openlibrary.org/b/id/$coverId-M.jpg?default=false'
+        : null;
+  }
+
+  Future<void> _rememberUrl(String url) async {
+    if (_cached || url == widget.coverUrl) return;
+    _cached = true;
     final preferences = await SharedPreferences.getInstance();
     final cache = _readCache(preferences.getString(_cacheKey));
-    final cachedUrl = cache[widget.id];
-    if (cachedUrl != null && cachedUrl.isNotEmpty) {
-      if (mounted) setState(() => _imageUrl = cachedUrl);
-      return;
-    }
-
-    if (widget.isbn.isNotEmpty) {
-      final coverUrl =
-          'https://covers.openlibrary.org/b/isbn/${Uri.encodeComponent(widget.isbn)}-M.jpg?default=false';
-      await _saveCachedUrl(preferences, cache, coverUrl);
-      if (mounted) setState(() => _imageUrl = coverUrl);
-      return;
-    }
-
-    await _findGoogleBooksCover(preferences, cache);
-  }
-
-  Future<void> _findGoogleBooksCover(
-    SharedPreferences preferences,
-    Map<String, String> cache,
-  ) async {
-    HttpClient? client;
-    try {
-      final query = 'intitle:${widget.title} inauthor:${widget.author}'.trim();
-      final uri = Uri.https('www.googleapis.com', '/books/v1/volumes', {
-        'q': query,
-        'maxResults': '1',
-      });
-      client = HttpClient()..connectionTimeout = const Duration(seconds: 3);
-      final request = await client
-          .getUrl(uri)
-          .timeout(const Duration(seconds: 4));
-      final response = await request.close().timeout(
-        const Duration(seconds: 4),
-      );
-      if (response.statusCode != HttpStatus.ok) {
-        _useFallback();
-        return;
-      }
-      final body = await utf8.decoder
-          .bind(response)
-          .join()
-          .timeout(const Duration(seconds: 4));
-      final decoded = jsonDecode(body);
-      final items = decoded is Map<String, dynamic> ? decoded['items'] : null;
-      final volumeInfo = items is List && items.isNotEmpty && items.first is Map
-          ? (items.first as Map)['volumeInfo']
-          : null;
-      final imageLinks = volumeInfo is Map ? volumeInfo['imageLinks'] : null;
-      final thumbnail = imageLinks is Map
-          ? imageLinks['thumbnail']?.toString()
-          : null;
-      if (thumbnail == null || thumbnail.isEmpty) {
-        _useFallback();
-        return;
-      }
-      final secureUrl = thumbnail.replaceFirst(RegExp(r'^http:'), 'https:');
-      await _saveCachedUrl(preferences, cache, secureUrl);
-      if (mounted) setState(() => _imageUrl = secureUrl);
-    } catch (_) {
-      _useFallback();
-    } finally {
-      client?.close(force: true);
-    }
-  }
-
-  Future<void> _saveCachedUrl(
-    SharedPreferences preferences,
-    Map<String, String> cache,
-    String url,
-  ) async {
     cache[widget.id] = url;
     await preferences.setString(_cacheKey, jsonEncode(cache));
+  }
+
+  Future<void> _forgetUrl() async {
+    final preferences = await SharedPreferences.getInstance();
+    final cache = _readCache(preferences.getString(_cacheKey));
+    if (cache.remove(widget.id) != null) {
+      await preferences.setString(_cacheKey, jsonEncode(cache));
+    }
   }
 
   Map<String, String> _readCache(String? encoded) {
@@ -128,12 +174,14 @@ class _BookCoverState extends State<BookCover> {
     return {};
   }
 
-  void _useFallback() {
-    if (mounted) setState(() => _showingFallback = true);
+  void _onImageError() {
+    if (_stage == 1) unawaited(_forgetUrl());
+    _advance(_stage);
   }
 
   @override
   Widget build(BuildContext context) {
+    final url = _imageUrl;
     return AspectRatio(
       aspectRatio: 2 / 3,
       child: DecoratedBox(
@@ -149,40 +197,28 @@ class _BookCoverState extends State<BookCover> {
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(12),
-          child: _imageUrl != null && !_showingFallback
-              ? Image.network(
-                  _imageUrl!,
+          child: url != null && !_showingFallback
+              ? CachedNetworkImage(
+                  key: ValueKey(url),
+                  imageUrl: url,
                   fit: BoxFit.cover,
-                  loadingBuilder: (context, child, progress) {
-                    if (progress == null) return child;
-                    return _loadingCover();
+                  fadeInDuration: const Duration(milliseconds: 180),
+                  placeholder: (context, _) => _loadingCover(),
+                  imageBuilder: (context, provider) {
+                    unawaited(_rememberUrl(url));
+                    return Image(image: provider, fit: BoxFit.cover);
                   },
-                  errorBuilder: (context, error, stackTrace) {
+                  errorWidget: (context, _, _) {
                     WidgetsBinding.instance.addPostFrameCallback((_) {
-                      if (!_showingFallback && widget.isbn.isNotEmpty) {
-                        _findFallbackAfterIsbnError();
-                      } else {
-                        _useFallback();
-                      }
+                      if (mounted && url == _imageUrl) _onImageError();
                     });
                     return _loadingCover();
                   },
                 )
-              : _fakeCover(),
+              : (_showingFallback ? _fakeCover() : _loadingCover()),
         ),
       ),
     );
-  }
-
-  Future<void> _findFallbackAfterIsbnError() async {
-    if (_showingFallback) return;
-    _showingFallback = true;
-    final preferences = await SharedPreferences.getInstance();
-    final cache = _readCache(preferences.getString(_cacheKey));
-    cache.remove(widget.id);
-    await preferences.setString(_cacheKey, jsonEncode(cache));
-    _showingFallback = false;
-    await _findGoogleBooksCover(preferences, cache);
   }
 
   Widget _loadingCover() => Container(
@@ -207,7 +243,7 @@ class _BookCoverState extends State<BookCover> {
     child: Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        const Icon(Icons.public_rounded, color: Colors.white70, size: 18),
+        const Icon(Icons.menu_book_rounded, color: Colors.white70, size: 18),
         const SizedBox(height: 4),
         Text(
           widget.title,
