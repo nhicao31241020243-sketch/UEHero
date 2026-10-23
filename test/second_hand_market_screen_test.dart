@@ -40,6 +40,11 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    await tester.scrollUntilVisible(
+      find.text('Vì sao nên học/đọc'),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
     expect(find.text('Vì sao nên học/đọc'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });

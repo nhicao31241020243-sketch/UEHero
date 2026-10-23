@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -6,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../models/career_goal.dart';
+import '../services/career_board_service.dart';
 import '../widgets/book_cover.dart';
 
 class SecondHandMarketScreen extends StatefulWidget {
@@ -355,6 +357,9 @@ class _SecondHandMarketScreenState extends State<SecondHandMarketScreen> {
       return;
     }
     final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (launched) {
+      unawaited(CareerBoardService.instance.reportLibraryOpened(resource.id));
+    }
     if (!launched && mounted) _showMessage('Không mở được liên kết học liệu.');
   }
 
@@ -680,6 +685,8 @@ class _SuggestionCard extends StatelessWidget {
                 title: resource.title,
                 author: resource.author,
                 isbn: resource.isbn,
+                coverUrl: resource.coverUrl,
+                              lookupOnline: resource.url.isEmpty,
               ),
             ),
             const SizedBox(width: 11),
@@ -772,6 +779,8 @@ class _ResourceCard extends StatelessWidget {
                   title: resource.title,
                   author: resource.author,
                   isbn: resource.isbn,
+                  coverUrl: resource.coverUrl,
+                                  lookupOnline: resource.url.isEmpty,
                 ),
               ),
             ),
@@ -851,12 +860,14 @@ class _ResourceDetailsSheet extends StatelessWidget {
             const SizedBox(height: 20),
             Center(
               child: SizedBox(
-                width: 142,
+                width: 180,
                 child: BookCover(
                   id: resource.id,
                   title: resource.title,
                   author: resource.author,
                   isbn: resource.isbn,
+                  coverUrl: resource.coverUrl,
+                                  lookupOnline: resource.url.isEmpty,
                 ),
               ),
             ),
@@ -1009,6 +1020,7 @@ class LearningResource {
     required this.why,
     required this.lang,
     required this.url,
+    this.coverUrl,
   });
 
   final String career;
@@ -1022,6 +1034,7 @@ class LearningResource {
   final String why;
   final String lang;
   final String url;
+  final String? coverUrl;
 
   factory LearningResource.fromJson(String career, Map<String, dynamic> json) =>
       LearningResource(
@@ -1036,6 +1049,7 @@ class LearningResource {
         why: json['why'] as String,
         lang: json['lang'] as String,
         url: json['url'] as String? ?? '',
+        coverUrl: json['coverUrl'] as String?,
       );
 }
 
