@@ -285,7 +285,7 @@ class XpEnergyBar extends StatelessWidget {
                 child: BackdropFilter(
                   filter: ui.ImageFilter.blur(sigmaX: 14, sigmaY: 14),
                   child: Container(
-                    height: 51,
+                    height: 40,
                     padding: const EdgeInsets.symmetric(horizontal: 8),
                     decoration: BoxDecoration(
                       color: SpaceTheme.glassTint,
@@ -295,35 +295,16 @@ class XpEnergyBar extends StatelessWidget {
                     child: Row(
                       children: [
                         _LevelBadge(level: stage.id),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                stage.name,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  color: SpaceTheme.textMuted,
-                                  fontSize: 10,
-                                  height: 1,
-                                ),
-                              ),
-                              const SizedBox(height: 6),
-                              _XpTrack(progress: progress),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 10),
+                        const SizedBox(width: 8),
+                        Expanded(child: _XpTrack(progress: progress)),
+                        const SizedBox(width: 8),
                         Padding(
-                          padding: const EdgeInsets.only(right: 6),
+                          padding: const EdgeInsets.only(right: 4),
                           child: Text(
                             label,
                             style: const TextStyle(
                               color: Colors.white,
-                              fontSize: 11,
+                              fontSize: 10,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -348,8 +329,8 @@ class _LevelBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-    width: 36,
-    height: 36,
+    width: 30,
+    height: 30,
     alignment: Alignment.center,
     decoration: BoxDecoration(
       shape: BoxShape.circle,
@@ -367,7 +348,7 @@ class _LevelBadge extends StatelessWidget {
       style: const TextStyle(
         color: Colors.white,
         fontWeight: FontWeight.w700,
-        fontSize: 15,
+        fontSize: 13,
       ),
     ),
   );
@@ -386,7 +367,7 @@ class _XpTrack extends StatelessWidget {
         : const Duration(milliseconds: 600),
     curve: Curves.easeOutCubic,
     builder: (context, value, _) => Container(
-      height: 8,
+      height: 5,
       decoration: BoxDecoration(
         color: const Color(0x66050818),
         borderRadius: BorderRadius.circular(4),

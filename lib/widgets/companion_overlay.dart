@@ -175,16 +175,17 @@ class _CompanionOverlayState extends State<CompanionOverlay>
   bool _routeCanShow(AppRouteSnapshot route) {
     if (!route.isPageRoute) return false;
     final name = (route.name ?? '').toLowerCase();
-    return ![
-      'onboarding',
-      'mascot-hub',
-      'mascot-selector',
-      'chatbot',
-      'interview-room',
-      'camera',
-      'full-screen',
-      'events',
-    ].any(name.contains);
+    return name != '/home' &&
+        ![
+          'onboarding',
+          'mascot-hub',
+          'mascot-selector',
+          'chatbot',
+          'interview-room',
+          'camera',
+          'full-screen',
+          'events',
+        ].any(name.contains);
   }
 
   @override
