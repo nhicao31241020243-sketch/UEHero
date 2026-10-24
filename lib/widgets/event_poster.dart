@@ -33,6 +33,7 @@ class EventPoster extends StatefulWidget {
 class _EventPosterState extends State<EventPoster> {
   String? _resolvedUrl;
   int _resolveGeneration = 0;
+  bool _isResolving = true;
 
   @override
   void initState() {
@@ -55,6 +56,7 @@ class _EventPosterState extends State<EventPoster> {
     final generation = ++_resolveGeneration;
     setState(() {
       _resolvedUrl = null;
+      _isResolving = true;
     });
     final imageUrl = await EventImageResolver.instance.resolve(
       imageUrl: widget.imageUrl,
@@ -63,6 +65,7 @@ class _EventPosterState extends State<EventPoster> {
     if (!mounted || generation != _resolveGeneration) return;
     setState(() {
       _resolvedUrl = imageUrl;
+      _isResolving = false;
     });
   }
 
@@ -79,7 +82,7 @@ class _EventPosterState extends State<EventPoster> {
             width: double.infinity,
             height: double.infinity,
             fadeInDuration: const Duration(milliseconds: 320),
-            placeholder: (_, _) => _fallback(),
+            placeholder: (_, _) => _fallback(isLoading: true),
             errorWidget: (_, _, _) => _fallback(),
           )
         : hasAsset
@@ -124,10 +127,11 @@ class _EventPosterState extends State<EventPoster> {
     );
   }
 
-  Widget _fallback() => EventImagePlaceholder(
+  Widget _fallback({bool isLoading = false}) => EventImagePlaceholder(
     icon: widget.placeholderIcon,
     colors: widget.fallbackColors,
     eventType: widget.eventType,
     organizer: widget.organizer,
+    isLoading: isLoading || _isResolving,
   );
 }

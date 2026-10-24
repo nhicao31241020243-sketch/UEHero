@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../models/event_item.dart';
+import '../models/tech_event.dart';
 
 abstract interface class EventRepository {
   Stream<List<EventItem>> watchEvents();
@@ -19,20 +20,25 @@ class FirestoreEventRepository implements EventRepository {
       _firestore.collection('events');
 
   @override
-  Stream<List<EventItem>> watchEvents() => _events.snapshots().map(
-    (snapshot) => snapshot.docs
-        .map((doc) => EventItem.fromFirestore(doc.id, doc.data()))
-        .toList(growable: false),
-  );
+  Stream<List<EventItem>> watchEvents() =>
+      _events.snapshots().map((snapshot) => _sortedEvents(snapshot.docs));
 
   @override
   Future<List<EventItem>> fetchEvents() async {
     final snapshot = await _events.get(
       const GetOptions(source: Source.serverAndCache),
     );
-    return snapshot.docs
-        .map((doc) => EventItem.fromFirestore(doc.id, doc.data()))
-        .toList(growable: false);
+    return _sortedEvents(snapshot.docs);
+  }
+
+  List<EventItem> _sortedEvents(
+    List<QueryDocumentSnapshot<Map<String, dynamic>>> documents,
+  ) {
+    final events = documents
+        .map((doc) => TechEvent.fromDoc(doc).toEventItem())
+        .toList();
+    events.sort((first, second) => first.id.compareTo(second.id));
+    return List.unmodifiable(events);
   }
 
   @override

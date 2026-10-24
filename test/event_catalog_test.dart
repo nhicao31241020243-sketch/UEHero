@@ -69,6 +69,23 @@ void main() {
       expect(event.needsVerification, isTrue);
     });
 
+    test('accepts the imported name/category/timeline event shape', () {
+      final event = EventItem.fromFirestore('evt_001', {
+        'id': 'evt_001',
+        'name': 'UEH Game Jam',
+        'category': 'Community',
+        'organizer': 'UEH',
+        'timeline': 'Tháng 9 - Tháng 12 hàng năm',
+        'description': 'Sự kiện sáng tạo trò chơi.',
+      });
+
+      expect(event.title, 'UEH Game Jam');
+      expect(event.type, 'Community');
+      expect(event.timeline, 'Tháng 9 - Tháng 12 hàng năm');
+      expect(event.description, 'Sự kiện sáng tạo trò chơi.');
+      expect(event.registrationDeadline, isNull);
+    });
+
     test('calculates opening, open, ended, and unknown-season states', () {
       final now = DateTime(2026, 10, 19, 12);
       expect(

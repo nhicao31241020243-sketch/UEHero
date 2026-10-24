@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../models/event_item.dart';
@@ -25,21 +27,21 @@ IconData eventTypeIcon(String type) {
 List<Color> eventTypeColors(String type) {
   final value = type.toLowerCase();
   if (value.contains('hack')) {
-    return const [Color(0xFF15445A), Color(0xFF413568)];
+    return const [Color(0xFF145B85), Color(0xFF37306F)];
   }
   if (value.contains('data')) {
-    return const [Color(0xFF3B286A), Color(0xFF15506C)];
+    return const [Color(0xFF43317A), Color(0xFF17627A)];
   }
   if (value.contains('workshop')) {
-    return const [Color(0xFF315C5B), Color(0xFF1E2E53)];
+    return const [Color(0xFF347658), Color(0xFF1F4D55)];
   }
   if (value.contains('hội chợ') || value.contains('career')) {
-    return const [Color(0xFF764B38), Color(0xFF33264F)];
+    return const [Color(0xFF8B5436), Color(0xFF49334D)];
   }
   if (value.contains('case')) {
-    return const [Color(0xFF6A443B), Color(0xFF29264D)];
+    return const [Color(0xFF945536), Color(0xFF57354C)];
   }
-  return const [Color(0xFF493C74), Color(0xFF1D3554)];
+  return const [Color(0xFF51477F), Color(0xFF213E5B)];
 }
 
 String eventStatusLabel(EventItem event, DateTime now) {
@@ -105,6 +107,170 @@ class EventSectionTitle extends StatelessWidget {
   );
 }
 
+class EventHeroCarousel extends StatefulWidget {
+  const EventHeroCarousel({
+    required this.events,
+    required this.savedIds,
+    required this.onOpen,
+    required this.onShare,
+    required this.onToggleSaved,
+    super.key,
+  });
+
+  final List<EventItem> events;
+  final Set<String> savedIds;
+  final ValueChanged<EventItem> onOpen;
+  final ValueChanged<EventItem> onShare;
+  final ValueChanged<EventItem> onToggleSaved;
+
+  @override
+  State<EventHeroCarousel> createState() => _EventHeroCarouselState();
+}
+
+class _EventHeroCarouselState extends State<EventHeroCarousel> {
+  late final PageController _controller;
+  Timer? _timer;
+  int _index = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = PageController();
+    _startTimer();
+  }
+
+  @override
+  void didUpdateWidget(covariant EventHeroCarousel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.events.length != widget.events.length) {
+      _index = 0;
+      if (_controller.hasClients) _controller.jumpToPage(0);
+    }
+    _startTimer();
+  }
+
+  void _startTimer() {
+    _timer?.cancel();
+    if (widget.events.length < 2) return;
+    _timer = Timer.periodic(const Duration(seconds: 5), (_) {
+      if (!mounted || !_controller.hasClients || widget.events.isEmpty) return;
+      final next = (_index + 1) % widget.events.length;
+      _controller.animateToPage(
+        next,
+        duration: const Duration(milliseconds: 420),
+        curve: Curves.easeOut,
+      );
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => Column(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      AspectRatio(
+        aspectRatio: 16 / 9,
+        child: PageView.builder(
+          controller: _controller,
+          itemCount: widget.events.length,
+          onPageChanged: (index) => setState(() => _index = index),
+          itemBuilder: (context, index) {
+            final event = widget.events[index];
+            return EventHero(
+              event: event,
+              saved: widget.savedIds.contains(event.id),
+              onOpen: () => widget.onOpen(event),
+              onShare: () => widget.onShare(event),
+              onToggleSaved: () => widget.onToggleSaved(event),
+            );
+          },
+        ),
+      ),
+      if (widget.events.length > 1) ...[
+        const SizedBox(height: 10),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(
+            widget.events.length,
+            (index) => AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              width: index == _index ? 18 : 6,
+              height: 6,
+              margin: const EdgeInsets.symmetric(horizontal: 3),
+              decoration: BoxDecoration(
+                color: index == _index
+                    ? const Color(0xFFBFA8FF)
+                    : Colors.white38,
+                borderRadius: BorderRadius.circular(5),
+              ),
+            ),
+          ),
+        ),
+      ],
+    ],
+  );
+}
+
+class EventCategoryChips extends StatelessWidget {
+  const EventCategoryChips({
+    required this.selected,
+    required this.onSelected,
+    super.key,
+  });
+
+  static const categories = [
+    'Tất cả',
+    'Hackathon',
+    'Business Case',
+    'Workshop',
+    'Cuộc thi',
+    'Kỹ năng',
+  ];
+
+  final String selected;
+  final ValueChanged<String> onSelected;
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+    height: 38,
+    child: ListView.separated(
+      scrollDirection: Axis.horizontal,
+      itemCount: categories.length,
+      separatorBuilder: (_, _) => const SizedBox(width: 8),
+      itemBuilder: (context, index) {
+        final category = categories[index];
+        final isSelected = category == selected;
+        return ChoiceChip(
+          label: Text(category),
+          selected: isSelected,
+          onSelected: (_) => onSelected(category),
+          showCheckmark: false,
+          backgroundColor: const Color(0xAA242236),
+          selectedColor: const Color(0xFF6751A5),
+          side: BorderSide(
+            color: isSelected
+                ? const Color(0xFFBFA8FF)
+                : Colors.white.withValues(alpha: 0.1),
+          ),
+          labelStyle: TextStyle(
+            color: isSelected ? Colors.white : const Color(0xFFD0CCDC),
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 5),
+          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        );
+      },
+    ),
+  );
+}
+
 class EventHero extends StatelessWidget {
   const EventHero({
     required this.event,
@@ -132,7 +298,7 @@ class EventHero extends StatelessWidget {
         : eventStatusLabel(event, now);
 
     return ClipRRect(
-      borderRadius: BorderRadius.circular(28),
+      borderRadius: BorderRadius.circular(20),
       child: Stack(
         fit: StackFit.expand,
         children: [
@@ -145,17 +311,43 @@ class EventHero extends StatelessWidget {
             eventType: event.type,
             organizer: event.organizer,
           ),
+          const Positioned.fill(
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Color(0x18030818),
+                      Color(0x16030818),
+                      Color(0xF208101F),
+                    ],
+                    stops: [0, 0.28, 1],
+                  ),
+                ),
+              ),
+            ),
+          ),
           Positioned(
-            top: 16,
-            left: 16,
+            top: 10,
+            left: 12,
             child: _SmallBadge(
-              label: countdown,
+              label: event.type,
               color: const Color(0xD81B1830),
             ),
           ),
           Positioned(
-            top: 8,
-            right: 8,
+            top: 40,
+            left: 12,
+            child: _SmallBadge(
+              label: countdown,
+              color: const Color(0xB81B1830),
+            ),
+          ),
+          Positioned(
+            top: 4,
+            right: 4,
             child: IconButton(
               tooltip: saved ? 'Bỏ lưu sự kiện' : 'Lưu sự kiện',
               onPressed: onToggleSaved,
@@ -164,15 +356,16 @@ class EventHero extends StatelessWidget {
                 color: saved ? const Color(0xFFFF91A9) : Colors.white,
               ),
               style: IconButton.styleFrom(
-                backgroundColor: const Color(0x66302B44),
+                backgroundColor: const Color(0x88302B44),
                 foregroundColor: Colors.white,
+                minimumSize: const Size(38, 38),
               ),
             ),
           ),
           Positioned(
-            left: 20,
-            right: 20,
-            bottom: 18,
+            left: 14,
+            right: 14,
+            bottom: 10,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
@@ -183,37 +376,46 @@ class EventHero extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 25,
-                    height: 1.08,
+                    fontSize: 17,
+                    height: 1.05,
                     fontWeight: FontWeight.w900,
-                    shadows: [Shadow(color: Colors.black54, blurRadius: 12)],
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  event.organizer,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Color(0xFFE2DDF2),
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
+                    shadows: [Shadow(color: Colors.black87, blurRadius: 10)],
                   ),
                 ),
                 const SizedBox(height: 3),
-                Text(
-                  deadline == null
-                      ? eventDateLabel(event.eventStart)
-                      : 'Hạn đăng ký ${eventDateLabel(deadline)}',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Color(0xFFFFD889),
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                  ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        event.organizer,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Color(0xFFE2DDF2),
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        deadline == null
+                            ? eventDateLabel(event.eventStart)
+                            : 'Hạn ${eventDateLabel(deadline)}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.right,
+                        style: const TextStyle(
+                          color: Color(0xFFFFD889),
+                          fontSize: 9,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 7),
                 Row(
                   children: [
                     Expanded(
@@ -222,24 +424,29 @@ class EventHero extends StatelessWidget {
                         style: FilledButton.styleFrom(
                           backgroundColor: const Color(0xFFD8CCFF),
                           foregroundColor: const Color(0xFF211B35),
-                          minimumSize: const Size(0, 44),
+                          minimumSize: const Size(0, 34),
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(15),
+                            borderRadius: BorderRadius.circular(12),
                           ),
                         ),
                         child: const Text(
                           'Xem chi tiết',
-                          style: TextStyle(fontWeight: FontWeight.w800),
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                          ),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 6),
                     _HeroActionButton(
                       icon: Icons.share_outlined,
                       label: 'Chia sẻ',
                       onPressed: onShare,
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 6),
                     _HeroActionButton(
                       icon: saved
                           ? Icons.favorite_rounded
@@ -273,18 +480,20 @@ class _HeroActionButton extends StatelessWidget {
   Widget build(BuildContext context) => IconButton(
     tooltip: label,
     onPressed: onPressed,
+    padding: EdgeInsets.zero,
     style: IconButton.styleFrom(
       foregroundColor: Colors.white,
       backgroundColor: const Color(0x66302B44),
-      minimumSize: const Size(44, 44),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+      minimumSize: const Size(36, 34),
+      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
     ),
-    icon: Icon(icon, size: 20),
+    icon: Icon(icon, size: 18),
   );
 }
 
-class EventSection extends StatelessWidget {
-  const EventSection({
+class EventSectionRow extends StatelessWidget {
+  const EventSectionRow({
     required this.title,
     required this.events,
     required this.matchPercent,
@@ -307,18 +516,18 @@ class EventSection extends StatelessWidget {
   Widget build(BuildContext context) {
     if (events.isEmpty) return const SizedBox.shrink();
     return Padding(
-      padding: const EdgeInsets.only(top: 24),
+      padding: const EdgeInsets.only(top: 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           EventSectionTitle(title: title, onSeeAll: onSeeAll),
-          const SizedBox(height: 10),
+          const SizedBox(height: 9),
           SizedBox(
-            height: 278,
+            height: 252,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: events.length,
-              separatorBuilder: (_, _) => const SizedBox(width: 12),
+              separatorBuilder: (_, _) => const SizedBox(width: 10),
               itemBuilder: (context, index) {
                 final event = events[index];
                 return EventCard(
@@ -327,6 +536,8 @@ class EventSection extends StatelessWidget {
                   matchPercent: matchPercent(event),
                   onTap: () => onOpen(event),
                   onSave: () => onSave(event),
+                  width: 168,
+                  height: 252,
                 );
               },
             ),
@@ -335,6 +546,19 @@ class EventSection extends StatelessWidget {
       ),
     );
   }
+}
+
+class EventSection extends EventSectionRow {
+  const EventSection({
+    required super.title,
+    required super.events,
+    required super.matchPercent,
+    required super.onSeeAll,
+    required super.onOpen,
+    required super.onSave,
+    required super.isSaved,
+    super.key,
+  });
 }
 
 class EventHomeSkeleton extends StatefulWidget {
@@ -414,9 +638,30 @@ class _EventHomeSkeletonState extends State<EventHomeSkeleton>
                 block(height: 42, width: 42, radius: 14),
               ],
             ),
-            const SizedBox(height: 18),
-            block(height: 404, radius: 28),
-            const SizedBox(height: 30),
+            const SizedBox(height: 14),
+            block(height: 48, radius: 24),
+            const SizedBox(height: 10),
+            SizedBox(
+              height: 36,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                children: [
+                  block(height: 34, width: 76, radius: 18),
+                  const SizedBox(width: 8),
+                  block(height: 34, width: 92, radius: 18),
+                  const SizedBox(width: 8),
+                  block(height: 34, width: 102, radius: 18),
+                  const SizedBox(width: 8),
+                  block(height: 34, width: 80, radius: 18),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+            AspectRatio(
+              aspectRatio: 16 / 9,
+              child: block(height: 184, radius: 20),
+            ),
+            const SizedBox(height: 20),
             for (var row = 0; row < 3; row++) ...[
               Row(
                 children: [
@@ -478,7 +723,7 @@ class _EventCardState extends State<EventCard> {
     final daysLeft = event.daysUntilDeadline(now);
     final isUrgent =
         daysLeft != null &&
-        daysLeft < 3 &&
+        daysLeft <= 3 &&
         event.statusAt(now) == EventStatus.registrationOpen;
     final dateLabel =
         daysLeft != null && event.statusAt(now) == EventStatus.registrationOpen
@@ -497,128 +742,135 @@ class _EventCardState extends State<EventCard> {
           width: widget.width,
           height: widget.height,
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(16),
             child: Material(
               color: const Color(0xFF211D2B),
               child: InkWell(
                 onTap: widget.onTap,
-                child: Stack(
-                  fit: StackFit.expand,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    EventPoster(
-                      imageUrl: event.posterUrl,
-                      sourceUrl: event.sourceUrl,
-                      borderRadius: BorderRadius.zero,
-                      placeholderIcon: eventTypeIcon(event.type),
-                      fallbackColors: eventTypeColors(event.type),
-                      eventType: event.type,
-                      organizer: event.organizer,
-                    ),
-                    Positioned(
-                      top: 9,
-                      left: 9,
-                      right: 8,
-                      child: Row(
+                    Expanded(
+                      flex: 5,
+                      child: Stack(
+                        fit: StackFit.expand,
                         children: [
-                          Flexible(
-                            child: _SmallBadge(
-                              label: event.type,
-                              color: const Color(0xC91B1830),
-                            ),
+                          EventPoster(
+                            imageUrl: event.posterUrl,
+                            sourceUrl: event.sourceUrl,
+                            borderRadius: BorderRadius.zero,
+                            placeholderIcon: eventTypeIcon(event.type),
+                            fallbackColors: eventTypeColors(event.type),
+                            eventType: event.type,
+                            organizer: event.organizer,
                           ),
-                          const Spacer(),
-                          IconButton(
-                            tooltip: widget.saved
-                                ? 'Bỏ lưu sự kiện'
-                                : 'Lưu sự kiện',
-                            constraints: const BoxConstraints.tightFor(
-                              width: 34,
-                              height: 34,
-                            ),
-                            padding: EdgeInsets.zero,
-                            onPressed: widget.onSave,
-                            style: IconButton.styleFrom(
-                              backgroundColor: const Color(0x88302B44),
-                            ),
-                            icon: Icon(
-                              widget.saved
-                                  ? Icons.favorite_rounded
-                                  : Icons.favorite_border_rounded,
-                              size: 18,
-                              color: widget.saved
-                                  ? const Color(0xFFFF91A9)
-                                  : Colors.white,
+                          Positioned(
+                            top: 7,
+                            left: 7,
+                            right: 7,
+                            child: Row(
+                              children: [
+                                Flexible(
+                                  child: _SmallBadge(
+                                    label: event.type,
+                                    color: const Color(0xD51B1830),
+                                  ),
+                                ),
+                                const Spacer(),
+                                IconButton(
+                                  tooltip: widget.saved
+                                      ? 'Bỏ lưu sự kiện'
+                                      : 'Lưu sự kiện',
+                                  constraints: const BoxConstraints.tightFor(
+                                    width: 32,
+                                    height: 32,
+                                  ),
+                                  padding: EdgeInsets.zero,
+                                  onPressed: widget.onSave,
+                                  style: IconButton.styleFrom(
+                                    backgroundColor: const Color(0xAA302B44),
+                                  ),
+                                  icon: Icon(
+                                    widget.saved
+                                        ? Icons.favorite_rounded
+                                        : Icons.favorite_border_rounded,
+                                    size: 17,
+                                    color: widget.saved
+                                        ? const Color(0xFFFF91A9)
+                                        : Colors.white,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
                       ),
                     ),
-                    Positioned(
-                      left: 10,
-                      right: 10,
-                      bottom: 10,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Wrap(
-                            spacing: 5,
-                            runSpacing: 4,
-                            children: [
-                              Tooltip(
-                                message: 'Hạn đăng ký / trạng thái',
-                                child: _SmallBadge(
+                    Expanded(
+                      flex: 6,
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              event.title,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                height: 1.12,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                            Wrap(
+                              spacing: 4,
+                              runSpacing: 3,
+                              children: [
+                                _SmallBadge(
                                   label: dateLabel,
                                   color: isUrgent
                                       ? const Color(0xE4A64432)
                                       : const Color(0xC91B1830),
                                 ),
-                              ),
-                              if (widget.matchPercent > 0)
-                                Tooltip(
-                                  message: 'Mức độ phù hợp với hồ sơ của bạn',
-                                  child: _SmallBadge(
+                                if (widget.matchPercent > 0)
+                                  _SmallBadge(
                                     label: 'Khớp ${widget.matchPercent}%',
                                     color: const Color(0xC9345C49),
                                   ),
-                                ),
-                              if (event.needsVerification)
-                                const Tooltip(
-                                  message: 'Cần kiểm tra thông tin sự kiện',
-                                  child: _SmallBadge(
-                                    label: 'Cần kiểm tra',
-                                    color: Color(0xDD795722),
-                                  ),
-                                ),
-                            ],
-                          ),
-                          const SizedBox(height: 7),
-                          Text(
-                            event.title,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              height: 1.12,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w900,
-                              shadows: [
-                                Shadow(color: Colors.black54, blurRadius: 8),
                               ],
                             ),
-                          ),
-                          const SizedBox(height: 3),
-                          Text(
-                            event.organizer,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: Color(0xFFE1DDEC),
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
+                            Text(
+                              event.registrationDeadline != null
+                                  ? 'Hạn ${eventDateLabel(event.registrationDeadline)}'
+                                  : eventDateLabel(event.eventStart),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Color(0xFFD2C3FF),
+                                fontSize: 9,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
-                          ),
-                        ],
+                            Text(
+                              event.organizer,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Color(0xFFD4D0DE),
+                                fontSize: 9,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            if (event.needsVerification)
+                              const _SmallBadge(
+                                label: 'Cần kiểm tra',
+                                color: Color(0xDD795722),
+                              ),
+                          ],
+                        ),
                       ),
                     ),
                   ],
@@ -857,7 +1109,7 @@ class _SmallBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-    constraints: const BoxConstraints(maxWidth: 112),
+    constraints: const BoxConstraints(maxWidth: 180),
     padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
     decoration: BoxDecoration(
       color: color,

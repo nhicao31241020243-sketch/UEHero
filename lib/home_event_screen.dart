@@ -7,11 +7,12 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:diacritic/diacritic.dart';
 
 import 'event_detail_screen.dart';
 import 'models/event_item.dart';
+import 'models/tech_event.dart';
 import 'services/career_board_service.dart';
 import 'services/event_notification_service.dart';
 import 'services/event_repository.dart';
@@ -19,6 +20,7 @@ import 'services/event_user_repository.dart';
 import 'services/firebase_bootstrap.dart';
 import 'services/points_manager.dart';
 import 'widgets/event_catalog_widgets.dart';
+import 'widgets/event_streaming_widgets.dart';
 import 'models/xp_entry.dart';
 
 class HomeEventScreen extends StatefulWidget {
@@ -44,6 +46,7 @@ class _HomeEventScreenState extends State<HomeEventScreen> {
 
   EventRepository? _repository;
   EventUserRepository? _userRepository;
+  Stream<List<EventItem>>? _eventsStream;
   StreamSubscription<List<EventItem>>? _eventsSubscription;
   StreamSubscription<Set<String>>? _savedSubscription;
   StreamSubscription<Map<String, bool>>? _planSubscription;
@@ -56,17 +59,17 @@ class _HomeEventScreenState extends State<HomeEventScreen> {
   bool _loading = true;
   bool _syncingReminderSchedules = false;
   int _selectedTab = 0;
+  String _homeCategory = 'Tất cả';
+  String _homeQuery = '';
+  late final TextEditingController _homeSearchController;
   EventSearchFilters _filters = const EventSearchFilters();
-  late final PageController _heroController;
-  int _heroIndex = 0;
-  Timer? _heroTimer;
 
   @override
   void initState() {
     super.initState();
     _selectedTab = widget.initialTab.clamp(0, 3);
     _filters = widget.initialFilters;
-    _heroController = PageController(viewportFraction: 0.92);
+    _homeSearchController = TextEditingController();
     unawaited(CareerBoardService.instance.initialize());
     _loadCareerProfile();
     _connect();
@@ -77,8 +80,7 @@ class _HomeEventScreenState extends State<HomeEventScreen> {
     _eventsSubscription?.cancel();
     _savedSubscription?.cancel();
     _planSubscription?.cancel();
-    _heroTimer?.cancel();
-    _heroController.dispose();
+    _homeSearchController.dispose();
     super.dispose();
   }
 
@@ -130,14 +132,14 @@ class _HomeEventScreenState extends State<HomeEventScreen> {
       await _eventsSubscription?.cancel();
       await _savedSubscription?.cancel();
       await _planSubscription?.cancel();
-      _eventsSubscription = _repository!.watchEvents().listen((events) {
+      _eventsStream = _repository!.watchEvents().asBroadcastStream();
+      _eventsSubscription = _eventsStream!.listen((events) {
         if (!mounted) return;
         setState(() {
           _events = events;
           _loading = false;
           _error = null;
         });
-        _startHeroTimer();
         _syncReminderSchedules();
       }, onError: _onStreamError);
       _savedSubscription = users.watchSavedEventIds().listen((ids) {
@@ -209,59 +211,6 @@ class _HomeEventScreenState extends State<HomeEventScreen> {
     return (((related ? 0.65 : 0) + skillScore.clamp(0, 0.35)) * 100)
         .round()
         .clamp(0, 100);
-  }
-
-  List<EventItem> _sorted({
-    String? type,
-    EventStatus? status,
-    String? career,
-    required EventSort sort,
-  }) => EventCatalog.filterAndSort(
-    _events,
-    now: DateTime.now(),
-    filters: EventSearchFilters(
-      type: type,
-      status: status,
-      career: career,
-      sort: sort,
-    ),
-    matchPercent: _matchPercent,
-  );
-
-  List<EventItem> get _heroEvents {
-    final now = DateTime.now();
-    final open =
-        _events
-            .where(
-              (event) => event.statusAt(now) == EventStatus.registrationOpen,
-            )
-            .toList()
-          ..sort((a, b) {
-            final deadline = (a.registrationDeadline ?? DateTime(9999))
-                .compareTo(b.registrationDeadline ?? DateTime(9999));
-            if (deadline != 0) return deadline;
-            return _matchPercent(b).compareTo(_matchPercent(a));
-          });
-    final upcoming = _events
-        .where((event) => event.statusAt(now) == EventStatus.closedUpcoming)
-        .toList();
-    final source = open.isNotEmpty ? open : upcoming;
-    return source.take(6).toList(growable: false);
-  }
-
-  void _startHeroTimer() {
-    if (_heroEvents.length < 2 || _heroTimer != null) return;
-    _heroTimer = Timer.periodic(const Duration(seconds: 6), (_) {
-      if (!mounted || !_heroController.hasClients || _heroEvents.isEmpty) {
-        return;
-      }
-      final next = (_heroIndex + 1) % _heroEvents.length;
-      _heroController.animateToPage(
-        next,
-        duration: const Duration(milliseconds: 400),
-        curve: Curves.easeOut,
-      );
-    });
   }
 
   Future<void> _syncReminderSchedules() async {
@@ -452,24 +401,6 @@ class _HomeEventScreenState extends State<HomeEventScreen> {
     );
   }
 
-  Future<void> _shareEvent(EventItem event) async {
-    final url = event.officialUrl ?? event.sourceUrl;
-    try {
-      await SharePlus.instance.share(
-        ShareParams(text: url == null ? event.title : '${event.title}\n$url'),
-      );
-    } on PlatformException {
-      _showMessage('Không thể chia sẻ sự kiện lúc này.');
-    }
-  }
-
-  void _goToExplore([EventSearchFilters filters = const EventSearchFilters()]) {
-    setState(() {
-      _filters = filters;
-      _selectedTab = 1;
-    });
-  }
-
   void _showMessage(String message) {
     if (!mounted) return;
     ScaffoldMessenger.of(context)
@@ -540,258 +471,179 @@ class _HomeEventScreenState extends State<HomeEventScreen> {
     );
   }
 
-  Widget _homeTab() {
-    final featured = _heroEvents;
-    final now = DateTime.now();
-    final closing = _sorted(
-      status: EventStatus.registrationOpen,
-      sort: EventSort.deadline,
-    ).take(10).toList();
-    final matched = _sorted(sort: EventSort.match)
-        .where(
-          (event) =>
-              _matchPercent(event) > 0 &&
-              event.statusAt(now) != EventStatus.ended,
-        )
-        .take(10)
-        .toList();
-    final opened = _sorted(
-      status: EventStatus.closedUpcoming,
-      sort: EventSort.deadline,
-    ).take(10).toList();
-    final planned =
-        _events.where((event) => _planReminders.containsKey(event.id)).toList()
-          ..sort(
-            (a, b) => (a.registrationDeadline ?? DateTime(9999)).compareTo(
-              b.registrationDeadline ?? DateTime(9999),
-            ),
+  Widget _homeTab() => StreamBuilder<List<EventItem>>(
+    stream: _eventsStream,
+    initialData: _events,
+    builder: (context, snapshot) => _buildEventHome(snapshot.data ?? _events),
+  );
+
+  Widget _buildEventHome(List<EventItem> events) {
+    final normalizedQuery = _normalizeEventSearch(_homeQuery);
+    final filtered = events
+        .where((event) {
+          final group = techEventGroup(event.title, event.type);
+          final categoryMatches =
+              _homeCategory == 'Tất cả' || group.label == _homeCategory;
+          final searchable = _normalizeEventSearch(
+            '${event.title} ${event.organizer} ${event.type}',
           );
-    final previous = _events.where((event) {
-      final status = event.statusAt(now);
-      return status == EventStatus.ended ||
-          (status == EventStatus.newSeasonUnknown &&
-              event.previousSeason != null);
-    }).toList();
-    final expiring = closing
-        .where((event) {
-          final days = event.daysUntilDeadline(now);
-          return days != null && days <= 3;
+          return categoryMatches &&
+              (normalizedQuery.isEmpty || searchable.contains(normalizedQuery));
         })
         .toList(growable: false);
-    final hackathons = _events
-        .where((event) => event.type.toLowerCase().contains('hackathon'))
-        .toList(growable: false);
-    final competitions = _events
-        .where((event) {
-          final type = event.type.toLowerCase();
-          return type.contains('cuộc thi') ||
-              type.contains('competition') ||
-              type.contains('contest') ||
-              type.contains('datathon');
-        })
-        .toList(growable: false);
-    final workshops = _events
-        .where((event) => event.type.toLowerCase().contains('workshop'))
-        .toList(growable: false);
-    final careerFairs = _events
-        .where((event) {
-          final type = event.type.toLowerCase();
-          return type.contains('hội chợ') ||
-              type.contains('career fair') ||
-              type.contains('job fair');
-        })
-        .toList(growable: false);
+    final isFiltering = normalizedQuery.isNotEmpty || _homeCategory != 'Tất cả';
+    final featured = events.take(5).toList(growable: false);
 
     return ListView(
       key: const PageStorageKey<String>('events-home'),
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 112),
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Chào ${FirebaseAuth.instance.currentUser?.displayName ?? 'bạn'} 👋',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  const Text(
-                    'Tìm cơ hội để tiến gần hơn tới nghề nghiệp mơ ước',
-                    maxLines: 2,
-                    style: TextStyle(color: _muted, fontSize: 12),
-                  ),
-                ],
-              ),
-            ),
-            IconButton(
-              tooltip: 'Nhắc nhở',
-              onPressed: () => setState(() => _selectedTab = 2),
-              icon: const Icon(Icons.notifications_none_rounded),
-            ),
-          ],
+        _homeSearchBar(),
+        if (!isFiltering && featured.isNotEmpty) ...[
+          const SizedBox(height: 14),
+          EventStreamHeroCarousel(events: featured, onOpen: _openEvent),
+        ],
+        const SizedBox(height: 12),
+        EventStreamCategoryChips(
+          selected: _homeCategory,
+          onSelected: (category) => setState(() => _homeCategory = category),
         ),
-        const SizedBox(height: 14),
-        if (featured.isNotEmpty) ...[
-          SizedBox(
-            height: 404,
-            child: PageView.builder(
-              controller: _heroController,
-              itemCount: featured.length,
-              onPageChanged: (index) => setState(() => _heroIndex = index),
-              itemBuilder: (context, index) => Padding(
-                padding: const EdgeInsets.only(right: 10),
-                child: EventHero(
-                  event: featured[index],
-                  saved: _savedIds.contains(featured[index].id),
-                  onOpen: () => _openEvent(featured[index]),
-                  onShare: () => _shareEvent(featured[index]),
-                  onToggleSaved: () => _toggleSaved(featured[index]),
-                ),
-              ),
+        if (isFiltering) ...[
+          const SizedBox(height: 18),
+          Text(
+            '${filtered.length} kết quả',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 17,
+              fontWeight: FontWeight.w900,
             ),
           ),
           const SizedBox(height: 10),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(
-              featured.length,
-              (index) => AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
-                width: index == _heroIndex ? 18 : 6,
-                height: 6,
-                margin: const EdgeInsets.symmetric(horizontal: 3),
-                decoration: BoxDecoration(
-                  color: index == _heroIndex
-                      ? const Color(0xFFBFA8FF)
-                      : Colors.white38,
-                  borderRadius: BorderRadius.circular(5),
-                ),
+          if (filtered.isEmpty)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 32),
+              child: Text(
+                'Không tìm thấy sự kiện phù hợp.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: _muted),
+              ),
+            )
+          else
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: filtered.length,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 10,
+                mainAxisSpacing: 10,
+                mainAxisExtent: 210,
+              ),
+              itemBuilder: (context, index) => EventStreamCard(
+                event: filtered[index],
+                onTap: () => _openEvent(filtered[index]),
+                width: double.infinity,
+                height: 210,
               ),
             ),
+        ] else if (events.isEmpty) ...[
+          const SizedBox(height: 24),
+          const Text(
+            'Chưa có sự kiện nào',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: _muted),
           ),
+        ] else ...[
+          const SizedBox(height: 8),
+          EventStreamSectionRow(
+            title: '🔥 Sắp diễn ra',
+            events: _upcomingEvents(events),
+            onOpen: _openEvent,
+          ),
+          for (final group in TechEventGroup.values)
+            EventStreamSectionRow(
+              title: group.label,
+              events: events
+                  .where(
+                    (event) => techEventGroup(event.title, event.type) == group,
+                  )
+                  .toList(growable: false),
+              onOpen: _openEvent,
+            ),
         ],
-        const SizedBox(height: 20),
-        _searchBar(
-          hint: 'Tìm cuộc thi, workshop, kỹ năng…',
-          onTap: () => _goToExplore(),
-        ),
-        const SizedBox(height: 8),
-        _eventSection(
-          'Đang mở đăng ký',
-          closing,
-          filters: const EventSearchFilters(
-            status: EventStatus.registrationOpen,
-            sort: EventSort.deadline,
-          ),
-        ),
-        _eventSection(
-          'Sắp hết hạn',
-          expiring,
-          filters: const EventSearchFilters(
-            status: EventStatus.registrationOpen,
-            sort: EventSort.deadline,
-          ),
-        ),
-        _eventSection(
-          'Sắp diễn ra',
-          opened,
-          filters: const EventSearchFilters(
-            status: EventStatus.closedUpcoming,
-            sort: EventSort.deadline,
-          ),
-        ),
-        _eventSection(
-          'Phù hợp với bạn',
-          matched,
-          filters: const EventSearchFilters(sort: EventSort.match),
-        ),
-        if (planned.isNotEmpty)
-          _eventSection(
-            'Đang theo dõi',
-            planned,
-            filters: const EventSearchFilters(),
-          ),
-        _eventSection(
-          'Đã kết thúc và mùa tới',
-          previous,
-          filters: const EventSearchFilters(status: EventStatus.ended),
-        ),
-        _eventSection(
-          'Hackathon nổi bật',
-          hackathons,
-          filters: const EventSearchFilters(type: 'Hackathon'),
-        ),
-        _eventSection(
-          'Cuộc thi',
-          competitions,
-          filters: const EventSearchFilters(type: 'Cuộc thi'),
-        ),
-        _eventSection(
-          'Workshop',
-          workshops,
-          filters: const EventSearchFilters(type: 'Workshop'),
-        ),
-        _eventSection(
-          'Hội chợ việc làm',
-          careerFairs,
-          filters: const EventSearchFilters(type: 'Hội chợ việc làm'),
-        ),
-        if (_events.isEmpty)
-          const EventEmptyState(
-            title: 'Chưa có sự kiện nào',
-            message: 'Sự kiện mới sẽ xuất hiện tại đây khi được cập nhật từ nguồn chính thức.',
-          ),
       ],
     );
   }
 
-  Widget _eventSection(
-    String title,
-    List<EventItem> events, {
-    required EventSearchFilters filters,
-  }) {
-    if (events.isEmpty) return const SizedBox.shrink();
-    return EventSection(
-      title: title,
-      events: events,
-      matchPercent: _matchPercent,
-      isSaved: (event) => _savedIds.contains(event.id),
-      onSeeAll: () => _goToExplore(filters),
-      onOpen: _openEvent,
-      onSave: _toggleSaved,
-    );
+  Widget _homeSearchBar() => TextField(
+    controller: _homeSearchController,
+    onChanged: (value) => setState(() => _homeQuery = value),
+    textInputAction: TextInputAction.search,
+    style: const TextStyle(color: Colors.white, fontSize: 14),
+    decoration: InputDecoration(
+      hintText: 'Tìm sự kiện, đơn vị tổ chức…',
+      hintStyle: const TextStyle(color: _muted, fontSize: 13),
+      prefixIcon: const Icon(Icons.search_rounded, color: _muted),
+      suffixIcon: _homeQuery.isEmpty
+          ? null
+          : IconButton(
+              tooltip: 'Xóa tìm kiếm',
+              onPressed: () {
+                _homeSearchController.clear();
+                setState(() => _homeQuery = '');
+              },
+              icon: const Icon(Icons.close_rounded, color: _muted),
+            ),
+      filled: true,
+      fillColor: const Color(0xB8222030),
+      contentPadding: const EdgeInsets.symmetric(vertical: 12),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(24),
+        borderSide: BorderSide.none,
+      ),
+    ),
+  );
+
+  List<EventItem> _upcomingEvents(List<EventItem> events) {
+    final now = DateTime.now();
+    final nextMonth = now.month == 12 ? 1 : now.month + 1;
+    final matching = events
+        .where((event) {
+          final timeline = event.timeline;
+          if (timeline == null) return false;
+          final months = _monthsInTimeline(timeline);
+          return months.contains(now.month) || months.contains(nextMonth);
+        })
+        .toList(growable: false);
+    return matching.isEmpty
+        ? events.take(10).toList(growable: false)
+        : matching;
   }
 
-  Widget _searchBar({required String hint, required VoidCallback onTap}) =>
-      InkWell(
-        borderRadius: BorderRadius.circular(24),
-        onTap: onTap,
-        child: Container(
-          height: 48,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          decoration: BoxDecoration(
-            color: const Color(0xB8222030),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
-          ),
-          child: Row(
-            children: [
-              const Icon(Icons.search_rounded, color: _muted),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(hint, style: const TextStyle(color: _muted)),
-              ),
-            ],
-          ),
-        ),
-      );
+  Set<int> _monthsInTimeline(String timeline) {
+    final normalized = _normalizeEventSearch(timeline);
+    final months = <int>{};
+    final range = RegExp(r'thang\s*(\d{1,2})\s*[-–]\s*(?:thang\s*)?(\d{1,2})');
+    for (final match in range.allMatches(normalized)) {
+      final start = int.tryParse(match.group(1) ?? '');
+      final end = int.tryParse(match.group(2) ?? '');
+      if (start == null || end == null || start < 1 || end > 12) continue;
+      var month = start;
+      while (true) {
+        months.add(month);
+        if (month == end) break;
+        month = month == 12 ? 1 : month + 1;
+      }
+    }
+    for (final match in RegExp(r'thang\s*(\d{1,2})').allMatches(normalized)) {
+      final month = int.tryParse(match.group(1) ?? '');
+      if (month != null && month >= 1 && month <= 12) months.add(month);
+    }
+    return months;
+  }
+
+  String _normalizeEventSearch(String value) =>
+      removeDiacritics(value).toLowerCase().trim();
 
   Widget _exploreTab() => _ExploreEventsPage(
     events: _events,
@@ -900,16 +752,22 @@ class _ExploreEventsPage extends StatefulWidget {
 class _ExploreEventsPageState extends State<_ExploreEventsPage> {
   late final TextEditingController _searchController;
   Timer? _debounce;
+  String _selectedCategory = 'Tất cả';
 
   @override
   void initState() {
     super.initState();
     _searchController = TextEditingController(text: widget.filters.query);
+    _selectedCategory = widget.filters.type ?? 'Tất cả';
   }
 
   @override
   void didUpdateWidget(covariant _ExploreEventsPage oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.filters.type != widget.filters.type &&
+        (widget.filters.type != null || _selectedCategory != 'Kỹ năng')) {
+      _selectedCategory = widget.filters.type ?? 'Tất cả';
+    }
     if (oldWidget.filters.query != widget.filters.query &&
         widget.filters.query != _searchController.text) {
       _searchController.text = widget.filters.query;
@@ -972,12 +830,15 @@ class _ExploreEventsPageState extends State<_ExploreEventsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final result = EventCatalog.filterAndSort(
+    final filtered = EventCatalog.filterAndSort(
       widget.events,
       now: DateTime.now(),
       filters: widget.filters,
       matchPercent: widget.matchPercent,
     );
+    final result = _selectedCategory == 'Kỹ năng'
+        ? filtered.where((event) => event.skills.isNotEmpty).toList()
+        : filtered;
     return ListView(
       key: const PageStorageKey<String>('events-explore'),
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 32),
@@ -1009,19 +870,28 @@ class _ExploreEventsPageState extends State<_ExploreEventsPage> {
           ),
         ),
         const SizedBox(height: 12),
+        EventCategoryChips(
+          selected: _selectedCategory,
+          onSelected: (category) {
+            setState(() => _selectedCategory = category);
+            if (category == 'Tất cả' || category == 'Kỹ năng') {
+              widget.onFiltersChanged(_copyFilters(clearType: true));
+            } else {
+              widget.onFiltersChanged(_copyFilters(type: category));
+            }
+          },
+        ),
+        const SizedBox(height: 8),
         SizedBox(
-          height: 38,
+          height: 36,
           child: ListView(
             scrollDirection: Axis.horizontal,
             children: [
-              _quickFilter('Tất cả', widget.filters.type == null),
-              _quickFilter('Cuộc thi', widget.filters.type == 'Cuộc thi'),
-              _quickFilter('Hackathon', widget.filters.type == 'Hackathon'),
-              _quickFilter('Workshop', widget.filters.type == 'Workshop'),
-              _quickFilter(
-                'Hội chợ việc làm',
-                widget.filters.type == 'Hội chợ việc làm',
-              ),
+              _statusFilter('Mọi trạng thái', null),
+              _statusFilter('Đang mở', EventStatus.registrationOpen),
+              _statusFilter('Sắp mở', EventStatus.openingSoon),
+              _statusFilter('Sắp diễn ra', EventStatus.closedUpcoming),
+              _statusFilter('Đã kết thúc', EventStatus.ended),
             ],
           ),
         ),
@@ -1068,34 +938,51 @@ class _ExploreEventsPageState extends State<_ExploreEventsPage> {
             message: 'Thử từ khóa khác hoặc bỏ bớt bộ lọc đang chọn.',
           )
         else
-          for (final event in result)
-            EventListTile(
-              event: event,
-              saved: widget.savedIds.contains(event.id),
-              matchPercent: widget.matchPercent(event),
-              onTap: () => widget.onOpen(event),
-              onSave: () => widget.onToggleSaved(event),
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: result.length,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 10,
+              mainAxisSpacing: 10,
+              mainAxisExtent: 248,
             ),
+            itemBuilder: (context, index) {
+              final event = result[index];
+              return EventCard(
+                event: event,
+                saved: widget.savedIds.contains(event.id),
+                matchPercent: widget.matchPercent(event),
+                onTap: () => widget.onOpen(event),
+                onSave: () => widget.onToggleSaved(event),
+                width: double.infinity,
+                height: 248,
+              );
+            },
+          ),
       ],
     );
   }
 
-  Widget _quickFilter(String label, bool selected) => Padding(
+  Widget _statusFilter(String label, EventStatus? status) => Padding(
     padding: const EdgeInsets.only(right: 8),
     child: ChoiceChip(
       label: Text(label),
-      selected: selected,
+      selected: widget.filters.status == status,
       onSelected: (_) {
-        if (label == 'Tất cả') {
-          widget.onFiltersChanged(_copyFilters(clearType: true));
-        } else {
-          widget.onFiltersChanged(_copyFilters(type: label));
-        }
+        widget.onFiltersChanged(
+          status == null
+              ? _copyFilters(clearStatus: true)
+              : _copyFilters(status: status),
+        );
       },
       selectedColor: const Color(0xFF574683),
       backgroundColor: const Color(0xAA242236),
       labelStyle: TextStyle(
-        color: selected ? Colors.white : const Color(0xFFB7B2C7),
+        color: widget.filters.status == status
+            ? Colors.white
+            : const Color(0xFFB7B2C7),
         fontSize: 12,
       ),
     ),

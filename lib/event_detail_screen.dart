@@ -465,9 +465,10 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
         _infoRow(
           Icons.event_available_outlined,
           'Thời gian diễn ra',
-          widget.event.eventStart == null && widget.event.eventEnd == null
-              ? 'Chưa công bố'
-              : '${eventDateLabel(widget.event.eventStart)}${widget.event.eventEnd == null ? '' : ' – ${eventDateLabel(widget.event.eventEnd)}'}',
+          widget.event.timeline ??
+              (widget.event.eventStart == null && widget.event.eventEnd == null
+                  ? 'Chưa công bố'
+                  : '${eventDateLabel(widget.event.eventStart)}${widget.event.eventEnd == null ? '' : ' – ${eventDateLabel(widget.event.eventEnd)}'}'),
         ),
         _divider(),
         _infoRow(

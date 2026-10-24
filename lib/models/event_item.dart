@@ -29,6 +29,7 @@ class EventItem {
     this.createdAt,
     this.updatedAt,
     this.description = '',
+    this.timeline,
     this.isNewSeasonUnknown = false,
     this.isRecurring = false,
     this.notes,
@@ -63,6 +64,7 @@ class EventItem {
   final DateTime? createdAt;
   final DateTime? updatedAt;
   final String description;
+  final String? timeline;
   final bool isNewSeasonUnknown;
   final bool isRecurring;
   final String? notes;
@@ -91,9 +93,9 @@ class EventItem {
 
     return EventItem(
       id: text(data['id']) ?? documentId,
-      title: text(data['title']) ?? '',
+      title: text(data['title']) ?? text(data['name']) ?? '',
       organizer: text(data['organizer']) ?? '',
-      type: text(data['type']) ?? 'Sự kiện',
+      type: text(data['type']) ?? text(data['category']) ?? 'Sự kiện',
       organizerLogoUrl: text(data['organizerLogoUrl']),
       sponsorLogoUrls: _strings(data['sponsorLogoUrls']),
       relatedCareers: _strings(data['relatedCareers'] ?? data['careerTags']),
@@ -116,6 +118,7 @@ class EventItem {
       createdAt: date(data['createdAt']),
       updatedAt: date(data['updatedAt']),
       description: text(data['description']) ?? '',
+      timeline: text(data['timeline']),
       isNewSeasonUnknown: data['isNewSeasonUnknown'] as bool? ?? false,
       isRecurring: data['isRecurring'] as bool? ?? false,
       notes: text(data['notes']),
