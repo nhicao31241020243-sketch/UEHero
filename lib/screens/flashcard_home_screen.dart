@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../config/deck_visuals.dart';
 import '../data/decks/deck_helpers.dart';
 import '../data/flashcard_seed.dart';
 import '../models/flashcard_deck.dart';
@@ -428,49 +429,52 @@ class _FlashcardHomeScreenState extends State<FlashcardHomeScreen> {
     ),
   );
 
-  Widget _libraryBody() => CustomScrollView(
-    keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-    slivers: [
-      SliverToBoxAdapter(child: _header()),
-      SliverPadding(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-        sliver: SliverToBoxAdapter(child: _continueCard()),
-      ),
-      SliverPadding(
-        padding: const EdgeInsets.fromLTRB(0, 16, 0, 0),
-        sliver: SliverToBoxAdapter(child: _filters()),
-      ),
-      if (_inProgressDecks.isNotEmpty) ...[
+  Widget _libraryBody() {
+    final deckColors = DeckPalette.assign(_service.decks);
+    return CustomScrollView(
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+      slivers: [
+        SliverToBoxAdapter(child: _header()),
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+          sliver: SliverToBoxAdapter(child: _continueCard()),
+        ),
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(0, 16, 0, 0),
+          sliver: SliverToBoxAdapter(child: _filters()),
+        ),
+        if (_inProgressDecks.isNotEmpty) ...[
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(20, 24, 20, 12),
+            sliver: SliverToBoxAdapter(child: _sectionTitle('Đang học')),
+          ),
+          SliverToBoxAdapter(child: _inProgressList(deckColors)),
+        ],
         SliverPadding(
           padding: const EdgeInsets.fromLTRB(20, 24, 20, 12),
-          sliver: SliverToBoxAdapter(child: _sectionTitle('Đang học')),
-        ),
-        SliverToBoxAdapter(child: _inProgressList()),
-      ],
-      SliverPadding(
-        padding: const EdgeInsets.fromLTRB(20, 24, 20, 12),
-        sliver: SliverToBoxAdapter(
-          child: _sectionTitle(
-            _inProgressDecks.isEmpty ? 'Danh mục' : 'Khám phá thêm',
-            onSeeAll: _showAllDecks,
-          ),
-        ),
-      ),
-      if (_otherDecks.isEmpty && _inProgressDecks.isEmpty)
-        const SliverFillRemaining(
-          hasScrollBody: false,
-          child: Center(
-            child: Text(
-              'Không tìm thấy gói phù hợp.',
-              style: TextStyle(color: FlashcardHomeScreen.muted),
+          sliver: SliverToBoxAdapter(
+            child: _sectionTitle(
+              _inProgressDecks.isEmpty ? 'Danh mục' : 'Khám phá thêm',
+              onSeeAll: _showAllDecks,
             ),
           ),
-        )
-      else
-        _deckGrid(_otherDecks),
-      const SliverToBoxAdapter(child: SizedBox(height: 104)),
-    ],
-  );
+        ),
+        if (_otherDecks.isEmpty && _inProgressDecks.isEmpty)
+          const SliverFillRemaining(
+            hasScrollBody: false,
+            child: Center(
+              child: Text(
+                'Không tìm thấy gói phù hợp.',
+                style: TextStyle(color: FlashcardHomeScreen.muted),
+              ),
+            ),
+          )
+        else
+          _deckGrid(_otherDecks, deckColors),
+        const SliverToBoxAdapter(child: SizedBox(height: 104)),
+      ],
+    );
+  }
 
   Widget _header() => Container(
     padding: EdgeInsets.fromLTRB(
@@ -648,12 +652,18 @@ class _FlashcardHomeScreenState extends State<FlashcardHomeScreen> {
     padding: const EdgeInsets.symmetric(horizontal: 20),
     child: Row(
       children: [
-        _filterChip('Tất cả', _groupFilter == null, () => _selectGroup(null)),
+        _filterChip(
+          'Tất cả',
+          _groupFilter == null,
+          () => _selectGroup(null),
+          color: FlashcardHomeScreen.teal,
+        ),
         for (final group in FlashcardGroup.values)
           _filterChip(
             group.label,
             _groupFilter == group,
             () => _selectGroup(group),
+            color: DeckPalette.colorForGroup(group),
           ),
         if (_levelFilter != null)
           _filterChip(_levelFilter!.label, true, () => _selectLevel(null)),
@@ -661,7 +671,12 @@ class _FlashcardHomeScreenState extends State<FlashcardHomeScreen> {
     ),
   );
 
-  Widget _filterChip(String label, bool selected, VoidCallback onTap) {
+  Widget _filterChip(
+    String label,
+    bool selected,
+    VoidCallback onTap, {
+    Color color = FlashcardHomeScreen.teal,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(right: 7),
       child: ChoiceChip(
@@ -670,15 +685,15 @@ class _FlashcardHomeScreenState extends State<FlashcardHomeScreen> {
         onSelected: (_) => onTap(),
         showCheckmark: false,
         backgroundColor: FlashcardHomeScreen.surface,
-        selectedColor: const Color(0xFF244039),
+        selectedColor: DeckPalette.darker(color, 0.52),
         side: BorderSide(
           color: selected
-              ? FlashcardHomeScreen.teal.withValues(alpha: 0.6)
+              ? color.withValues(alpha: 0.9)
               : Colors.white.withValues(alpha: 0.06),
         ),
         labelStyle: TextStyle(
           color: selected
-              ? FlashcardHomeScreen.lime
+              ? DeckPalette.foreground(color)
               : FlashcardHomeScreen.muted,
           fontSize: 10,
           fontWeight: FontWeight.w700,
@@ -718,7 +733,7 @@ class _FlashcardHomeScreenState extends State<FlashcardHomeScreen> {
     ],
   );
 
-  Widget _inProgressList() => SizedBox(
+  Widget _inProgressList(Map<String, Color> deckColors) => SizedBox(
     height: 220,
     child: ListView.separated(
       scrollDirection: Axis.horizontal,
@@ -735,6 +750,7 @@ class _FlashcardHomeScreenState extends State<FlashcardHomeScreen> {
               deck: deck,
               mastered: _service.masteredCount(deck),
               progress: _service.masteryProgress(deck),
+              accentColor: deckColors[deck.id],
               onTap: () => _openStudy(deck),
               onEdit: () => _editDeck(deck),
               onDelete: () => _deleteDeck(deck),
@@ -795,7 +811,7 @@ class _FlashcardHomeScreenState extends State<FlashcardHomeScreen> {
     ),
   );
 
-  Widget _deckGrid(List<FlashcardDeck> decks) {
+  Widget _deckGrid(List<FlashcardDeck> decks, Map<String, Color> deckColors) {
     if (decks.isEmpty) {
       return const SliverToBoxAdapter(child: SizedBox.shrink());
     }
@@ -817,6 +833,7 @@ class _FlashcardHomeScreenState extends State<FlashcardHomeScreen> {
               deck: deck,
               progress: _service.masteryProgress(deck),
               inGoal: _goalProgress.selectedGoal.deckIds.contains(deck.id),
+              accentColor: deckColors[deck.id],
               onTap: () => _openStudy(deck),
               onEdit: () => _editDeck(deck),
               onDelete: () => _deleteDeck(deck),

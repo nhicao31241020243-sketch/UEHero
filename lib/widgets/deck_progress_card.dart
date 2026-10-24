@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 
+import '../config/deck_visuals.dart';
 import '../models/flashcard_deck.dart';
 import 'deck_card_parts.dart';
+import 'deck_icon_art.dart';
 
-class DeckProgressCard extends StatelessWidget {
+class DeckProgressCard extends StatefulWidget {
   const DeckProgressCard({
     required this.deck,
     required this.mastered,
@@ -12,6 +14,7 @@ class DeckProgressCard extends StatelessWidget {
     required this.onEdit,
     required this.onDelete,
     required this.onReset,
+    this.accentColor,
     super.key,
   });
 
@@ -22,24 +25,41 @@ class DeckProgressCard extends StatelessWidget {
   final VoidCallback onEdit;
   final VoidCallback onDelete;
   final VoidCallback onReset;
+  final Color? accentColor;
+
+  @override
+  State<DeckProgressCard> createState() => _DeckProgressCardState();
+}
+
+class _DeckProgressCardState extends State<DeckProgressCard> {
+  bool _pressed = false;
 
   @override
   Widget build(BuildContext context) {
-    final percent = (progress * 100).round();
+    final deck = widget.deck;
+    final accent = widget.accentColor ?? DeckPalette.colorFor(deck);
+    final foreground = DeckPalette.foreground(accent);
+    final percent = (widget.progress * 100).round();
+    final dark = DeckPalette.darker(accent, 0.3);
     return Material(
       color: Colors.transparent,
       borderRadius: BorderRadius.circular(24),
       child: InkWell(
-        onTap: onTap,
+        onTap: widget.onTap,
+        onHighlightChanged: (pressed) => setState(() => _pressed = pressed),
         borderRadius: BorderRadius.circular(24),
         child: Ink(
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
-            gradient: deckVividGradient(deck.color),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color.lerp(accent, Colors.white, 0.08)!, dark],
+            ),
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
-                color: deck.color.withValues(alpha: 0.28),
+                color: accent.withValues(alpha: 0.28),
                 blurRadius: 18,
                 offset: const Offset(0, 8),
               ),
@@ -50,31 +70,43 @@ class DeckProgressCard extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.14),
-                      borderRadius: BorderRadius.circular(12),
+                  Icon(
+                    Icons.play_circle_outline_rounded,
+                    color: foreground.withValues(alpha: 0.85),
+                    size: 19,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    'ĐANG HỌC',
+                    style: TextStyle(
+                      color: foreground.withValues(alpha: 0.86),
+                      fontSize: 10,
+                      letterSpacing: 1,
+                      fontWeight: FontWeight.w800,
                     ),
-                    child: Icon(deck.icon, color: Colors.white, size: 20),
                   ),
                   const Spacer(),
                   DeckActionsMenu(
-                    onEdit: onEdit,
-                    onReset: onReset,
-                    onDelete: onDelete,
+                    onEdit: widget.onEdit,
+                    onReset: widget.onReset,
+                    onDelete: widget.onDelete,
+                    color: foreground.withValues(alpha: 0.9),
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 3),
+              Align(
+                alignment: Alignment.centerRight,
+                heightFactor: 0.9,
+                child: DeckIconArt(deck: deck, size: 52, pressed: _pressed),
+              ),
               Text(
                 deck.title,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
+                style: TextStyle(
+                  color: foreground,
+                  fontSize: 16,
                   height: 1.15,
                   fontWeight: FontWeight.w900,
                 ),
@@ -83,9 +115,9 @@ class DeckProgressCard extends StatelessWidget {
               ClipRRect(
                 borderRadius: BorderRadius.circular(10),
                 child: LinearProgressIndicator(
-                  value: progress,
+                  value: widget.progress,
                   minHeight: 6,
-                  backgroundColor: Colors.white.withValues(alpha: 0.18),
+                  backgroundColor: foreground.withValues(alpha: 0.18),
                   valueColor: const AlwaysStoppedAnimation(Colors.white),
                 ),
               ),
@@ -94,11 +126,11 @@ class DeckProgressCard extends StatelessWidget {
                 children: [
                   Expanded(
                     child: Text(
-                      '$mastered/${deck.cards.length} đã thuộc',
+                      '${widget.mastered}/${deck.cards.length} đã thuộc',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.75),
+                        color: foreground.withValues(alpha: 0.78),
                         fontSize: 11,
                       ),
                     ),
@@ -113,7 +145,7 @@ class DeckProgressCard extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 9),
               Align(
                 alignment: Alignment.centerLeft,
                 child: Container(
@@ -122,22 +154,18 @@ class DeckProgressCard extends StatelessWidget {
                     vertical: 7,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: foreground,
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
-                        Icons.play_arrow_rounded,
-                        color: deck.color,
-                        size: 16,
-                      ),
+                      Icon(Icons.play_arrow_rounded, color: dark, size: 16),
                       const SizedBox(width: 4),
                       Text(
                         'Tiếp tục',
                         style: TextStyle(
-                          color: deck.color,
+                          color: dark,
                           fontSize: 12,
                           fontWeight: FontWeight.w900,
                         ),
